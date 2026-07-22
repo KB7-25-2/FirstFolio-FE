@@ -1,0 +1,55 @@
+---
+description: Vue.js 프로젝트 네이밍 규칙
+alwaysApply: true
+---
+
+# Vue 네이밍 룰
+
+## 프로젝트 구조
+
+```
+src/
+├── views/        # 화면 컴포넌트
+├── components/   # 공통 컴포넌트
+├── router/       # 라우터 설정
+├── api/          # API 모듈
+├── store/        # Pinia 스토어
+└── assets/       # 정적 리소스
+```
+
+## 네이밍 규칙
+
+| 대상 | 규칙 | 예시 |
+|------|------|------|
+| 화면 컴포넌트 | PascalCase + `View` 접미사 | `ProductCompareView.vue` |
+| 공통 컴포넌트 | PascalCase (`Base` 접두사 권장) | `BaseButton.vue`, `ProductCard.vue` |
+| API 파일 | camelCase + `Api` 접미사 | `productApi.js`, `walletApi.js` |
+| Pinia 스토어 | camelCase + `Store` 접미사 | `userStore.js`, `walletStore.js` |
+| 라우터 경로 | 소문자 kebab-case | `/products`, `/wallet`, `/dashboard` |
+
+## 예시
+
+```vue
+<!-- ✅ GOOD: 화면 컴포넌트 -->
+<!-- src/views/DashboardView.vue -->
+
+<!-- ✅ GOOD: 공통 컴포넌트 -->
+<!-- src/components/BaseButton.vue -->
+```
+
+```js
+// ✅ GOOD: API 파일
+// src/api/productApi.js
+export const getProducts = () => apiClient.get('/products')
+
+// ✅ GOOD: 라우터 경로
+{ path: '/product-compare', component: ProductCompareView }
+```
+
+```js
+// ❌ BAD
+// src/views/dashboard.vue       → DashboardView.vue
+// src/components/button.vue     → BaseButton.vue
+// src/api/product.js            → productApi.js
+// { path: '/ProductCompare' }   → /product-compare
+```

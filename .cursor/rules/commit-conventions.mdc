@@ -1,0 +1,48 @@
+---
+description: Git 커밋 메시지 규칙 (Conventional Commits)
+alwaysApply: true
+---
+
+# 커밋 규칙
+
+[Conventional Commits](https://www.conventionalcommits.org/) 형식을 따릅니다.
+
+## 형식
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+```
+
+- `type`: 필수 — 변경 유형
+- `scope`: 선택 — 영향 범위 (예: `auth`, `dashboard`, `api`)
+- `subject`: 필수 — 50자 이내, 명령형, 마침표 없음
+
+## Type
+
+| Type | 설명 | 예시 |
+|------|------|------|
+| `feat` | 새 기능 추가 | `feat: 로그인 화면 추가` |
+| `fix` | 버그 수정 | `fix: 잔액 표시 오류 수정` |
+| `docs` | 문서 변경 | `docs: README 프로젝트 구조 추가` |
+| `style` | 코드 포맷팅 (로직 변경 없음) | `style: Prettier 적용` |
+| `ref` | 리팩토링 | `ref: axios 인스턴스 분리` |
+| `test` | 테스트 추가/수정 | `test: 로그인 유닛 테스트 추가` |
+| `chore` | 빌드/설정 변경 | `chore: ESLint 설정 추가` |
+
+## 규칙
+
+- subject는 **한국어 또는 영어** 중 팀 내 통일된 언어 사용
+- subject는 **명령형**으로 작성 (`추가`, `수정`, `삭제` / `add`, `fix`, `remove`)
+- subject 끝에 마침표(`.`) 사용 금지
+- body가 필요하면 subject와 빈 줄로 구분
+
+## 예시
+
+```
+feat(dashboard): 대시보드 차트 컴포넌트 추가
+fix(api): 401 응답 시 토큰 갱신 처리
+docs: Vue 네이밍 규칙 문서 추가
+chore: Bootstrap 5 의존성 추가
+```
