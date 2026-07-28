@@ -131,11 +131,11 @@ chore: Vercel 배포 설정 추가
 
 PR 및 `main` / `dev` 푸시 시 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)이 실행된다. 아래가 모두 통과해야 CI가 성공한다.
 
-| 순서 | 명령어                 | 설명              |
-| ---- | ---------------------- | ----------------- |
-| 1    | `npm run lint`         | ESLint 검사       |
+| 순서 | 명령어                 | 설명               |
+| ---- | ---------------------- | ------------------ |
+| 1    | `npm run lint`         | ESLint 검사        |
 | 2    | `npm run format:check` | Prettier 포맷 검사 |
-| 3    | `npm run build`        | 프로덕션 빌드     |
+| 3    | `npm run build`        | 프로덕션 빌드      |
 
 CI 빌드에는 `.env.example`과 동일한 `VITE_*` 값이 사용된다. 실제 API URL 등은 Vercel 환경 변수에서 관리한다.
 
@@ -143,10 +143,10 @@ CI 빌드에는 `.env.example`과 동일한 `VITE_*` 값이 사용된다. 실제
 
 배포는 **Vercel Git Integration**이 담당한다. GitHub Actions에서는 배포를 수행하지 않는다.
 
-| Git | Vercel 환경 |
-| --- | ----------- |
-| `main` (push / merge) | Production |
-| `dev` 푸시 / 모든 PR | Preview |
+| Git                   | Vercel 환경 |
+| --------------------- | ----------- |
+| `main` (push / merge) | Production  |
+| `dev` 푸시 / 모든 PR  | Preview     |
 
 `vercel.json`에 SPA 라우팅 fallback이 설정되어 있어 Vue Router `history` 모드에서 새로고침 시 404가 발생하지 않는다.
 
@@ -154,11 +154,11 @@ CI 빌드에는 `.env.example`과 동일한 `VITE_*` 값이 사용된다. 실제
 
 Project Settings → Environment Variables에서 Production / Preview 스코프별로 등록한다.
 
-| 변수                | 설명                 | 예시 (로컬)             |
-| ------------------- | -------------------- | ----------------------- |
-| `VITE_API_BASE_URL` | API Base URL         | `/api`                  |
-| `VITE_API_TIMEOUT`  | 요청 타임아웃 (ms)   | `10000`                 |
-| `VITE_TOKEN_KEY`    | localStorage 토큰 키 | `access_token`          |
+| 변수                | 설명                 | 예시 (로컬)    |
+| ------------------- | -------------------- | -------------- |
+| `VITE_API_BASE_URL` | API Base URL         | `/api`         |
+| `VITE_API_TIMEOUT`  | 요청 타임아웃 (ms)   | `10000`        |
+| `VITE_TOKEN_KEY`    | localStorage 토큰 키 | `access_token` |
 
 `VITE_API_PROXY_TARGET`은 Vite 개발 서버 전용이므로 Vercel에는 등록하지 않아도 된다.
 
