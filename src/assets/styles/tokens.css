@@ -34,6 +34,22 @@
   --color-nav-text-muted: #b0b0b0;
   --color-nav-active-primary: #c17f24;
   --color-nav-active-secondary: #ffa1b8;
+
+  /* StudyNote */
+  --color-study-surface: #f1fff0;
+  --color-study-border: #89d973;
+  --color-study-ink: #212b5c;
+  --color-study-muted: rgba(139, 100, 60, 0.6);
+  --color-study-faint: rgba(139, 100, 60, 0.5);
+  --color-study-todo: rgba(139, 100, 60, 0.55);
+  --color-study-check: #5fff50;
+  --color-study-continue: #22c55e;
+  --color-study-total: #d52a2d;
+  --color-study-line: rgba(139, 100, 60, 0.08);
+  --color-study-divider: rgba(0, 0, 0, 0.2);
+  --color-study-score-label: rgba(0, 0, 0, 0.55);
+  --color-study-tape: rgba(255, 242, 204, 0.55);
+  --color-study-sticker: #fffaed;
 }
 
 :root {
@@ -67,4 +83,20 @@
   --nav-text-muted: var(--color-nav-text-muted);
   --nav-active-primary: var(--color-nav-active-primary);
   --nav-active-secondary: var(--color-nav-active-secondary);
+
+  /* StudyNote */
+  --study-surface: var(--color-study-surface);
+  --study-border: var(--color-study-border);
+  --study-ink: var(--color-study-ink);
+  --study-muted: var(--color-study-muted);
+  --study-faint: var(--color-study-faint);
+  --study-todo: var(--color-study-todo);
+  --study-check: var(--color-study-check);
+  --study-continue: var(--color-study-continue);
+  --study-total: var(--color-study-total);
+  --study-line: var(--color-study-line);
+  --study-divider: var(--color-study-divider);
+  --study-score-label: var(--color-study-score-label);
+  --study-tape: var(--color-study-tape);
+  --study-sticker: var(--color-study-sticker);
 }

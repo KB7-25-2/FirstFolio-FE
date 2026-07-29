@@ -71,12 +71,13 @@ export const useStudyStore = defineStore('study', () => {
 
   /** StudyNote용: 커리큘럼 + 소단원 목록 + 이어하기 */
   const fetchStudyNote = async () => {
+    if (isLoading.value) return
+
     isLoading.value = true
     error.value = null
 
     try {
-      await fetchCurriculum()
-      await fetchContinuePosition()
+      await Promise.all([fetchCurriculum(), fetchContinuePosition()])
 
       const active = activeCurriculumItem.value
       if (!active) {
@@ -86,8 +87,7 @@ export const useStudyStore = defineStore('study', () => {
 
       await fetchLearningProgress(active.mainChapterId)
     } catch (err) {
-      error.value = err.message
-      throw err
+      error.value = err?.message || '학습 현황을 불러오지 못했습니다.'
     } finally {
       isLoading.value = false
     }

@@ -143,7 +143,7 @@ const MOCK_LEARNING_PROGRESS = [
     order: 1,
     title: '예금과 적금의 이해',
     shortLabel: '예금·적금',
-    quizScore: 80,
+    quizScore: 100,
   },
   {
     progressId: 202,
@@ -159,7 +159,7 @@ const MOCK_LEARNING_PROGRESS = [
     order: 2,
     title: '금리와 복리의 원리',
     shortLabel: '금리·복리',
-    quizScore: 90,
+    quizScore: 100,
   },
   {
     progressId: 203,
