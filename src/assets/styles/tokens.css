@@ -26,6 +26,14 @@
 
   --width-mobile: 390px;
   --height-mobile: 844px;
+
+  /* Navbar */
+  --color-nav-bg: #121212;
+  --color-nav-border: rgba(0, 0, 0, 0.08);
+  --color-nav-text: #1a1a1a;
+  --color-nav-text-muted: #b0b0b0;
+  --color-nav-active-primary: #c17f24;
+  --color-nav-active-secondary: #ffa1b8;
 }
 
 :root {
@@ -51,4 +59,12 @@
   --auth-method-border: var(--color-auth-method-border);
   --mobile-width: var(--width-mobile);
   --mobile-height: var(--height-mobile);
+
+  /* Navbar */
+  --nav-bg: var(--color-nav-bg);
+  --nav-border: var(--color-nav-border);
+  --nav-text: var(--color-nav-text);
+  --nav-text-muted: var(--color-nav-text-muted);
+  --nav-active-primary: var(--color-nav-active-primary);
+  --nav-active-secondary: var(--color-nav-active-secondary);
 }
