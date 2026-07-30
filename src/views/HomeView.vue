@@ -1,5 +1,6 @@
 <script setup>
 import StudyNote from '@/components/StudyNote.vue'
+import NewsScrap from '@/components/NewsScrap.vue'
 </script>
 
 <template>
@@ -9,6 +10,10 @@ import StudyNote from '@/components/StudyNote.vue'
     </h1>
     <div class="flex justify-center pt-3">
       <StudyNote />
+    </div>
+
+    <div class="mt-8">
+      <NewsScrap />
     </div>
   </div>
 </template>
