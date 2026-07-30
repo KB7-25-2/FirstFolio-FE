@@ -63,4 +63,9 @@
       rgb(46, 26, 12) 91.51%
     );
   }
+
+  /* 선택 가능한 메모지 컨셉 컴포넌트 */
+  .memo-selectable {
+    @apply cursor-pointer transition-transform duration-200 ease-out hover:scale-[1.02];
+  }
 }

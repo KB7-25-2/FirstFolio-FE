@@ -32,7 +32,7 @@ const onContinue = () => {
 </script>
 
 <template>
-  <div class="relative w-full max-w-[346px]">
+  <div class="memo-selectable relative w-full max-w-[346px]">
     <!-- 테이프 -->
     <div
       class="pointer-events-none absolute top-[-8px] left-3 z-20 h-4 w-[70px] -rotate-[4deg] border-[0.5px] border-white/25 bg-[var(--study-tape)]"
