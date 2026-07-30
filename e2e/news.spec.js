@@ -17,7 +17,7 @@ test.describe('홈 금융 뉴스 스크랩 (UI)', () => {
     await expect(firstCard.locator('img')).toBeVisible()
   })
 
-  test('뉴스 카드를 클릭할 수 있다', async ({ page }) => {
+  test('뉴스 카드를 클릭하면 상세 모달이 열린다', async ({ page }) => {
     await page.goto('/home')
 
     const firstCard = page
@@ -25,7 +25,14 @@ test.describe('홈 금융 뉴스 스크랩 (UI)', () => {
       .getByRole('button')
       .first()
 
-    await expect(firstCard).toBeVisible()
     await firstCard.click()
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByText('AI 요약')).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /원문 보러가기/ })).toBeVisible()
+
+    await dialog.getByRole('button', { name: '닫기', exact: true }).click()
+    await expect(dialog).toHaveCount(0)
   })
 })

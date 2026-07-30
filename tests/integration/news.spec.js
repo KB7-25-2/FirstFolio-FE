@@ -5,6 +5,7 @@ import { useNewsStore } from '@/store/newsStore.js'
 import { getFinancialNews } from '@/services/newsService.js'
 import NewsClipping from '@/components/NewsClipping.vue'
 import NewsScrap from '@/components/NewsScrap.vue'
+import NewsDetailModal from '@/components/NewsDetailModal.vue'
 
 const sampleItem = {
   financial_news_id: 1,
@@ -111,5 +112,53 @@ describe('NewsScrap (integration)', () => {
     await newsStore.fetchNews({ limit: 3 })
 
     expect(newsStore.items).toHaveLength(data.items.length)
+  })
+})
+
+describe('NewsDetailModal (integration)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  const mountModal = () =>
+    mount(NewsDetailModal, {
+      global: {
+        stubs: {
+          Teleport: {
+            template: '<div><slot /></div>',
+          },
+        },
+      },
+    })
+
+  it('뉴스 선택 시 제목·요약·원문 버튼이 보인다', async () => {
+    const newsStore = useNewsStore()
+    await newsStore.fetchNews({ limit: 1 })
+    newsStore.selectNews(newsStore.items[0].financial_news_id)
+
+    const wrapper = mountModal()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain(newsStore.selectedNews.title)
+    expect(wrapper.text()).toContain('AI 요약')
+    expect(wrapper.text()).toContain(newsStore.selectedNews.summary)
+    expect(wrapper.text()).toContain('원문 보러가기')
+
+    wrapper.unmount()
+  })
+
+  it('닫기 클릭 시 선택이 해제된다', async () => {
+    const newsStore = useNewsStore()
+    await newsStore.fetchNews({ limit: 1 })
+    newsStore.selectNews(newsStore.items[0].financial_news_id)
+
+    const wrapper = mountModal()
+    await flushPromises()
+
+    await wrapper.get('[data-testid="news-modal-close"]').trigger('click')
+    await flushPromises()
+
+    expect(newsStore.selectedId).toBeNull()
+    wrapper.unmount()
   })
 })

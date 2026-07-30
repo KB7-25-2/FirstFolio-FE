@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useNewsStore } from '@/store/newsStore.js'
 import NewsClipping from '@/components/NewsClipping.vue'
+import NewsDetailModal from '@/components/NewsDetailModal.vue'
 
 const newsStore = useNewsStore()
 const { items, isLoading, error } = storeToRefs(newsStore)
@@ -22,7 +23,6 @@ const collectedLabel = computed(() => {
 const tapeSide = (index) => (index % 2 === 0 ? 'left' : 'right')
 
 const onSelect = (id) => {
-  // 모달은 다음 단계에서 연결
   newsStore.selectNews(id)
 }
 </script>
@@ -58,5 +58,7 @@ const onSelect = (id) => {
         @select="onSelect"
       />
     </div>
+
+    <NewsDetailModal />
   </section>
 </template>
