@@ -24,7 +24,7 @@ const relativeTime = computed(() => formatRelativeTime(props.item.published_at))
 <template>
   <button
     type="button"
-    class="relative w-full max-w-[344px] text-left"
+    class="memo-selectable relative w-full max-w-[344px] text-left"
     @click="$emit('select', item.financial_news_id)"
   >
     <!-- 와시 테이프 (CSS) -->

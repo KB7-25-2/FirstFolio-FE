@@ -35,6 +35,11 @@
   --color-nav-active-primary: #c17f24;
   --color-nav-active-secondary: #ffa1b8;
 
+  /* Scrollbar */
+  --color-scrollbar-thumb: rgba(255, 255, 255, 0.14);
+  --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.24);
+  --size-scrollbar: 4px;
+
   /* StudyNote */
   --color-study-surface: #f1fff0;
   --color-study-border: #89d973;
@@ -103,6 +108,11 @@
   --nav-text-muted: var(--color-nav-text-muted);
   --nav-active-primary: var(--color-nav-active-primary);
   --nav-active-secondary: var(--color-nav-active-secondary);
+
+  /* Scrollbar */
+  --scrollbar-thumb: var(--color-scrollbar-thumb);
+  --scrollbar-thumb-hover: var(--color-scrollbar-thumb-hover);
+  --scrollbar-size: var(--size-scrollbar);
 
   /* StudyNote */
   --study-surface: var(--color-study-surface);
