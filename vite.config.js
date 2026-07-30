@@ -1,4 +1,5 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vitest/config'
+import { loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -79,6 +80,23 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
           changeOrigin: true,
         },
+      },
+    },
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: ['./tests/setup.js'],
+      include: [
+        'tests/unit/**/*.{test,spec}.{js,ts}',
+        'tests/integration/**/*.{test,spec}.{js,ts}',
+        'src/**/*.{test,spec}.{js,ts}',
+      ],
+      exclude: ['node_modules', 'dist', 'e2e', 'tests/e2e'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'html'],
+        include: ['src/**/*.{js,vue}'],
+        exclude: ['src/main.js', 'src/pwa/**', 'src/**/*.spec.js', 'src/**/*.test.js'],
       },
     },
   }
