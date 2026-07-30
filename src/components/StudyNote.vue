@@ -25,14 +25,29 @@ const checklistLabel = (item) => {
 
 const ruledOffsets = computed(() => Array.from({ length: 14 }, (_, index) => 48 + index * 22))
 
-const onContinue = () => {
-  if (!continueRoute.value) return
+const onContinue = (event) => {
+  event.stopPropagation()
+  if (!continueRoute.value) {
+    router.push({ name: 'learning' })
+    return
+  }
   router.push(continueRoute.value)
+}
+
+const goLearning = () => {
+  router.push({ name: 'learning' })
 }
 </script>
 
 <template>
-  <div class="memo-selectable relative w-full max-w-[346px]">
+  <div
+    class="memo-selectable relative w-full max-w-[346px]"
+    role="button"
+    tabindex="0"
+    aria-label="학습 현황 — 학습 화면으로 이동"
+    @click="goLearning"
+    @keydown.enter="goLearning"
+  >
     <!-- 테이프 -->
     <div
       class="pointer-events-none absolute top-[-8px] left-3 z-20 h-4 w-[70px] -rotate-[4deg] border-[0.5px] border-white/25 bg-[var(--study-tape)]"

@@ -30,7 +30,7 @@ const goPortfolios = () => {
 </script>
 
 <template>
-  <div class="relative w-full max-w-[346px]">
+  <div class="memo-selectable relative w-full max-w-[346px]">
     <!-- 테이프 -->
     <div
       class="pointer-events-none absolute -top-2 left-1/2 z-20 h-4 w-[90px] -translate-x-1/2 rotate-3 border-[0.5px] border-white/25 bg-[var(--portfolio-tape)]"
@@ -40,9 +40,9 @@ const goPortfolios = () => {
     <!-- 포인트 상점 보드 -->
     <button
       type="button"
-      class="absolute -top-3 -right-1 z-30 -rotate-3 rounded-[5px] bg-[var(--portfolio-shop)] p-1 shadow-[0_0_12px_rgba(193,127,36,0.35),1px_4px_10px_rgba(0,0,0,0.45)]"
+      class="memo-selectable absolute -top-3 -right-1 z-30 -rotate-3 rounded-[5px] bg-[var(--portfolio-shop)] p-1 shadow-[0_0_12px_rgba(193,127,36,0.35),1px_4px_10px_rgba(0,0,0,0.45)]"
       aria-label="포인트 상점"
-      @click="goPointMarket"
+      @click.stop="goPointMarket"
     >
       <span
         class="flex flex-col items-center gap-[3px] rounded-[3px] bg-[var(--portfolio-shop-paper)] px-3 py-2.5 text-center"
