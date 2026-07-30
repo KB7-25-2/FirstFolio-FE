@@ -30,12 +30,12 @@ export const ASSET_TYPE_LABELS = /** @type {Record<AssetType, string>} */ ({
   OTHER: '기타',
 })
 
-/** Figma PortfolioCard 색상 순서에 맞춘 기본 팔레트 */
+/** Figma PortfolioMemo AllocBar 색상 */
 export const ASSET_TYPE_COLORS = /** @type {Record<AssetType, string>} */ ({
   DEPOSIT_SAVINGS: '#c17f24',
-  STOCK: '#5c4033',
-  BOND: '#8a9a5b',
-  OTHER: '#9ca3af',
+  STOCK: '#6b4a2b',
+  BOND: '#7a6b33',
+  OTHER: '#a89980',
 })
 
 /**

@@ -56,6 +56,23 @@
   --color-study-tape: rgba(255, 242, 204, 0.55);
   --color-study-sticker: #fffaed;
 
+  /* PortfolioSummary */
+  --color-portfolio-surface: #f5edd9;
+  --color-portfolio-border: #d4b896;
+  --color-portfolio-ink: #212b5c;
+  --color-portfolio-muted: rgba(139, 100, 60, 0.6);
+  --color-portfolio-unit: rgba(139, 100, 60, 0.7);
+  --color-portfolio-legend: rgba(61, 31, 8, 0.75);
+  --color-portfolio-line: rgba(139, 100, 60, 0.08);
+  --color-portfolio-margin: rgba(139, 100, 60, 0.25);
+  --color-portfolio-tape: rgba(255, 242, 204, 0.55);
+  --color-portfolio-chip-bg: rgba(46, 41, 31, 0.75);
+  --color-portfolio-chip-border: rgba(242, 199, 89, 0.85);
+  --color-portfolio-chip-label: #d9c78c;
+  --color-portfolio-chip-value: #ffeb8c;
+  --color-portfolio-shop: #c17f24;
+  --color-portfolio-shop-paper: #fcf7ed;
+
   /* NewsClipping */
   --color-news-surface: #f5edd9;
   --color-news-ink: #2c1810;
@@ -129,6 +146,23 @@
   --study-score-label: var(--color-study-score-label);
   --study-tape: var(--color-study-tape);
   --study-sticker: var(--color-study-sticker);
+
+  /* PortfolioSummary */
+  --portfolio-surface: var(--color-portfolio-surface);
+  --portfolio-border: var(--color-portfolio-border);
+  --portfolio-ink: var(--color-portfolio-ink);
+  --portfolio-muted: var(--color-portfolio-muted);
+  --portfolio-unit: var(--color-portfolio-unit);
+  --portfolio-legend: var(--color-portfolio-legend);
+  --portfolio-line: var(--color-portfolio-line);
+  --portfolio-margin: var(--color-portfolio-margin);
+  --portfolio-tape: var(--color-portfolio-tape);
+  --portfolio-chip-bg: var(--color-portfolio-chip-bg);
+  --portfolio-chip-border: var(--color-portfolio-chip-border);
+  --portfolio-chip-label: var(--color-portfolio-chip-label);
+  --portfolio-chip-value: var(--color-portfolio-chip-value);
+  --portfolio-shop: var(--color-portfolio-shop);
+  --portfolio-shop-paper: var(--color-portfolio-shop-paper);
 
   /* NewsClipping */
   --news-surface: var(--color-news-surface);
