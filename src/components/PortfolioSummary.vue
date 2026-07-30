@@ -41,7 +41,7 @@ const goPortfolios = () => {
     <button
       type="button"
       class="memo-selectable absolute -top-3 -right-1 z-30 -rotate-3 rounded-[5px] bg-[var(--portfolio-shop)] p-1 shadow-[0_0_12px_rgba(193,127,36,0.35),1px_4px_10px_rgba(0,0,0,0.45)]"
-      aria-label="포인트 상점"
+      aria-label="포인트 상점으로 이동"
       @click.stop="goPointMarket"
     >
       <span
@@ -58,7 +58,7 @@ const goPortfolios = () => {
 
     <section
       class="relative min-h-[133px] w-full rotate-[0.8deg] overflow-hidden rounded border-[0.8px] border-[var(--portfolio-border)] bg-[var(--portfolio-surface)] shadow-[0_5px_14px_rgba(0,0,0,0.35)]"
-      aria-label="현재 포트폴리오"
+      aria-label="현재 포트폴리오로 이동"
       role="button"
       tabindex="0"
       @click="goPortfolios"

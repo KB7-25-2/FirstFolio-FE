@@ -44,7 +44,7 @@ const goLearning = () => {
     class="memo-selectable relative w-full max-w-[346px]"
     role="button"
     tabindex="0"
-    aria-label="학습 현황 — 학습 화면으로 이동"
+    aria-label="현재 학습 현황으로 이동"
     @click="goLearning"
     @keydown.enter="goLearning"
   >
