@@ -29,11 +29,11 @@ onMounted(() => {
         {{ greeting }}
       </h1>
       <div
-        class="absolute top-5 right-0 rotate-5 rounded border-[1.5px] border-[rgba(193,127,36,0.8)] px-2 py-[3px]"
+        class="absolute top-5 right-0 flex rotate-5 items-center justify-center rounded border-[1.5px] border-[rgba(193,127,36,0.8)] px-2 py-[3px]"
         aria-hidden="true"
       >
         <span
-          class="font-serif text-[10px] font-black whitespace-nowrap text-[rgba(193,127,36,0.9)]"
+          class="font-serif text-[10px] leading-none font-black whitespace-nowrap text-[rgba(193,127,36,0.9)]"
         >
           오늘 출석 완료
         </span>
