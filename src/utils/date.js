@@ -16,3 +16,18 @@ export const formatRelativeTime = (isoString) => {
   const days = Math.floor(hours / 24)
   return `${days}일 전`
 }
+
+const WEEKDAY_KO = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일']
+
+/**
+ * Date를 `2026년 7월 21일 화요일` 형식으로 변환
+ * @param {Date} [date=new Date()]
+ * @returns {string}
+ */
+export const formatKoreanDate = (date = new Date()) => {
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const weekday = WEEKDAY_KO[date.getDay()]
+  return `${year}년 ${month}월 ${day}일 ${weekday}`
+}

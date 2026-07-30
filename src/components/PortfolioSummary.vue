@@ -3,22 +3,25 @@ import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
-
-/** 포인트는 포트폴리오 API에 없음 — UI용 임시 목업 */
-const MOCK_POINT_BALANCE = 3800
+import { useUserStore } from '@/store/userStore.js'
 
 const portfolioStore = usePortfolioStore()
+const userStore = useUserStore()
 const router = useRouter()
 const { portfolioSummary, allocationView, totalAssetsDisplay, isLoading, error } =
   storeToRefs(portfolioStore)
+const { pointBalanceDisplay } = storeToRefs(userStore)
 
-onMounted(() => {
-  portfolioStore.fetchPortfolioSummary()
+onMounted(async () => {
+  await Promise.all([
+    portfolioStore.fetchPortfolioSummary(),
+    userStore.profile ? Promise.resolve() : userStore.fetchProfile(),
+  ])
 })
 
 const ruledOffsets = computed(() => Array.from({ length: 8 }, (_, index) => 44 + index * 22))
 
-const pointDisplay = computed(() => MOCK_POINT_BALANCE.toLocaleString('ko-KR'))
+const pointDisplay = computed(() => pointBalanceDisplay.value)
 
 const goPointMarket = () => {
   router.push({ name: 'point-market' })
