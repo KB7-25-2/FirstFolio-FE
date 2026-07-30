@@ -50,6 +50,16 @@
   --color-study-score-label: rgba(0, 0, 0, 0.55);
   --color-study-tape: rgba(255, 242, 204, 0.55);
   --color-study-sticker: #fffaed;
+
+  /* NewsClipping */
+  --color-news-surface: #f5edd9;
+  --color-news-ink: #2c1810;
+  --color-news-muted: rgba(44, 24, 16, 0.45);
+  --color-news-masthead: rgba(44, 24, 16, 0.55);
+  --color-news-line: rgba(44, 24, 16, 0.35);
+  --color-news-section: rgba(245, 237, 217, 0.9);
+  --color-news-section-muted: rgba(245, 237, 217, 0.5);
+  --color-news-tape: rgba(255, 161, 184, 0.55);
 }
 
 :root {
@@ -99,4 +109,14 @@
   --study-score-label: var(--color-study-score-label);
   --study-tape: var(--color-study-tape);
   --study-sticker: var(--color-study-sticker);
+
+  /* NewsClipping */
+  --news-surface: var(--color-news-surface);
+  --news-ink: var(--color-news-ink);
+  --news-muted: var(--color-news-muted);
+  --news-masthead: var(--color-news-masthead);
+  --news-line: var(--color-news-line);
+  --news-section: var(--color-news-section);
+  --news-section-muted: var(--color-news-section-muted);
+  --news-tape: var(--color-news-tape);
 }

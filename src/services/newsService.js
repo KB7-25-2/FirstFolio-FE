@@ -3,7 +3,11 @@
  * @typedef {import('@/types/news.js').FinancialNewsListResponse} FinancialNewsListResponse
  */
 
+import scrap1 from '@/assets/news/scrap-1.png'
+import scrap2 from '@/assets/news/scrap-2.png'
+
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
+
 export class NewsApiError extends Error {
   /**
    * @param {string} code
@@ -23,34 +27,34 @@ export class NewsApiError extends Error {
 const MOCK_NEWS = [
   {
     financial_news_id: 1,
-    title: '기준금리 동결, 금융시장 영향은?',
+    title: '예·적금 금리 비교 수요 증가…은행권 경쟁 격화',
     summary: '기준금리 동결 결정의 배경과 예·적금, 대출 금리에 미칠 수 있는 영향을 요약합니다.',
-    image_url: 'https://cdn.example.com/images/financial-news-1.jpg',
-    source_name: '한국은행',
+    image_url: scrap1,
+    source_name: '경제일보',
     source_url: 'https://example.com/source-news',
     source_published_at: '2026-07-24T09:00:00',
-    published_at: '2026-07-24T10:00:00',
+    published_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
   },
   {
     financial_news_id: 2,
-    title: '청년 자산 형성 지원 정책, 무엇이 달라지나',
+    title: '코스피, 외국인 매수에 2,720선 회복',
     summary:
       '청년층을 위한 저축·투자 지원 제도 개편 내용을 정리하고, 포트폴리오에 반영할 포인트를 안내합니다.',
-    image_url: 'https://cdn.example.com/images/financial-news-2.jpg',
-    source_name: '기획재정부',
+    image_url: scrap2,
+    source_name: '한국경제',
     source_url: 'https://example.com/source-news-2',
     source_published_at: '2026-07-23T14:30:00',
-    published_at: '2026-07-23T15:00:00',
+    published_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
   },
   {
     financial_news_id: 3,
     title: '국내 증시 변동성 확대…초보 투자자가 봐야 할 지표',
     summary: '최근 증시 변동성의 원인과 함께 초보 투자자가 참고할 수 있는 기초 지표를 요약합니다.',
-    image_url: 'https://cdn.example.com/images/financial-news-3.jpg',
+    image_url: scrap1,
     source_name: '금융감독원',
     source_url: 'https://example.com/source-news-3',
     source_published_at: '2026-07-22T08:00:00',
-    published_at: '2026-07-22T09:30:00',
+    published_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
   },
 ]
 
