@@ -157,7 +157,7 @@ const openPeriod = async (period) => {
       <div class="relative mx-auto w-full max-w-[300px]">
         <button
           type="button"
-          class="absolute top-16 left-0 z-10 flex h-[160px] w-7 -translate-x-1/2 items-center justify-center rounded-r bg-[#e5dec7]/90 font-serif text-[10px] text-[rgba(41,33,26,0.45)] disabled:opacity-30"
+          class="memo-selectable absolute top-16 left-0 z-10 flex h-[160px] w-7 -translate-x-1/2 items-center justify-center rounded-r bg-[#e5dec7]/90 font-serif text-[10px] text-[rgba(41,33,26,0.45)] disabled:opacity-30"
           :disabled="activeIndex <= 0"
           aria-label="이전 대단원"
           @click="goPrev"
@@ -176,7 +176,7 @@ const openPeriod = async (period) => {
 
         <button
           type="button"
-          class="absolute top-16 right-0 z-10 flex h-[160px] w-7 translate-x-1/2 items-center justify-center rounded-l bg-[#fff1a3]/90 font-serif text-[10px] text-[rgba(41,33,26,0.45)] disabled:opacity-30"
+          class="memo-selectable absolute top-16 right-0 z-10 flex h-[160px] w-7 translate-x-1/2 items-center justify-center rounded-l bg-[#fff1a3]/90 font-serif text-[10px] text-[rgba(41,33,26,0.45)] disabled:opacity-30"
           :disabled="activeIndex >= sortedCurriculum.length - 1"
           aria-label="다음 대단원"
           @click="goNext"
