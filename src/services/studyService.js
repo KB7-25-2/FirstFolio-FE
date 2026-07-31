@@ -21,7 +21,7 @@ export class StudyApiError extends Error {
   }
 }
 
-/** API 원본 형태 목업 (snake_case) — PROJECT_SPEC: 기초 + 예·적금/채권/주식/펀드 */
+/** 개인 커리큘럼 조회 API 목업 (snake_case) */
 const MOCK_CURRICULUM_RESPONSE = {
   data: {
     items: [
@@ -31,13 +31,9 @@ const MOCK_CURRICULUM_RESPONSE = {
         title: '포트폴리오 기초',
         chapter_type: 'FOUNDATION',
         display_order: 1,
-        status: 'COMPLETED',
-        completed_at: '2026-06-20T12:00:00',
-        progress_percent: 100,
-        description: '모의투자 전에 꼭 알아야 할 포트폴리오의 기초',
-        sub_chapter_count: 5,
-        accent: 'cream',
-        icon: '📋',
+        status: 'ACTIVE',
+        completed_at: null,
+        progress_percent: 40,
       },
       {
         curriculum_item_id: 502,
@@ -45,13 +41,9 @@ const MOCK_CURRICULUM_RESPONSE = {
         title: '예·적금',
         chapter_type: 'CORE',
         display_order: 2,
-        status: 'ACTIVE',
+        status: 'LOCKED',
         completed_at: null,
-        progress_percent: 50,
-        description: '안전한 자산관리의 시작',
-        sub_chapter_count: 6,
-        accent: 'yellow',
-        icon: '🏦',
+        progress_percent: 0,
       },
       {
         curriculum_item_id: 503,
@@ -62,10 +54,6 @@ const MOCK_CURRICULUM_RESPONSE = {
         status: 'LOCKED',
         completed_at: null,
         progress_percent: 0,
-        description: '안정적인 수익을 위한 채권 이해',
-        sub_chapter_count: 5,
-        accent: 'mint',
-        icon: '📜',
       },
       {
         curriculum_item_id: 504,
@@ -76,10 +64,6 @@ const MOCK_CURRICULUM_RESPONSE = {
         status: 'LOCKED',
         completed_at: null,
         progress_percent: 0,
-        description: '기업과 시장을 읽는 투자 기초',
-        sub_chapter_count: 6,
-        accent: 'blue',
-        icon: '📈',
       },
       {
         curriculum_item_id: 505,
@@ -90,10 +74,6 @@ const MOCK_CURRICULUM_RESPONSE = {
         status: 'LOCKED',
         completed_at: null,
         progress_percent: 0,
-        description: '분산투자로 시작하는 자산관리',
-        sub_chapter_count: 5,
-        accent: 'purple',
-        icon: '💼',
       },
     ],
   },
@@ -223,16 +203,16 @@ const MOCK_SUB_CHAPTER_CONTENT = {
   },
 }
 
-/** 이어하기 목업 (snake_case) — ACTIVE 대단원(예·적금)의 IN_PROGRESS 소단원 */
+/** 이어하기 목업 — ACTIVE 대단원(포트폴리오 기초) */
 const MOCK_CONTINUE_POSITION = {
   data: {
-    curriculum_item_id: 502,
-    main_chapter_id: 2,
-    sub_chapter_id: 103,
-    content_version_id: 303,
+    curriculum_item_id: 501,
+    main_chapter_id: 1,
+    sub_chapter_id: 11,
+    content_version_id: 201,
     last_page_id: 'page-2',
-    progress_percent: 50,
-    route: '/learning/sub-chapters/103?page=page-2',
+    progress_percent: 40,
+    route: '/learning/sub-chapters/11?page=page-2',
   },
 }
 
@@ -249,10 +229,6 @@ const mapCurriculumItem = (item) => ({
   status: item.status,
   completedAt: item.completed_at,
   progressPercent: item.progress_percent,
-  description: item.description ?? '',
-  subChapterCount: item.sub_chapter_count ?? 0,
-  accent: item.accent ?? 'cream',
-  icon: item.icon ?? '',
 })
 
 /**
@@ -290,13 +266,18 @@ const mapContinuePosition = (raw) => ({
 /**
  * 확정된 개인 커리큘럼 + 대단원별 진행 상태 조회 (목업)
  * @returns {Promise<{ data: { items: CurriculumItem[] } }>}
+ * @throws {StudyApiError} CURRICULUM_NOT_FOUND
  */
 export const getCurriculum = async () => {
   await delay()
   const raw = structuredClone(MOCK_CURRICULUM_RESPONSE)
+  const items = raw.data?.items ?? []
+  if (!items.length) {
+    throw new StudyApiError('CURRICULUM_NOT_FOUND', '확정된 커리큘럼이 없다.', 404)
+  }
   return {
     data: {
-      items: raw.data.items.map(mapCurriculumItem),
+      items: items.map(mapCurriculumItem),
     },
   }
 }

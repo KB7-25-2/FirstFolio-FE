@@ -8,6 +8,7 @@
  */
 
 /**
+ * 개인 커리큘럼 아이템 (커리큘럼 조회 API `data.items[]`)
  * @typedef {object} CurriculumItem
  * @property {number} curriculumItemId
  * @property {number} mainChapterId
@@ -17,10 +18,6 @@
  * @property {CurriculumItemStatus} status
  * @property {string | null} completedAt
  * @property {number} progressPercent
- * @property {string} [description]
- * @property {number} [subChapterCount]
- * @property {string} [accent]
- * @property {string} [icon]
  */
 
 /**

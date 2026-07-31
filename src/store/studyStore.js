@@ -37,8 +37,15 @@ export const useStudyStore = defineStore('study', () => {
   const maxTotalScore = computed(() => learningItems.value.length * 100)
 
   const fetchCurriculum = async () => {
-    const { data } = await getCurriculum()
-    curriculumItems.value = data.items
+    try {
+      const { data } = await getCurriculum()
+      curriculumItems.value = data.items
+    } catch (err) {
+      if (err?.code === 'CURRICULUM_NOT_FOUND') {
+        curriculumItems.value = []
+      }
+      throw err
+    }
   }
 
   const fetchLearningProgress = async (mainChapterId) => {
