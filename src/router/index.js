@@ -33,7 +33,7 @@ const router = createRouter({
             {
               path: '',
               name: 'learning',
-              component: () => import('@/views/learning/LearningIndexView.vue'),
+              component: () => import('@/views/learning/LearningRoadmapView.vue'),
             },
             {
               path: 'main-chapters/:mainChapterId',

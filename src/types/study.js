@@ -4,15 +4,23 @@
  */
 
 /**
+ * @typedef {'FOUNDATION' | 'CORE'} ChapterType
+ */
+
+/**
  * @typedef {object} CurriculumItem
  * @property {number} curriculumItemId
  * @property {number} mainChapterId
  * @property {string} title
- * @property {string} chapterType
+ * @property {ChapterType} chapterType
  * @property {number} displayOrder
  * @property {CurriculumItemStatus} status
  * @property {string | null} completedAt
  * @property {number} progressPercent
+ * @property {string} [description]
+ * @property {number} [subChapterCount]
+ * @property {string} [accent]
+ * @property {string} [icon]
  */
 
 /**

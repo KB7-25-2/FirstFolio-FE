@@ -21,7 +21,7 @@ export class StudyApiError extends Error {
   }
 }
 
-/** API 원본 형태 목업 (snake_case) */
+/** API 원본 형태 목업 (snake_case) — PROJECT_SPEC: 기초 + 예·적금/채권/주식/펀드 */
 const MOCK_CURRICULUM_RESPONSE = {
   data: {
     items: [
@@ -34,36 +34,66 @@ const MOCK_CURRICULUM_RESPONSE = {
         status: 'COMPLETED',
         completed_at: '2026-06-20T12:00:00',
         progress_percent: 100,
+        description: '모의투자 전에 꼭 알아야 할 포트폴리오의 기초',
+        sub_chapter_count: 5,
+        accent: 'cream',
+        icon: '📋',
       },
       {
         curriculum_item_id: 502,
         main_chapter_id: 2,
-        title: '소비와 예산',
+        title: '예·적금',
         chapter_type: 'CORE',
         display_order: 2,
-        status: 'COMPLETED',
-        completed_at: '2026-06-28T18:00:00',
-        progress_percent: 100,
+        status: 'ACTIVE',
+        completed_at: null,
+        progress_percent: 50,
+        description: '안전한 자산관리의 시작',
+        sub_chapter_count: 6,
+        accent: 'yellow',
+        icon: '🏦',
       },
       {
         curriculum_item_id: 503,
         main_chapter_id: 3,
-        title: 'III. 저축과 투자',
+        title: '채권',
         chapter_type: 'CORE',
         display_order: 3,
-        status: 'ACTIVE',
+        status: 'LOCKED',
         completed_at: null,
-        progress_percent: 50,
+        progress_percent: 0,
+        description: '안정적인 수익을 위한 채권 이해',
+        sub_chapter_count: 5,
+        accent: 'mint',
+        icon: '📜',
       },
       {
         curriculum_item_id: 504,
         main_chapter_id: 4,
-        title: '위험과 분산',
+        title: '주식',
         chapter_type: 'CORE',
         display_order: 4,
         status: 'LOCKED',
         completed_at: null,
         progress_percent: 0,
+        description: '기업과 시장을 읽는 투자 기초',
+        sub_chapter_count: 6,
+        accent: 'blue',
+        icon: '📈',
+      },
+      {
+        curriculum_item_id: 505,
+        main_chapter_id: 5,
+        title: '펀드',
+        chapter_type: 'CORE',
+        display_order: 5,
+        status: 'LOCKED',
+        completed_at: null,
+        progress_percent: 0,
+        description: '분산투자로 시작하는 자산관리',
+        sub_chapter_count: 5,
+        accent: 'purple',
+        icon: '💼',
       },
     ],
   },
@@ -74,7 +104,7 @@ const MOCK_LEARNING_PROGRESS = [
   {
     progressId: 201,
     userId: 1,
-    mainChapterId: 3,
+    mainChapterId: 2,
     subChapterId: 101,
     contentVersionId: 301,
     lastPageId: 'page-final',
@@ -90,7 +120,7 @@ const MOCK_LEARNING_PROGRESS = [
   {
     progressId: 202,
     userId: 1,
-    mainChapterId: 3,
+    mainChapterId: 2,
     subChapterId: 102,
     contentVersionId: 302,
     lastPageId: 'page-final',
@@ -106,7 +136,7 @@ const MOCK_LEARNING_PROGRESS = [
   {
     progressId: 203,
     userId: 1,
-    mainChapterId: 3,
+    mainChapterId: 2,
     subChapterId: 103,
     contentVersionId: 303,
     lastPageId: 'page-2',
@@ -122,7 +152,7 @@ const MOCK_LEARNING_PROGRESS = [
   {
     progressId: 204,
     userId: 1,
-    mainChapterId: 3,
+    mainChapterId: 2,
     subChapterId: 104,
     contentVersionId: 304,
     lastPageId: null,
@@ -193,11 +223,11 @@ const MOCK_SUB_CHAPTER_CONTENT = {
   },
 }
 
-/** 이어하기 목업 (snake_case) — ACTIVE 대단원의 IN_PROGRESS 소단원 */
+/** 이어하기 목업 (snake_case) — ACTIVE 대단원(예·적금)의 IN_PROGRESS 소단원 */
 const MOCK_CONTINUE_POSITION = {
   data: {
-    curriculum_item_id: 503,
-    main_chapter_id: 3,
+    curriculum_item_id: 502,
+    main_chapter_id: 2,
     sub_chapter_id: 103,
     content_version_id: 303,
     last_page_id: 'page-2',
@@ -219,6 +249,10 @@ const mapCurriculumItem = (item) => ({
   status: item.status,
   completedAt: item.completed_at,
   progressPercent: item.progress_percent,
+  description: item.description ?? '',
+  subChapterCount: item.sub_chapter_count ?? 0,
+  accent: item.accent ?? 'cream',
+  icon: item.icon ?? '',
 })
 
 /**
