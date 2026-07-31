@@ -13,11 +13,13 @@ defineProps({
 
 <template>
   <div
-    class="flex min-h-full flex-col bg-[var(--auth-page)]"
-    :class="immersive ? 'px-4 pt-4 pb-6' : 'px-5 pt-6 pb-8'"
+    class="flex h-full min-h-0 flex-col bg-[var(--auth-page)]"
+    :class="immersive ? 'px-4 pt-4 pb-6' : 'px-5 pt-6 pb-3'"
   >
     <slot name="header" />
-    <div class="mt-4 flex min-h-0 flex-1 flex-col">
+    <div
+      class="mt-4 flex min-h-0 w-full max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto"
+    >
       <slot />
     </div>
     <slot name="footer" />

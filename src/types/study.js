@@ -25,13 +25,22 @@
  */
 
 /**
- * StudyNote 체크리스트용 소단원 진행 (목록 API 확정 전 목업)
+ * 시간표 UI 상태 (목록 progress.status에서 파생)
+ * @typedef {'COMPLETED' | 'IN_PROGRESS' | 'NEXT' | 'LOCKED'} ScheduleStatus
+ */
+
+/**
+ * @typedef {'LESSON' | 'SCENARIO_QUIZ'} SubChapterEntryType
+ */
+
+/**
+ * 대단원 내 소단원 진행 목록 아이템 (목록 API 확정 전 목업)
  * @typedef {object} LearningProgressItem
  * @property {number} progressId
  * @property {number} userId
  * @property {number} mainChapterId
- * @property {number} subChapterId
- * @property {number} contentVersionId
+ * @property {number | null} subChapterId
+ * @property {number | null} contentVersionId
  * @property {string | null} lastPageId
  * @property {LearningProgressStatus} status
  * @property {string | null} startedAt
@@ -40,11 +49,13 @@
  * @property {number} order
  * @property {string} title
  * @property {string} shortLabel
+ * @property {string} [periodSubtitle]
+ * @property {SubChapterEntryType} [entryType]
  * @property {number | null} quizScore
  */
 
 /**
- * 소단원 학습 콘텐츠 조회 응답
+ * 소단원 메타 + 콘텐츠 접근 정보 (GET …/sub-chapters/:id)
  * @typedef {object} SubChapterContent
  * @property {number} subChapterId
  * @property {string} title

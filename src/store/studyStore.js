@@ -71,9 +71,14 @@ export const useStudyStore = defineStore('study', () => {
    * @param {number} subChapterId
    */
   const fetchSubChapterContent = async (subChapterId) => {
-    const { data } = await getSubChapterContent(subChapterId)
-    currentContent.value = data
-    return data
+    try {
+      const { data } = await getSubChapterContent(subChapterId)
+      currentContent.value = data
+      return data
+    } catch (err) {
+      currentContent.value = null
+      throw err
+    }
   }
 
   /** StudyNote용: 커리큘럼 + 소단원 목록 + 이어하기 */

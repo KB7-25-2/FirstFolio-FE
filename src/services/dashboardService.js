@@ -88,9 +88,9 @@ const buildMockDashboardRaw = async () => {
         total_count: 5,
       },
       learning: {
-        main_chapter_id: 1,
-        sub_chapter_id: 11,
-        progress_percent: 40,
+        main_chapter_id: 2,
+        sub_chapter_id: 103,
+        progress_percent: 50,
       },
       upcoming_events: [
         {
