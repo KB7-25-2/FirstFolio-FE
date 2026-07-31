@@ -83,7 +83,7 @@ const openMainChapter = (item) => {
         </p>
         <button
           type="button"
-          class="w-full text-left"
+          class="w-full text-left memo-selectable"
           :disabled="foundationItem.status === 'LOCKED'"
           @click="openMainChapter(foundationItem)"
         >
@@ -141,7 +141,7 @@ const openMainChapter = (item) => {
             v-for="item in coreItems"
             :key="item.curriculumItemId"
             type="button"
-            class="text-left disabled:cursor-not-allowed disabled:opacity-55"
+            class="text-left disabled:cursor-not-allowed disabled:opacity-55 memo-selectable"
             :disabled="item.status === 'LOCKED'"
             @click="openMainChapter(item)"
           >
