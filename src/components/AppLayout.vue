@@ -1,6 +1,10 @@
 <script setup>
-import { RouterView } from 'vue-router'
+import { computed } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import AppNavbar from '@/components/AppNavbar.vue'
+
+const route = useRoute()
+const hideNavbar = computed(() => route.matched.some((record) => record.meta.hideNavbar === true))
 </script>
 
 <template>
@@ -8,6 +12,6 @@ import AppNavbar from '@/components/AppNavbar.vue'
     <main class="flex-1 overflow-y-auto">
       <RouterView />
     </main>
-    <AppNavbar />
+    <AppNavbar v-if="!hideNavbar" />
   </div>
 </template>

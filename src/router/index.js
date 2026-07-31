@@ -27,8 +27,38 @@ const router = createRouter({
         },
         {
           path: 'learning',
-          name: 'learning',
-          component: () => import('@/views/LearningView.vue'),
+          component: () => import('@/views/learning/LearningShellView.vue'),
+          meta: { navTab: 'learning' },
+          children: [
+            {
+              path: '',
+              name: 'learning',
+              component: () => import('@/views/learning/LearningIndexView.vue'),
+            },
+            {
+              path: 'main-chapters/:mainChapterId',
+              name: 'learning-main-chapter',
+              component: () => import('@/views/learning/SubChapterSelectView.vue'),
+            },
+            {
+              path: 'sub-chapters/:subChapterId',
+              name: 'learning-lesson',
+              component: () => import('@/views/learning/LessonPlayerView.vue'),
+              meta: { hideNavbar: true },
+            },
+            {
+              path: 'sub-chapters/:subChapterId/quiz',
+              name: 'learning-quiz',
+              component: () => import('@/views/learning/SubChapterQuizView.vue'),
+              meta: { hideNavbar: true },
+            },
+            {
+              path: 'main-chapters/:mainChapterId/scenario-quiz',
+              name: 'learning-scenario-quiz',
+              component: () => import('@/views/learning/MainChapterScenarioQuizView.vue'),
+              meta: { hideNavbar: true },
+            },
+          ],
         },
         {
           path: 'portfolios',
