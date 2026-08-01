@@ -5,15 +5,11 @@ import DefinitionBlock from '@/components/learning/DefinitionBlock.vue'
 import LearnMoreEntry from '@/components/learning/LearnMoreEntry.vue'
 
 defineProps({
-  eyebrow: {
-    type: String,
-    default: 'TEXTBOOK · 핵심 개념',
-  },
   title: {
     type: String,
     required: true,
   },
-  /** @type {{ type: string, text?: string, formula?: string, note?: string, term?: string, body?: string, chipLabel?: string, chipSubtitle?: string }[]} */
+  /** @type {import('@/types/study.js').LessonBlock[]} */
   blocks: {
     type: Array,
     default: () => [],
@@ -27,7 +23,7 @@ defineEmits(['open-learn-more'])
   <div class="relative flex flex-col gap-3 px-[18px] py-4">
     <div>
       <p class="font-serif text-[9px] font-black tracking-wide text-[rgba(139,100,60,0.5)]">
-        {{ eyebrow }}
+        TEXTBOOK · 핵심 개념
       </p>
       <p class="mt-1 font-pen text-[28px] leading-tight text-[#212b5c]">
         {{ title }}
@@ -35,7 +31,7 @@ defineEmits(['open-learn-more'])
     </div>
 
     <template v-for="(block, index) in blocks" :key="`${block.type}-${index}`">
-      <ParagraphBlock v-if="block.type === 'paragraph'" :text="block.text" />
+      <ParagraphBlock v-if="block.type === 'text'" :text="block.content" />
       <ConclusionCard
         v-else-if="block.type === 'conclusion'"
         :formula="block.formula"

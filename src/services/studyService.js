@@ -4,7 +4,7 @@
  * @typedef {import('@/types/study.js').SubChapterContent} SubChapterContent
  * @typedef {import('@/types/study.js').ContinuePosition} ContinuePosition
  * @typedef {import('@/types/study.js').LessonPage} LessonPage
- * @typedef {import('@/types/study.js').LessonPagesPayload} LessonPagesPayload
+ * @typedef {import('@/types/study.js').SubChapterLessonJson} SubChapterLessonJson
  * @typedef {import('@/types/study.js').LearningProgressStatus} LearningProgressStatus
  */
 
@@ -271,17 +271,17 @@ const MOCK_SUB_CHAPTER_CONTENT = {
   },
 }
 
-/** 금리의 이해(103) — Figma TextbookPage 다페이지 mock */
+/** 금리의 이해(103) — Figma TextbookPage 다페이지 mock (명세 스키마 + FE 확장 블록) */
 const MOCK_PAGES_INTEREST = [
   {
-    pageId: 'page-1',
-    type: 'TEXTBOOK',
-    eyebrow: 'TEXTBOOK · 핵심 개념',
+    id: 'page-1',
+    order: 1,
     title: '실질 금리란?',
     blocks: [
       {
-        type: 'paragraph',
-        text: '만화 속에서 토끼는 5%로 5만 원을 벌었지만,\n물가 3% 때문에 진짜 이득은 2만 원(2%)뿐이었어요.',
+        type: 'text',
+        content:
+          '만화 속에서 토끼는 5%로 5만 원을 벌었지만,\n물가 3% 때문에 진짜 이득은 2만 원(2%)뿐이었어요.',
       },
       {
         type: 'conclusion',
@@ -306,14 +306,13 @@ const MOCK_PAGES_INTEREST = [
     ],
   },
   {
-    pageId: 'page-2',
-    type: 'TEXTBOOK',
-    eyebrow: 'TEXTBOOK · 개념 정리',
+    id: 'page-2',
+    order: 2,
     title: '예금과 적금',
     blocks: [
       {
-        type: 'paragraph',
-        text: '같은 금리라도 예금과 적금의 이자 결과가\n달라질 수 있어요.',
+        type: 'text',
+        content: '같은 금리라도 예금과 적금의 이자 결과가\n달라질 수 있어요.',
       },
       {
         type: 'conclusion',
@@ -349,14 +348,13 @@ const MOCK_PAGES_INTEREST = [
     ],
   },
   {
-    pageId: 'page-3',
-    type: 'TEXTBOOK',
-    eyebrow: 'TEXTBOOK · 핵심 개념',
+    id: 'page-3',
+    order: 3,
     title: '단리와 복리',
     blocks: [
       {
-        type: 'paragraph',
-        text: '이자가 원금에만 붙는지, 이자에도 이자가\n붙는지에 따라 결과가 달라져요.',
+        type: 'text',
+        content: '이자가 원금에만 붙는지, 이자에도 이자가\n붙는지에 따라 결과가 달라져요.',
       },
       {
         type: 'conclusion',
@@ -376,14 +374,13 @@ const MOCK_PAGES_INTEREST = [
     ],
   },
   {
-    pageId: 'page-final',
-    type: 'TEXTBOOK',
-    eyebrow: 'TEXTBOOK · 정리',
+    id: 'page-final',
+    order: 4,
     title: '오늘 배운 것',
     blocks: [
       {
-        type: 'paragraph',
-        text: '실질 금리와 예·적금, 단리·복리의\n차이를 기억해 두세요.',
+        type: 'text',
+        content: '실질 금리와 예·적금, 단리·복리의\n차이를 기억해 두세요.',
       },
       {
         type: 'conclusion',
@@ -395,69 +392,92 @@ const MOCK_PAGES_INTEREST = [
 ]
 
 /**
+ * 명세 §1.2 형태 소단원 JSON 생성
+ * @param {number} subChapterId
+ * @param {LessonPage[]} pages
+ * @param {number[]} questionIds
+ * @returns {SubChapterLessonJson}
+ */
+const buildLessonJson = (subChapterId, pages, questionIds) => ({
+  schemaVersion: '1.0',
+  subChapterId,
+  pages: pages.slice().sort((a, b) => a.order - b.order),
+  subChapterQuiz: {
+    questionIds: questionIds.slice(),
+  },
+})
+
+/**
  * 짧은 기본 강좌 페이지 (완료/미시작 소단원용)
  * @param {string} title
+ * @param {string} [secondTitle]
  * @returns {LessonPage[]}
  */
-const buildDefaultPages = (title) => [
+const buildDefaultPages = (title, secondTitle = '금융상품을 볼 때 확인할 항목') => [
   {
-    pageId: 'page-1',
-    type: 'TEXTBOOK',
-    eyebrow: 'TEXTBOOK · 핵심 개념',
+    id: 'page-1',
+    order: 1,
     title,
-    blocks: [
-      {
-        type: 'paragraph',
-        text: `${title}의 핵심을 한 장으로 정리했어요.`,
-      },
-      {
-        type: 'conclusion',
-        formula: `${title} = 오늘의 학습 포인트`,
-        note: '천천히 읽어 보세요',
-      },
-    ],
+    blocks: [{ type: 'text', content: `${title}의 핵심을 알아봅니다.` }],
   },
   {
-    pageId: 'page-final',
-    type: 'TEXTBOOK',
-    eyebrow: 'TEXTBOOK · 정리',
-    title: '정리',
+    id: 'page-2',
+    order: 2,
+    title: secondTitle,
     blocks: [
       {
-        type: 'paragraph',
-        text: '이 소단원의 개념을 확인했다면\n퀴즈로 넘어가 보세요.',
-      },
-      {
-        type: 'conclusion',
-        formula: '학습 완료 후 퀴즈로',
-        note: '준비됐나요?',
+        type: 'text',
+        content: '금리, 만기, 지급 주기와 위험도를 확인합니다.',
       },
     ],
   },
 ]
 
-/** content_url → 페이지 JSON (클라이언트가 URL 경로를 조합하지 않음) */
-const MOCK_LESSON_PAGES_BY_URL = {
-  'https://cdn.example.com/signed/sub-101.json': {
-    schemaVersion: '1.0',
-    pages: buildDefaultPages('예금이란?'),
-  },
-  'https://cdn.example.com/signed/sub-102.json': {
-    schemaVersion: '1.0',
-    pages: buildDefaultPages('예금의 종류'),
-  },
-  'https://cdn.example.com/signed/sub-103.json': {
-    schemaVersion: '1.0',
-    pages: MOCK_PAGES_INTEREST,
-  },
-  'https://cdn.example.com/signed/sub-104.json': {
-    schemaVersion: '1.0',
-    pages: buildDefaultPages('예금자 보호 제도'),
-  },
-  'https://cdn.example.com/signed/sub-105.json': {
-    schemaVersion: '1.0',
-    pages: buildDefaultPages('저축 목표 세우기'),
-  },
+/** content_url → 소단원 강좌 JSON (클라이언트가 URL 경로를 조합하지 않음) */
+const MOCK_LESSON_JSON_BY_URL = {
+  'https://cdn.example.com/signed/sub-101.json': buildLessonJson(
+    101,
+    [
+      {
+        id: 'page-1',
+        order: 1,
+        title: '예금과 적금의 차이',
+        blocks: [{ type: 'text', content: '예금과 적금의 차이를 알아봅니다.' }],
+      },
+      {
+        id: 'page-2',
+        order: 2,
+        title: '금융상품을 볼 때 확인할 항목',
+        blocks: [
+          {
+            type: 'text',
+            content: '금리, 만기, 지급 주기와 위험도를 확인합니다.',
+          },
+        ],
+      },
+    ],
+    [1001, 1002, 1003],
+  ),
+  'https://cdn.example.com/signed/sub-102.json': buildLessonJson(
+    102,
+    buildDefaultPages('예금의 종류'),
+    [1011, 1012, 1013],
+  ),
+  'https://cdn.example.com/signed/sub-103.json': buildLessonJson(
+    103,
+    MOCK_PAGES_INTEREST,
+    [1021, 1022, 1023],
+  ),
+  'https://cdn.example.com/signed/sub-104.json': buildLessonJson(
+    104,
+    buildDefaultPages('예금자 보호 제도'),
+    [1031, 1032, 1033],
+  ),
+  'https://cdn.example.com/signed/sub-105.json': buildLessonJson(
+    105,
+    buildDefaultPages('저축 목표 세우기'),
+    [1041, 1042, 1043],
+  ),
 }
 
 /** 이어하기 목업 — ACTIVE 대단원(예·적금) */
@@ -572,14 +592,14 @@ export const getSubChapterContent = async (subChapterId) => {
 }
 
 /**
- * 백엔드가 발급한 contentUrl로 강좌 페이지 JSON 로드 (목업)
+ * 백엔드가 발급한 contentUrl로 소단원 강좌 JSON 로드 (목업)
  * @param {string} contentUrl
- * @returns {Promise<{ data: LessonPagesPayload }>}
+ * @returns {Promise<{ data: SubChapterLessonJson }>}
  * @throws {StudyApiError} CONTENT_NOT_FOUND
  */
 export const getLessonPages = async (contentUrl) => {
   await delay()
-  const payload = MOCK_LESSON_PAGES_BY_URL[contentUrl]
+  const payload = MOCK_LESSON_JSON_BY_URL[contentUrl]
   if (!payload) {
     throw new StudyApiError('CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.', 404)
   }

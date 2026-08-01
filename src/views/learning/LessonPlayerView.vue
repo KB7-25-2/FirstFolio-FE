@@ -54,7 +54,6 @@ const {
     >
       <LearningNotePaper :show-tape="false" ruled surface-class="bg-[#f5edd9]">
         <TextbookPage
-          :eyebrow="currentPage.eyebrow"
           :title="currentPage.title"
           :blocks="currentPage.blocks"
           @open-learn-more="openLearnMore"

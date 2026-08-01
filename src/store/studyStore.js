@@ -15,6 +15,7 @@ export const useStudyStore = defineStore('study', () => {
   const continuePosition = ref(null)
   const currentContent = ref(null)
   const lessonPages = ref([])
+  const lessonQuizQuestionIds = ref([])
   const currentPageId = ref(null)
   const isLoading = ref(false)
   const error = ref(null)
@@ -42,7 +43,7 @@ export const useStudyStore = defineStore('study', () => {
 
   const pageIndex = computed(() => {
     if (!currentPageId.value || !lessonPages.value.length) return 0
-    const index = lessonPages.value.findIndex((page) => page.pageId === currentPageId.value)
+    const index = lessonPages.value.findIndex((page) => page.id === currentPageId.value)
     return index >= 0 ? index : 0
   })
 
@@ -98,37 +99,36 @@ export const useStudyStore = defineStore('study', () => {
   }
 
   /**
-   * 메타 + 페이지 JSON 로드 후 초기 pageId 설정
+   * 메타 + 소단원 강좌 JSON 로드 후 초기 page id 설정
    * @param {number} subChapterId
-   * @param {string | null} [preferredPageId] route.query.page
+   * @param {string | null} [preferredPageId] route.query.page (= pages[].id)
    */
   const fetchLessonContent = async (subChapterId, preferredPageId = null) => {
     const meta = await fetchSubChapterContent(subChapterId)
     const { data } = await getLessonPages(meta.contentUrl)
-    lessonPages.value = data.pages ?? []
+    const pages = (data.pages ?? []).slice().sort((a, b) => a.order - b.order)
+    lessonPages.value = pages
+    lessonQuizQuestionIds.value = data.subChapterQuiz?.questionIds ?? []
 
     const fromPreferred =
-      preferredPageId && lessonPages.value.some((page) => page.pageId === preferredPageId)
-        ? preferredPageId
-        : null
+      preferredPageId && pages.some((page) => page.id === preferredPageId) ? preferredPageId : null
     const fromProgress =
-      meta.progress?.lastPageId &&
-      lessonPages.value.some((page) => page.pageId === meta.progress.lastPageId)
+      meta.progress?.lastPageId && pages.some((page) => page.id === meta.progress.lastPageId)
         ? meta.progress.lastPageId
         : null
 
-    currentPageId.value = fromPreferred || fromProgress || lessonPages.value[0]?.pageId || null
+    currentPageId.value = fromPreferred || fromProgress || pages[0]?.id || null
 
-    return { meta, pages: lessonPages.value }
+    return { meta, lesson: data, pages }
   }
 
   /**
-   * @param {string} pageId
+   * @param {string} pageId pages[].id
    * @param {{ persist?: boolean }} [options]
    */
   const setCurrentPage = async (pageId, options = {}) => {
     const { persist = true } = options
-    if (!lessonPages.value.some((page) => page.pageId === pageId)) return
+    if (!lessonPages.value.some((page) => page.id === pageId)) return
     currentPageId.value = pageId
     if (persist) {
       await saveProgress(pageId)
@@ -155,7 +155,7 @@ export const useStudyStore = defineStore('study', () => {
     if (isLastPage.value) return false
     const next = lessonPages.value[pageIndex.value + 1]
     if (!next) return false
-    await setCurrentPage(next.pageId)
+    await setCurrentPage(next.id)
     return true
   }
 
@@ -163,7 +163,7 @@ export const useStudyStore = defineStore('study', () => {
     if (pageIndex.value <= 0) return false
     const prev = lessonPages.value[pageIndex.value - 1]
     if (!prev) return false
-    await setCurrentPage(prev.pageId)
+    await setCurrentPage(prev.id)
     return true
   }
 
@@ -193,6 +193,7 @@ export const useStudyStore = defineStore('study', () => {
 
   const clearLesson = () => {
     lessonPages.value = []
+    lessonQuizQuestionIds.value = []
     currentPageId.value = null
   }
 
@@ -211,6 +212,7 @@ export const useStudyStore = defineStore('study', () => {
     continuePosition,
     currentContent,
     lessonPages,
+    lessonQuizQuestionIds,
     currentPageId,
     isLoading,
     error,

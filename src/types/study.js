@@ -68,38 +68,48 @@
  */
 
 /**
- * @typedef {'paragraph' | 'conclusion' | 'definition' | 'learn_more'} LessonBlockType
+ * S3 소단원 JSON 블록 타입
+ * - `text`: 명세 기본 블록 (`content`)
+ * - `conclusion` | `definition` | `learn_more`: FE 교과서 UI용 확장 (상품 전용 FK 블록 없음)
+ * @typedef {'text' | 'conclusion' | 'definition' | 'learn_more'} LessonBlockType
  */
 
 /**
- * 강좌 페이지 블록 (S3 JSON 목업)
+ * 강좌 페이지 블록 (S3 소단원 JSON)
  * @typedef {object} LessonBlock
  * @property {LessonBlockType} type
- * @property {string} [text]
- * @property {string} [formula]
- * @property {string} [note]
- * @property {string} [term]
- * @property {string} [body]
- * @property {string} [chipLabel]
- * @property {string} [chipSubtitle]
- * @property {{ title?: string, example?: string, body?: string, footer?: string }} [modal]
+ * @property {string} [content] text 블록 본문
+ * @property {string} [formula] conclusion
+ * @property {string} [note] conclusion
+ * @property {string} [term] definition
+ * @property {string} [body] definition
+ * @property {string} [chipLabel] learn_more
+ * @property {string} [chipSubtitle] learn_more
+ * @property {{ title?: string, example?: string, body?: string, footer?: string }} [modal] learn_more
  */
 
 /**
  * 소단원 강좌 한 페이지
  * @typedef {object} LessonPage
- * @property {string} pageId
- * @property {'TEXTBOOK'} type
- * @property {string} eyebrow
+ * @property {string} id
+ * @property {number} order
  * @property {string} title
  * @property {LessonBlock[]} blocks
  */
 
 /**
- * contentUrl로 로드하는 페이지 목록 JSON
- * @typedef {object} LessonPagesPayload
+ * 소단원 퀴즈에 포함할 게시된 문항 버전 행 ID 목록
+ * @typedef {object} SubChapterQuizRef
+ * @property {number[]} questionIds
+ */
+
+/**
+ * contentUrl로 로드하는 소단원 강좌 JSON (S3)
+ * @typedef {object} SubChapterLessonJson
  * @property {string} schemaVersion
+ * @property {number} subChapterId
  * @property {LessonPage[]} pages
+ * @property {SubChapterQuizRef} subChapterQuiz
  */
 
 /**
