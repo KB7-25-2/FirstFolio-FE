@@ -4,7 +4,9 @@ import {
   getContinuePosition,
   getCurriculum,
   getLearningProgress,
+  getLessonPages,
   getSubChapterContent,
+  saveLessonProgress,
 } from '@/services/studyService.js'
 
 export const useStudyStore = defineStore('study', () => {
@@ -12,6 +14,8 @@ export const useStudyStore = defineStore('study', () => {
   const learningItems = ref([])
   const continuePosition = ref(null)
   const currentContent = ref(null)
+  const lessonPages = ref([])
+  const currentPageId = ref(null)
   const isLoading = ref(false)
   const error = ref(null)
 
@@ -35,6 +39,18 @@ export const useStudyStore = defineStore('study', () => {
   )
 
   const maxTotalScore = computed(() => learningItems.value.length * 100)
+
+  const pageIndex = computed(() => {
+    if (!currentPageId.value || !lessonPages.value.length) return 0
+    const index = lessonPages.value.findIndex((page) => page.pageId === currentPageId.value)
+    return index >= 0 ? index : 0
+  })
+
+  const pageTotal = computed(() => lessonPages.value.length)
+
+  const currentPage = computed(() => lessonPages.value[pageIndex.value] ?? null)
+
+  const isLastPage = computed(() => pageTotal.value > 0 && pageIndex.value >= pageTotal.value - 1)
 
   const fetchCurriculum = async () => {
     try {
@@ -81,6 +97,76 @@ export const useStudyStore = defineStore('study', () => {
     }
   }
 
+  /**
+   * 메타 + 페이지 JSON 로드 후 초기 pageId 설정
+   * @param {number} subChapterId
+   * @param {string | null} [preferredPageId] route.query.page
+   */
+  const fetchLessonContent = async (subChapterId, preferredPageId = null) => {
+    const meta = await fetchSubChapterContent(subChapterId)
+    const { data } = await getLessonPages(meta.contentUrl)
+    lessonPages.value = data.pages ?? []
+
+    const fromPreferred =
+      preferredPageId && lessonPages.value.some((page) => page.pageId === preferredPageId)
+        ? preferredPageId
+        : null
+    const fromProgress =
+      meta.progress?.lastPageId &&
+      lessonPages.value.some((page) => page.pageId === meta.progress.lastPageId)
+        ? meta.progress.lastPageId
+        : null
+
+    currentPageId.value = fromPreferred || fromProgress || lessonPages.value[0]?.pageId || null
+
+    return { meta, pages: lessonPages.value }
+  }
+
+  /**
+   * @param {string} pageId
+   * @param {{ persist?: boolean }} [options]
+   */
+  const setCurrentPage = async (pageId, options = {}) => {
+    const { persist = true } = options
+    if (!lessonPages.value.some((page) => page.pageId === pageId)) return
+    currentPageId.value = pageId
+    if (persist) {
+      await saveProgress(pageId)
+    }
+  }
+
+  /**
+   * @param {string} [pageId]
+   */
+  const saveProgress = async (pageId) => {
+    const subChapterId = currentContent.value?.subChapterId
+    const lastPageId = pageId ?? currentPageId.value
+    if (!subChapterId || !lastPageId) return null
+
+    const { data } = await saveLessonProgress(subChapterId, { lastPageId })
+    if (currentContent.value?.progress) {
+      currentContent.value.progress.lastPageId = data.lastPageId
+      currentContent.value.progress.status = data.status
+    }
+    return data
+  }
+
+  const goNextPage = async () => {
+    if (isLastPage.value) return false
+    const next = lessonPages.value[pageIndex.value + 1]
+    if (!next) return false
+    await setCurrentPage(next.pageId)
+    return true
+  }
+
+  const goPrevPage = async () => {
+    if (pageIndex.value <= 0) return false
+    const prev = lessonPages.value[pageIndex.value - 1]
+    if (!prev) return false
+    await setCurrentPage(prev.pageId)
+    return true
+  }
+
   /** StudyNote용: 커리큘럼 + 소단원 목록 + 이어하기 */
   const fetchStudyNote = async () => {
     if (isLoading.value) return
@@ -105,11 +191,17 @@ export const useStudyStore = defineStore('study', () => {
     }
   }
 
+  const clearLesson = () => {
+    lessonPages.value = []
+    currentPageId.value = null
+  }
+
   const clearStudy = () => {
     curriculumItems.value = []
     learningItems.value = []
     continuePosition.value = null
     currentContent.value = null
+    clearLesson()
     error.value = null
   }
 
@@ -118,6 +210,8 @@ export const useStudyStore = defineStore('study', () => {
     learningItems,
     continuePosition,
     currentContent,
+    lessonPages,
+    currentPageId,
     isLoading,
     error,
     activeCurriculumItem,
@@ -126,11 +220,21 @@ export const useStudyStore = defineStore('study', () => {
     continueRoute,
     totalScore,
     maxTotalScore,
+    pageIndex,
+    pageTotal,
+    currentPage,
+    isLastPage,
     fetchCurriculum,
     fetchLearningProgress,
     fetchContinuePosition,
     fetchSubChapterContent,
+    fetchLessonContent,
+    setCurrentPage,
+    saveProgress,
+    goNextPage,
+    goPrevPage,
     fetchStudyNote,
+    clearLesson,
     clearStudy,
   }
 })
