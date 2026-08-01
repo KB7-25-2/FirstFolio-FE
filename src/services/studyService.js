@@ -3,6 +3,9 @@
  * @typedef {import('@/types/study.js').LearningProgressItem} LearningProgressItem
  * @typedef {import('@/types/study.js').SubChapterContent} SubChapterContent
  * @typedef {import('@/types/study.js').ContinuePosition} ContinuePosition
+ * @typedef {import('@/types/study.js').LessonPage} LessonPage
+ * @typedef {import('@/types/study.js').LessonPagesPayload} LessonPagesPayload
+ * @typedef {import('@/types/study.js').LearningProgressStatus} LearningProgressStatus
  */
 
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -198,6 +201,7 @@ const MOCK_PREREQUISITE_BLOCKED = new Set([105])
 const MOCK_SUB_CHAPTER_CONTENT = {
   101: {
     sub_chapter_id: 101,
+    main_chapter_id: 2,
     title: '예금의 기초',
     content_version_id: 301,
     schema_version: '1.0',
@@ -211,6 +215,7 @@ const MOCK_SUB_CHAPTER_CONTENT = {
   },
   102: {
     sub_chapter_id: 102,
+    main_chapter_id: 2,
     title: '예금의 종류',
     content_version_id: 302,
     schema_version: '1.0',
@@ -224,6 +229,7 @@ const MOCK_SUB_CHAPTER_CONTENT = {
   },
   103: {
     sub_chapter_id: 103,
+    main_chapter_id: 2,
     title: '금리의 이해',
     content_version_id: 303,
     schema_version: '1.0',
@@ -237,6 +243,7 @@ const MOCK_SUB_CHAPTER_CONTENT = {
   },
   104: {
     sub_chapter_id: 104,
+    main_chapter_id: 2,
     title: '예금자 보호 제도',
     content_version_id: 304,
     schema_version: '1.0',
@@ -250,6 +257,7 @@ const MOCK_SUB_CHAPTER_CONTENT = {
   },
   105: {
     sub_chapter_id: 105,
+    main_chapter_id: 2,
     title: '저축 목표 세우기',
     content_version_id: 305,
     schema_version: '1.0',
@@ -260,6 +268,195 @@ const MOCK_SUB_CHAPTER_CONTENT = {
       last_page_id: null,
       completed_at: null,
     },
+  },
+}
+
+/** 금리의 이해(103) — Figma TextbookPage 다페이지 mock */
+const MOCK_PAGES_INTEREST = [
+  {
+    pageId: 'page-1',
+    type: 'TEXTBOOK',
+    eyebrow: 'TEXTBOOK · 핵심 개념',
+    title: '실질 금리란?',
+    blocks: [
+      {
+        type: 'paragraph',
+        text: '만화 속에서 토끼는 5%로 5만 원을 벌었지만,\n물가 3% 때문에 진짜 이득은 2만 원(2%)뿐이었어요.',
+      },
+      {
+        type: 'conclusion',
+        formula: '실질 금리 = 명목 금리 − 물가 상승률',
+        note: '5% − 3% = 2%',
+      },
+      {
+        type: 'definition',
+        term: '명목 금리',
+        body: '은행이 알려주는 겉보기 이자율.\n만화 속 5%가 바로 이것!',
+      },
+      {
+        type: 'definition',
+        term: '물가 상승률',
+        body: '물건 값이 오른 비율.\n태블릿이 100만 → 103만이 된 이유.',
+      },
+      {
+        type: 'definition',
+        term: '실질 금리',
+        body: '물가를 뺀 뒤, 내 주머니에\n진짜로 남는 이익.',
+      },
+    ],
+  },
+  {
+    pageId: 'page-2',
+    type: 'TEXTBOOK',
+    eyebrow: 'TEXTBOOK · 개념 정리',
+    title: '예금과 적금',
+    blocks: [
+      {
+        type: 'paragraph',
+        text: '같은 금리라도 예금과 적금의 이자 결과가\n달라질 수 있어요.',
+      },
+      {
+        type: 'conclusion',
+        formula: '예금 = 목돈 한 번에 · 적금 = 나눠 넣기',
+        note: '이자는 예치 기간만큼',
+      },
+      {
+        type: 'definition',
+        term: '정기 예금',
+        body: '목돈을 한 번에 맡기는 방식',
+      },
+      {
+        type: 'definition',
+        term: '정기 적금',
+        body: '매월 나눠 넣는 방식',
+      },
+      {
+        type: 'definition',
+        term: 'TIP',
+        body: '왜 이자가 다른지 더 알아보세요',
+      },
+      {
+        type: 'learn_more',
+        chipLabel: '더 알아보기',
+        chipSubtitle: '예금 vs 적금 이자',
+        modal: {
+          title: '💡 정기 예금 vs 정기 적금 이자, 왜 차이가 날까?',
+          example: '예시) 1,200만 원, 금리 10%',
+          body: '• 정기 예금: 1,200만 원 전체가 1년 내내 은행에 머무름 → 이자 120만 원\n\n• 정기 적금: 첫 달 100만 원은 12개월, 마지막 달 100만 원은 1개월만 머무름 → 실제 평균 금리는 절반 수준 (이자 65만 원)\n\n→ 적금 이자는 통장에 남아있는 기간만큼만 계산되기 때문입니다.',
+          footer: '예금 · 적금 이자 비교',
+        },
+      },
+    ],
+  },
+  {
+    pageId: 'page-3',
+    type: 'TEXTBOOK',
+    eyebrow: 'TEXTBOOK · 핵심 개념',
+    title: '단리와 복리',
+    blocks: [
+      {
+        type: 'paragraph',
+        text: '이자가 원금에만 붙는지, 이자에도 이자가\n붙는지에 따라 결과가 달라져요.',
+      },
+      {
+        type: 'conclusion',
+        formula: '복리 = 이자에 이자가 붙는 방식',
+        note: '시간이 길수록 격차 ↑',
+      },
+      {
+        type: 'definition',
+        term: '단리',
+        body: '원금에만 이자가 붙는 계산',
+      },
+      {
+        type: 'definition',
+        term: '복리',
+        body: '원금+이자에 다시 이자가 붙는 계산',
+      },
+    ],
+  },
+  {
+    pageId: 'page-final',
+    type: 'TEXTBOOK',
+    eyebrow: 'TEXTBOOK · 정리',
+    title: '오늘 배운 것',
+    blocks: [
+      {
+        type: 'paragraph',
+        text: '실질 금리와 예·적금, 단리·복리의\n차이를 기억해 두세요.',
+      },
+      {
+        type: 'conclusion',
+        formula: '금리의 의미를 이해하고 비교할 수 있다',
+        note: '퀴즈로 확인해요',
+      },
+    ],
+  },
+]
+
+/**
+ * 짧은 기본 강좌 페이지 (완료/미시작 소단원용)
+ * @param {string} title
+ * @returns {LessonPage[]}
+ */
+const buildDefaultPages = (title) => [
+  {
+    pageId: 'page-1',
+    type: 'TEXTBOOK',
+    eyebrow: 'TEXTBOOK · 핵심 개념',
+    title,
+    blocks: [
+      {
+        type: 'paragraph',
+        text: `${title}의 핵심을 한 장으로 정리했어요.`,
+      },
+      {
+        type: 'conclusion',
+        formula: `${title} = 오늘의 학습 포인트`,
+        note: '천천히 읽어 보세요',
+      },
+    ],
+  },
+  {
+    pageId: 'page-final',
+    type: 'TEXTBOOK',
+    eyebrow: 'TEXTBOOK · 정리',
+    title: '정리',
+    blocks: [
+      {
+        type: 'paragraph',
+        text: '이 소단원의 개념을 확인했다면\n퀴즈로 넘어가 보세요.',
+      },
+      {
+        type: 'conclusion',
+        formula: '학습 완료 후 퀴즈로',
+        note: '준비됐나요?',
+      },
+    ],
+  },
+]
+
+/** content_url → 페이지 JSON (클라이언트가 URL 경로를 조합하지 않음) */
+const MOCK_LESSON_PAGES_BY_URL = {
+  'https://cdn.example.com/signed/sub-101.json': {
+    schemaVersion: '1.0',
+    pages: buildDefaultPages('예금이란?'),
+  },
+  'https://cdn.example.com/signed/sub-102.json': {
+    schemaVersion: '1.0',
+    pages: buildDefaultPages('예금의 종류'),
+  },
+  'https://cdn.example.com/signed/sub-103.json': {
+    schemaVersion: '1.0',
+    pages: MOCK_PAGES_INTEREST,
+  },
+  'https://cdn.example.com/signed/sub-104.json': {
+    schemaVersion: '1.0',
+    pages: buildDefaultPages('예금자 보호 제도'),
+  },
+  'https://cdn.example.com/signed/sub-105.json': {
+    schemaVersion: '1.0',
+    pages: buildDefaultPages('저축 목표 세우기'),
   },
 }
 
@@ -297,6 +494,7 @@ const mapCurriculumItem = (item) => ({
  */
 const mapSubChapterContent = (raw) => ({
   subChapterId: raw.sub_chapter_id,
+  mainChapterId: raw.main_chapter_id,
   title: raw.title,
   contentVersionId: raw.content_version_id,
   schemaVersion: raw.schema_version,
@@ -371,6 +569,73 @@ export const getSubChapterContent = async (subChapterId) => {
     throw new StudyApiError('SUB_CHAPTER_NOT_FOUND', '공개 소단원을 찾을 수 없다.', 404)
   }
   return { data: mapSubChapterContent(structuredClone(raw)) }
+}
+
+/**
+ * 백엔드가 발급한 contentUrl로 강좌 페이지 JSON 로드 (목업)
+ * @param {string} contentUrl
+ * @returns {Promise<{ data: LessonPagesPayload }>}
+ * @throws {StudyApiError} CONTENT_NOT_FOUND
+ */
+export const getLessonPages = async (contentUrl) => {
+  await delay()
+  const payload = MOCK_LESSON_PAGES_BY_URL[contentUrl]
+  if (!payload) {
+    throw new StudyApiError('CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.', 404)
+  }
+  return { data: structuredClone(payload) }
+}
+
+/**
+ * 소단원 강좌 진도 저장 (목업) — lastPageId / status
+ * @param {number} subChapterId
+ * @param {{ lastPageId: string, status?: LearningProgressStatus }} payload
+ * @returns {Promise<{ data: { lastPageId: string, status: LearningProgressStatus } }>}
+ * @throws {StudyApiError} SUB_CHAPTER_NOT_FOUND
+ */
+export const saveLessonProgress = async (subChapterId, payload) => {
+  await delay(80)
+  const raw = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
+  if (!raw) {
+    throw new StudyApiError('SUB_CHAPTER_NOT_FOUND', '공개 소단원을 찾을 수 없다.', 404)
+  }
+
+  const lastPageId = payload.lastPageId
+  let status = payload.status ?? raw.progress.status
+  if (status === 'NOT_STARTED') status = 'IN_PROGRESS'
+  if (lastPageId === 'page-final' && payload.status === 'COMPLETED') {
+    status = 'COMPLETED'
+  }
+
+  raw.progress.last_page_id = lastPageId
+  raw.progress.status = status
+  if (status === 'COMPLETED' && !raw.progress.completed_at) {
+    raw.progress.completed_at = new Date().toISOString()
+  }
+
+  const progressItem = MOCK_LEARNING_PROGRESS.find((item) => item.subChapterId === subChapterId)
+  if (progressItem) {
+    progressItem.lastPageId = lastPageId
+    progressItem.status = status
+    progressItem.updatedAt = new Date().toISOString()
+    if (status === 'COMPLETED') {
+      progressItem.completedAt = progressItem.completedAt ?? new Date().toISOString()
+    } else if (!progressItem.startedAt) {
+      progressItem.startedAt = new Date().toISOString()
+    }
+  }
+
+  if (MOCK_CONTINUE_POSITION.data?.sub_chapter_id === subChapterId) {
+    MOCK_CONTINUE_POSITION.data.last_page_id = lastPageId
+    MOCK_CONTINUE_POSITION.data.route = `/learning/sub-chapters/${subChapterId}?page=${lastPageId}`
+  }
+
+  return {
+    data: {
+      lastPageId,
+      status,
+    },
+  }
 }
 
 /**
