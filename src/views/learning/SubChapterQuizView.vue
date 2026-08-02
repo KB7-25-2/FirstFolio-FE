@@ -6,6 +6,7 @@ import QuizExamPaper from '@/components/learning/QuizExamPaper.vue'
 import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
 import QuizFeedbackBlock from '@/components/learning/QuizFeedbackBlock.vue'
 import QuizResultModal from '@/components/learning/QuizResultModal.vue'
+import QuizGradeMark from '@/components/learning/QuizGradeMark.vue'
 import { useSubChapterQuiz } from '@/composables/useSubChapterQuiz.js'
 
 const {
@@ -16,6 +17,7 @@ const {
   subject,
   scorePerQuestion,
   statusBadge,
+  feedbackHint,
   quizCurrentQuestion,
   quizQuestionTotal,
   quizQuestionNumber,
@@ -61,12 +63,24 @@ const {
         :question-total="quizQuestionTotal"
         :score-per-question="scorePerQuestion"
       >
-        <div class="flex gap-2">
-          <p class="shrink-0 font-serif text-[13px] font-black text-[#29211a]">
+        <div class="relative flex gap-2">
+          <QuizGradeMark
+            v-if="quizUiStatus === 'CORRECT'"
+            type="circle"
+            size="lg"
+            class="absolute -top-3 -left-2 z-[2] rotate-[6deg]"
+          />
+          <QuizGradeMark
+            v-else-if="quizUiStatus === 'WRONG'"
+            type="slash"
+            size="lg"
+            class="absolute -top-2 -left-1 z-[2] rotate-[8deg]"
+          />
+          <p class="relative z-[1] shrink-0 font-serif text-[13px] font-black text-[#29211a]">
             문 {{ quizQuestionNumber }}.
           </p>
           <p
-            class="font-serif text-[14px] leading-[22px] font-bold whitespace-pre-line text-[#29211a]"
+            class="relative z-[1] font-serif text-[14px] leading-[22px] font-bold whitespace-pre-line text-[#29211a]"
           >
             {{ quizCurrentQuestion.prompt }}
           </p>
@@ -89,11 +103,14 @@ const {
           v-if="quizUiStatus === 'CORRECT'"
           result="correct"
           :explanation="quizCurrentQuestion.explanation"
+          :score="scorePerQuestion"
+          :hint="feedbackHint"
         />
         <QuizFeedbackBlock
           v-else-if="quizUiStatus === 'WRONG'"
           result="wrong"
           :explanation="quizCurrentQuestion.explanation"
+          :hint="feedbackHint"
         />
         <p v-else class="mt-8 font-pen text-[15px] text-[rgba(33,43,92,0.75)]">
           보기 번호를 골라 답을 쓰세요

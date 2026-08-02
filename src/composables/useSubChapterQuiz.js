@@ -41,10 +41,22 @@ export const useSubChapterQuiz = () => {
     const map = {
       IN_PROGRESS: { label: '시험 중', class: 'border-[rgba(193,127,36,0.9)] text-[#c17f24]' },
       SELECTED: { label: '답 선택', class: 'border-[#c17f24] text-[#c17f24]' },
-      CORRECT: { label: '정답', class: 'border-[#3d7a4a] text-[#3d7a4a]' },
-      WRONG: { label: '오답', class: 'border-[#c12e24] text-[#c12e24]' },
+      CORRECT: { label: '정답!', class: 'border-[rgba(193,127,36,0.9)] text-[#c17f24]' },
+      WRONG: { label: '오답', class: 'border-[rgba(209,46,41,0.9)] text-[#d12e29]' },
     }
     return map[quizUiStatus.value]
+  })
+
+  const CIRCLE_NUM = { 1: '①', 2: '②', 3: '③', 4: '④' }
+
+  const feedbackHint = computed(() => {
+    if (quizUiStatus.value === 'CORRECT') return '잘했어요 · 빨간 펜으로 동그라미'
+    if (quizUiStatus.value === 'WRONG') {
+      const key = quizCurrentQuestion.value?.correctAnswerJson?.key
+      const mark = CIRCLE_NUM[key] ?? key
+      return `틀린 답에 찍!  ·  정답은 ${mark}`
+    }
+    return ''
   })
 
   const optionsWithTone = computed(() => {
@@ -158,6 +170,7 @@ export const useSubChapterQuiz = () => {
     subject,
     scorePerQuestion: SCORE_PER_QUESTION,
     statusBadge,
+    feedbackHint,
     quizCurrentQuestion,
     quizQuestionTotal,
     quizQuestionNumber,
