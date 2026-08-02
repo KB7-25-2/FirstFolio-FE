@@ -5,6 +5,7 @@ import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import QuizExamPaper from '@/components/learning/QuizExamPaper.vue'
 import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
 import QuizFeedbackBlock from '@/components/learning/QuizFeedbackBlock.vue'
+import QuizResultModal from '@/components/learning/QuizResultModal.vue'
 import { useSubChapterQuiz } from '@/composables/useSubChapterQuiz.js'
 
 const {
@@ -30,6 +31,7 @@ const {
   selectOption,
   onPrimaryAction,
   giveUp,
+  goToMainChapter,
 } = useSubChapterQuiz()
 </script>
 
@@ -50,27 +52,6 @@ const {
 
     <p v-if="isLoading" class="font-serif text-sm text-[rgba(245,237,217,0.55)]">불러오는 중…</p>
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
-
-    <LearningNotePaper v-else-if="quizFinished" ruled surface-class="bg-[#faf5eb]">
-      <div class="px-5 py-8 text-center">
-        <p class="font-serif text-[18px] font-black text-[#29211a]">시험 결과</p>
-        <p class="mt-4 font-pen text-[28px] text-[#212b5c]">
-          {{ quizAttemptResult?.correctCount ?? quizCorrectCount }} /
-          {{ quizAttemptResult?.totalCount ?? quizQuestionTotal }}
-        </p>
-        <p class="mt-2 font-serif text-[13px] text-[rgba(61,31,8,0.7)]">
-          득점
-          {{ (quizAttemptResult?.correctCount ?? quizCorrectCount) * scorePerQuestion }}점 · 정답률
-          {{ quizAttemptResult?.quizScore ?? 0 }}%
-        </p>
-        <p
-          v-if="quizAttemptResult?.pointsGranted != null"
-          class="mt-3 font-serif text-[12px] text-[rgba(139,100,60,0.75)]"
-        >
-          포인트 +{{ quizAttemptResult.pointsGranted }}
-        </p>
-      </div>
-    </LearningNotePaper>
 
     <LearningNotePaper v-else-if="quizCurrentQuestion" ruled surface-class="bg-[#faf5eb]">
       <QuizExamPaper
@@ -99,7 +80,7 @@ const {
             :label="opt.label"
             :tone="opt.tone"
             :variant="optionVariant(opt.key)"
-            :disabled="quizIsGraded"
+            :disabled="quizIsGraded || quizFinished"
             @select="selectOption"
           />
         </div>
@@ -120,14 +101,25 @@ const {
       </QuizExamPaper>
     </LearningNotePaper>
 
-    <template #footer>
+    <QuizResultModal
+      :open="quizFinished"
+      :correct-count="quizAttemptResult?.correctCount ?? quizCorrectCount"
+      :total-count="quizAttemptResult?.totalCount ?? quizQuestionTotal"
+      :quiz-score="quizAttemptResult?.quizScore ?? 0"
+      :score-per-question="scorePerQuestion"
+      :points-granted="quizAttemptResult?.pointsGranted ?? 0"
+      @confirm="goToMainChapter"
+      @close="goToMainChapter"
+    />
+
+    <template v-if="!quizFinished" #footer>
       <div class="mt-4 flex gap-4">
         <button
           type="button"
           class="flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
           @click="giveUp"
         >
-          {{ quizFinished ? '닫기' : '시험 포기' }}
+          시험 포기
         </button>
         <button
           type="button"

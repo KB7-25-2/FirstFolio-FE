@@ -56,15 +56,13 @@ export const useSubChapterQuiz = () => {
   })
 
   const primaryLabel = computed(() => {
-    if (quizFinished.value) return '학습 목록으로'
     if (quizUiStatus.value === 'WRONG') return '다시 풀기'
     if (quizIsGraded.value) return quizIsLastQuestion.value ? '결과 보기' : '다음 문항 →'
     return '정답 제출'
   })
 
   const primaryEnabled = computed(() => {
-    if (isCompleting.value) return false
-    if (quizFinished.value) return true
+    if (isCompleting.value || quizFinished.value) return false
     if (quizUiStatus.value === 'WRONG') return true
     if (quizIsGraded.value) return true
     return quizUiStatus.value === 'SELECTED'
@@ -112,15 +110,7 @@ export const useSubChapterQuiz = () => {
   }
 
   const onPrimaryAction = async () => {
-    if (quizFinished.value) {
-      const mainChapterId = currentContent.value?.mainChapterId
-      if (mainChapterId) {
-        router.push({ name: 'learning-main-chapter', params: { mainChapterId } })
-      } else {
-        router.back()
-      }
-      return
-    }
+    if (quizFinished.value) return
 
     if (quizUiStatus.value === 'WRONG') {
       studyStore.retryCurrentQuizQuestion()
@@ -135,6 +125,7 @@ export const useSubChapterQuiz = () => {
           await studyStore.completeQuizAttempt()
         } catch (err) {
           error.value = err?.message || '채점 결과를 저장하지 못했습니다.'
+          studyStore.quizFinished = false
         } finally {
           isCompleting.value = false
         }
@@ -145,7 +136,7 @@ export const useSubChapterQuiz = () => {
     studyStore.submitCurrentQuizQuestion()
   }
 
-  const giveUp = () => {
+  const goToMainChapter = () => {
     studyStore.clearQuizSession()
     const mainChapterId = currentContent.value?.mainChapterId
     if (mainChapterId) {
@@ -153,6 +144,10 @@ export const useSubChapterQuiz = () => {
       return
     }
     router.back()
+  }
+
+  const giveUp = () => {
+    goToMainChapter()
   }
 
   return {
@@ -178,5 +173,6 @@ export const useSubChapterQuiz = () => {
     selectOption,
     onPrimaryAction,
     giveUp,
+    goToMainChapter,
   }
 }
