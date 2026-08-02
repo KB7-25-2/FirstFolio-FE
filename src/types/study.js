@@ -113,6 +113,80 @@
  */
 
 /**
+ * @typedef {'LEVEL_TEST' | 'SUB_CHAPTER' | 'MAIN_CHAPTER' | 'DAILY_GENERAL' | 'DAILY_NEWS'} QuizUsageType
+ */
+
+/**
+ * @typedef {'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SCENARIO'} QuizQuestionType
+ */
+
+/**
+ * @typedef {'EASY' | 'MEDIUM' | 'HARD'} QuizDifficulty
+ */
+
+/**
+ * @typedef {'DRAFT' | 'REVIEW' | 'PUBLISHED' | 'RETIRED'} QuizQuestionStatus
+ */
+
+/**
+ * 선택지 (options_json 항목)
+ * @typedef {object} QuizOption
+ * @property {string} key
+ * @property {string} label
+ */
+
+/**
+ * quiz_questions 행 (MySQL 문항 버전) — FE 카멜케이스
+ * @typedef {object} QuizQuestion
+ * @property {number} questionId
+ * @property {string} questionKey
+ * @property {number} versionNo
+ * @property {QuizUsageType} usageType
+ * @property {number | null} mainChapterId
+ * @property {number | null} subChapterId
+ * @property {number | null} displayOrder
+ * @property {QuizQuestionType} questionType
+ * @property {QuizDifficulty | null} difficulty
+ * @property {string} prompt
+ * @property {object | null} scenarioJson
+ * @property {QuizOption[] | null} optionsJson
+ * @property {{ key?: string, keys?: string[] }} correctAnswerJson
+ * @property {string} explanation
+ * @property {object | null} sourceRefsJson
+ * @property {QuizQuestionStatus} status
+ * @property {number} createdBy
+ * @property {string | null} publishedAt
+ * @property {string} createdAt
+ */
+
+/**
+ * 문항별 제출 답안
+ * @typedef {object} QuizAnswerItem
+ * @property {number} questionId
+ * @property {string} selectedKey
+ */
+
+/**
+ * 오답 이력 항목
+ * @typedef {object} QuizWrongAnswer
+ * @property {number} questionId
+ * @property {string} selectedKey
+ * @property {string} correctKey
+ */
+
+/**
+ * 소단원 퀴즈 제출·채점 결과
+ * @typedef {object} QuizAttemptResult
+ * @property {number} subChapterId
+ * @property {number} totalCount
+ * @property {number} correctCount
+ * @property {number} quizScore 0–100
+ * @property {number} pointsGranted
+ * @property {QuizWrongAnswer[]} wrongAnswers
+ * @property {{ questionId: number, selectedKey: string, isCorrect: boolean }[]} gradedAnswers
+ */
+
+/**
  * 학습 이어하기 위치
  * @typedef {object} ContinuePosition
  * @property {number} curriculumItemId
