@@ -1,3 +1,5 @@
+import { ALLOW_DUPLICATE_POINT_GRANT, POINTS_PER_CORRECT } from '@/constants/quizPolicy.js'
+
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
  * @typedef {import('@/types/study.js').LearningProgressItem} LearningProgressItem
@@ -6,6 +8,10 @@
  * @typedef {import('@/types/study.js').LessonPage} LessonPage
  * @typedef {import('@/types/study.js').SubChapterLessonJson} SubChapterLessonJson
  * @typedef {import('@/types/study.js').LearningProgressStatus} LearningProgressStatus
+ * @typedef {import('@/types/study.js').QuizQuestion} QuizQuestion
+ * @typedef {import('@/types/study.js').QuizAnswerItem} QuizAnswerItem
+ * @typedef {import('@/types/study.js').QuizAttemptResult} QuizAttemptResult
+ * @typedef {import('@/types/study.js').QuizWrongAnswer} QuizWrongAnswer
  */
 
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -654,6 +660,339 @@ export const saveLessonProgress = async (subChapterId, payload) => {
     data: {
       lastPageId,
       status,
+    },
+  }
+}
+
+/** 소단원별 포인트 지급 여부 (재응시 중복 방지) */
+const MOCK_QUIZ_POINT_GRANTED = new Set()
+
+/** @type {QuizWrongAnswer[]} */
+const MOCK_WRONG_ANSWER_LOG = []
+
+/**
+ * @param {number} questionId
+ * @param {number} subChapterId
+ * @param {string} questionKey
+ * @param {string} prompt
+ * @param {string[]} labels
+ * @param {string} correctKey
+ * @param {string} explanation
+ * @param {'SINGLE_CHOICE' | 'TRUE_FALSE'} [questionType]
+ * @returns {QuizQuestion}
+ */
+const buildSubChapterQuestion = (
+  questionId,
+  subChapterId,
+  questionKey,
+  prompt,
+  labels,
+  correctKey,
+  explanation,
+  questionType = 'SINGLE_CHOICE',
+) => ({
+  questionId,
+  questionKey,
+  versionNo: 1,
+  usageType: 'SUB_CHAPTER',
+  mainChapterId: 2,
+  subChapterId,
+  displayOrder: null,
+  questionType,
+  difficulty: 'MEDIUM',
+  prompt,
+  scenarioJson: null,
+  optionsJson: labels.map((label, i) => ({
+    key: String(i + 1),
+    label,
+  })),
+  correctAnswerJson: { key: correctKey },
+  explanation,
+  sourceRefsJson: null,
+  status: 'PUBLISHED',
+  createdBy: 1,
+  publishedAt: '2026-07-01T00:00:00',
+  createdAt: '2026-06-15T00:00:00',
+})
+
+/** quiz_questions 목업 — question_id 키, 소단원 JSON questionIds와 대응 */
+const MOCK_QUIZ_QUESTIONS = {
+  1001: buildSubChapterQuestion(
+    1001,
+    101,
+    'deposit-vs-savings',
+    '예금과 적금의 차이로 올바른 것은?',
+    [
+      '예금은 나눠 넣고 적금은 한 번에 맡긴다',
+      '예금은 목돈을 한 번에, 적금은 나눠 넣는다',
+      '둘 다 원금이 보장되지 않는다',
+      '적금만 이자가 붙는다',
+    ],
+    '2',
+    '정기 예금은 목돈을 한 번에 맡기고, 정기 적금은 매월 나눠 넣는 방식입니다.',
+  ),
+  1002: buildSubChapterQuestion(
+    1002,
+    101,
+    'deposit-check-items',
+    '금융상품을 볼 때 확인할 항목이 아닌 것은?',
+    ['금리', '만기', '좋아하는 색', '위험도'],
+    '3',
+    '금리, 만기, 지급 주기, 위험도 등을 확인합니다. 선호 색은 상품 선택 기준이 아닙니다.',
+  ),
+  1003: buildSubChapterQuestion(
+    1003,
+    101,
+    'deposit-interest-period',
+    '적금 이자가 예금보다 적어 보이는 이유로 적절한 것은?',
+    [
+      '적금은 이자가 붙지 않아서',
+      '돈이 통장에 머무는 기간이 평균적으로 짧아서',
+      '은행이 적금만 손해를 봐서',
+      '예금만 복리여서',
+    ],
+    '2',
+    '적금은 나중에 넣는 돈일수록 예치 기간이 짧아 평균 이자가 작아질 수 있습니다.',
+  ),
+  1011: buildSubChapterQuestion(
+    1011,
+    102,
+    'deposit-types-1',
+    '보통예금의 특징으로 맞는 것은?',
+    ['만기가 고정된다', '자유롭게 입출금할 수 있다', '이자가 없다', '주식과 같다'],
+    '2',
+    '보통예금은 필요할 때 자유롭게 입출금할 수 있는 예금입니다.',
+  ),
+  1012: buildSubChapterQuestion(
+    1012,
+    102,
+    'deposit-types-2',
+    '정기예금에 대한 설명으로 옳은 것은?',
+    [
+      '매일 나눠 넣어야 한다',
+      '약정한 기간 동안 목돈을 맡겨 둔다',
+      '정부가 발행한다',
+      '원금이 항상 줄어든다',
+    ],
+    '2',
+    '정기예금은 약정 기간 동안 목돈을 맡겨 두고 이자를 받는 상품입니다.',
+  ),
+  1013: buildSubChapterQuestion(
+    1013,
+    102,
+    'deposit-types-3',
+    '적금의 특징으로 맞는 것은?',
+    ['한 번에만 입금한다', '정해진 주기로 나눠 넣는다', '주식 배당이다', '만기가 없다'],
+    '2',
+    '적금은 매월 등 정해진 주기로 나눠 넣는 저축 방식입니다.',
+  ),
+  1021: buildSubChapterQuestion(
+    1021,
+    103,
+    'stock-basics-1',
+    '다음 중 주식에 대한 설명으로\n올바른 것은?',
+    [
+      '주식은 원금이 보장됩니다',
+      '주식을 사면 회사의 주주가 됩니다',
+      '주식 수익률은 항상 예금보다 낮습니다',
+      '주식은 정부가 발행합니다',
+    ],
+    '2',
+    '주식을 매수하면 해당 회사의 주주가 됩니다. 원금 보장·정부 발행은 일반적인 주식의 특성이 아닙니다.',
+  ),
+  1022: buildSubChapterQuestion(
+    1022,
+    103,
+    'deposit-protection-limit',
+    '예금자 보호 한도로 올바른 것은?',
+    ['1천만 원', '3천만 원', '5천만 원', '한도 없음'],
+    '3',
+    '예금자보호제도는 금융기관당 원금과 이자를 합쳐 5천만 원까지 보호합니다.',
+  ),
+  1023: buildSubChapterQuestion(
+    1023,
+    103,
+    'real-interest-formula',
+    '실질 금리의 계산으로 맞는 것은?',
+    [
+      '명목 금리 − 물가 상승률',
+      '명목 금리 + 물가 상승률',
+      '명목 금리 × 물가 상승률',
+      '명목 금리 ÷ 물가 상승률',
+    ],
+    '1',
+    '실질 금리 = 명목 금리 − 물가 상승률 입니다.',
+  ),
+  1031: buildSubChapterQuestion(
+    1031,
+    104,
+    'protection-1',
+    '예금자 보호 제도의 목적으로 적절한 것은?',
+    ['주가 부양', '예금자 보호와 금융 안정', '세금 감면', '대출 금리 인하'],
+    '2',
+    '금융기관 파산 시 예금자를 보호하고 금융 안정을 돕습니다.',
+  ),
+  1032: buildSubChapterQuestion(
+    1032,
+    104,
+    'protection-2',
+    '예금자 보호 대상이 아닌 것은?',
+    ['은행 예금', '일부 저축은행 예금', '주식', '보험금 일부'],
+    '3',
+    '주식 등 투자 상품은 예금자 보호 대상이 아닙니다.',
+  ),
+  1033: buildSubChapterQuestion(
+    1033,
+    104,
+    'protection-3',
+    '보호 한도 적용 단위로 맞는 것은?',
+    ['계좌마다', '금융기관마다', '상품마다', '국가마다 매일'],
+    '2',
+    '일반적으로 금융기관당 합산하여 한도가 적용됩니다.',
+  ),
+  1041: buildSubChapterQuestion(
+    1041,
+    105,
+    'saving-goal-1',
+    '저축 목표를 세울 때 먼저 할 일로 적절한 것은?',
+    [
+      '목표 금액과 기간을 정한다',
+      '아무 상품이나 가입한다',
+      '대출부터 받는다',
+      '주식을 전액 매수한다',
+    ],
+    '1',
+    '목표 금액·기간을 정한 뒤 맞는 저축 방법을 고릅니다.',
+  ),
+  1042: buildSubChapterQuestion(
+    1042,
+    105,
+    'saving-goal-2',
+    '단기 목표에 더 잘 맞는 상품 성향은?',
+    ['장기 묶임·고위험', '유동성이 높은 예금·적금', '부동산만', '암호화폐만'],
+    '2',
+    '단기 목표는 꺼내 쓰기 쉬운 예·적금이 유리한 경우가 많습니다.',
+  ),
+  1043: buildSubChapterQuestion(
+    1043,
+    105,
+    'saving-goal-3',
+    '목표 달성 점검으로 좋은 습관은?',
+    [
+      '아예 확인하지 않는다',
+      '주기적으로 잔액·진행률을 본다',
+      '매일 전액 출금한다',
+      '목표를 숨긴다',
+    ],
+    '2',
+    '주기적으로 진행률을 보면 계획을 조정하기 쉽습니다.',
+  ),
+}
+
+/**
+ * 게시된 문항 행 조회 (목업) — 소단원 JSON questionIds 순서 유지
+ * @param {number[]} questionIds
+ * @returns {Promise<{ data: { items: QuizQuestion[] } }>}
+ * @throws {StudyApiError} QUESTIONS_NOT_FOUND
+ */
+export const getQuizQuestions = async (questionIds) => {
+  await delay()
+  if (!questionIds?.length) {
+    throw new StudyApiError('QUESTIONS_NOT_FOUND', '퀴즈 문항 ID가 없다.', 404)
+  }
+  const items = []
+  for (const id of questionIds) {
+    const row = MOCK_QUIZ_QUESTIONS[id]
+    if (!row || row.status !== 'PUBLISHED') {
+      throw new StudyApiError('QUESTIONS_NOT_FOUND', `문항 ${id}를 찾을 수 없다.`, 404)
+    }
+    items.push(structuredClone(row))
+  }
+  return { data: { items } }
+}
+
+/**
+ * 소단원 퀴즈 제출·채점 (목업)
+ * @param {{ subChapterId: number, answers: QuizAnswerItem[] }} payload
+ * @returns {Promise<{ data: QuizAttemptResult }>}
+ */
+export const submitQuizAttempt = async (payload) => {
+  await delay(120)
+  const { subChapterId, answers } = payload
+  if (!subChapterId || !answers?.length) {
+    throw new StudyApiError('INVALID_ATTEMPT', '제출 데이터가 올바르지 않다.', 400)
+  }
+
+  const gradedAnswers = []
+  const wrongAnswers = []
+  let correctCount = 0
+
+  for (const answer of answers) {
+    const question = MOCK_QUIZ_QUESTIONS[answer.questionId]
+    if (!question) {
+      throw new StudyApiError(
+        'QUESTIONS_NOT_FOUND',
+        `문항 ${answer.questionId}를 찾을 수 없다.`,
+        404,
+      )
+    }
+    const correctKey = question.correctAnswerJson?.key
+    const isCorrect = answer.selectedKey === correctKey
+    if (isCorrect) correctCount += 1
+    else {
+      wrongAnswers.push({
+        questionId: answer.questionId,
+        selectedKey: answer.selectedKey,
+        correctKey,
+      })
+      MOCK_WRONG_ANSWER_LOG.push({
+        questionId: answer.questionId,
+        selectedKey: answer.selectedKey,
+        correctKey,
+        subChapterId,
+        recordedAt: new Date().toISOString(),
+      })
+    }
+    gradedAnswers.push({
+      questionId: answer.questionId,
+      selectedKey: answer.selectedKey,
+      isCorrect,
+    })
+  }
+
+  const totalCount = answers.length
+  const quizScore = totalCount ? Math.round((correctCount / totalCount) * 100) : 0
+  let pointsGranted = correctCount * POINTS_PER_CORRECT
+  if (!ALLOW_DUPLICATE_POINT_GRANT && MOCK_QUIZ_POINT_GRANTED.has(subChapterId)) {
+    pointsGranted = 0
+  } else if (pointsGranted > 0) {
+    MOCK_QUIZ_POINT_GRANTED.add(subChapterId)
+  }
+
+  const progressItem = MOCK_LEARNING_PROGRESS.find((item) => item.subChapterId === subChapterId)
+  if (progressItem) {
+    progressItem.status = 'COMPLETED'
+    progressItem.quizScore = quizScore
+    progressItem.completedAt = progressItem.completedAt ?? new Date().toISOString()
+    progressItem.updatedAt = new Date().toISOString()
+    progressItem.lastPageId = progressItem.lastPageId ?? 'page-final'
+  }
+
+  const content = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
+  if (content) {
+    content.progress.status = 'COMPLETED'
+    content.progress.completed_at = content.progress.completed_at ?? new Date().toISOString()
+  }
+
+  return {
+    data: {
+      subChapterId,
+      totalCount,
+      correctCount,
+      quizScore,
+      pointsGranted,
+      wrongAnswers,
+      gradedAnswers,
     },
   }
 }
