@@ -5,9 +5,12 @@ import {
   getCurriculum,
   getLearningProgress,
   getLessonPages,
+  getQuizQuestions,
   getSubChapterContent,
   saveLessonProgress,
+  submitQuizAttempt,
 } from '@/services/studyService.js'
+import { useUserStore } from '@/store/userStore.js'
 
 export const useStudyStore = defineStore('study', () => {
   const curriculumItems = ref([])
@@ -19,6 +22,18 @@ export const useStudyStore = defineStore('study', () => {
   const currentPageId = ref(null)
   const isLoading = ref(false)
   const error = ref(null)
+
+  /** 소단원 퀴즈 세션 */
+  const quizSubChapterId = ref(null)
+  const quizQuestions = ref([])
+  const quizIndex = ref(0)
+  const quizSelectedKey = ref(null)
+  /** @type {import('vue').Ref<'IN_PROGRESS' | 'SELECTED' | 'CORRECT' | 'WRONG'>} */
+  const quizUiStatus = ref('IN_PROGRESS')
+  /** @type {import('vue').Ref<Record<number, string>>} questionId → selectedKey */
+  const quizAnswers = ref({})
+  const quizFinished = ref(false)
+  const quizAttemptResult = ref(null)
 
   /** StudyNote에 표시할 활성 대단원 */
   const activeCurriculumItem = computed(
@@ -52,6 +67,23 @@ export const useStudyStore = defineStore('study', () => {
   const currentPage = computed(() => lessonPages.value[pageIndex.value] ?? null)
 
   const isLastPage = computed(() => pageTotal.value > 0 && pageIndex.value >= pageTotal.value - 1)
+
+  const quizQuestionTotal = computed(() => quizQuestions.value.length)
+  const quizCurrentQuestion = computed(() => quizQuestions.value[quizIndex.value] ?? null)
+  const quizQuestionNumber = computed(() => quizIndex.value + 1)
+  const quizIsLastQuestion = computed(
+    () => quizQuestionTotal.value > 0 && quizIndex.value >= quizQuestionTotal.value - 1,
+  )
+  const quizIsGraded = computed(
+    () => quizUiStatus.value === 'CORRECT' || quizUiStatus.value === 'WRONG',
+  )
+  const quizCorrectCount = computed(() => {
+    let count = 0
+    for (const q of quizQuestions.value) {
+      if (quizAnswers.value[q.questionId] === q.correctAnswerJson?.key) count += 1
+    }
+    return count
+  })
 
   const fetchCurriculum = async () => {
     try {
@@ -167,6 +199,123 @@ export const useStudyStore = defineStore('study', () => {
     return true
   }
 
+  const resetQuizQuestionUi = () => {
+    quizSelectedKey.value = null
+    quizUiStatus.value = 'IN_PROGRESS'
+  }
+
+  /**
+   * 소단원 퀴즈 세션 시작 — questionIds 없으면 강좌 JSON 재조회
+   * @param {number} subChapterId
+   */
+  const startSubChapterQuiz = async (subChapterId) => {
+    clearQuizSession()
+    quizSubChapterId.value = subChapterId
+
+    if (
+      !lessonQuizQuestionIds.value.length ||
+      currentContent.value?.subChapterId !== subChapterId
+    ) {
+      await fetchLessonContent(subChapterId)
+    }
+
+    const ids = lessonQuizQuestionIds.value
+    if (!ids.length) {
+      throw Object.assign(new Error('퀴즈 문항이 없습니다.'), { code: 'QUESTIONS_NOT_FOUND' })
+    }
+
+    const { data } = await getQuizQuestions(ids)
+    quizQuestions.value = data.items
+    quizIndex.value = 0
+    resetQuizQuestionUi()
+  }
+
+  const selectQuizOption = (key) => {
+    if (quizFinished.value || quizIsGraded.value) return
+    quizSelectedKey.value = key
+    quizUiStatus.value = 'SELECTED'
+  }
+
+  const submitCurrentQuizQuestion = () => {
+    const question = quizCurrentQuestion.value
+    if (!question || quizUiStatus.value !== 'SELECTED' || !quizSelectedKey.value) return false
+
+    quizAnswers.value = {
+      ...quizAnswers.value,
+      [question.questionId]: quizSelectedKey.value,
+    }
+    const correctKey = question.correctAnswerJson?.key
+    quizUiStatus.value = quizSelectedKey.value === correctKey ? 'CORRECT' : 'WRONG'
+    return true
+  }
+
+  const retryCurrentQuizQuestion = () => {
+    const question = quizCurrentQuestion.value
+    if (!question) return
+    const next = { ...quizAnswers.value }
+    delete next[question.questionId]
+    quizAnswers.value = next
+    resetQuizQuestionUi()
+  }
+
+  const goNextQuizQuestion = () => {
+    if (quizIsLastQuestion.value) {
+      quizFinished.value = true
+      return true
+    }
+    quizIndex.value += 1
+    resetQuizQuestionUi()
+    return false
+  }
+
+  /**
+   * 전체 답안 제출·채점 (결과 화면 진입 시)
+   * @returns {Promise<import('@/types/study.js').QuizAttemptResult | null>}
+   */
+  const completeQuizAttempt = async () => {
+    const subChapterId = quizSubChapterId.value
+    if (!subChapterId || !quizQuestions.value.length) return null
+
+    const answers = quizQuestions.value.map((q) => ({
+      questionId: q.questionId,
+      selectedKey: quizAnswers.value[q.questionId] ?? '',
+    }))
+
+    const { data } = await submitQuizAttempt({ subChapterId, answers })
+    quizAttemptResult.value = data
+
+    if (data.pointsGranted > 0) {
+      const userStore = useUserStore()
+      await userStore.addPoints(data.pointsGranted)
+    }
+
+    if (currentContent.value?.subChapterId === subChapterId && currentContent.value.progress) {
+      currentContent.value.progress.status = 'COMPLETED'
+      currentContent.value.progress.completedAt =
+        currentContent.value.progress.completedAt ?? new Date().toISOString()
+    }
+
+    const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
+    if (item) {
+      item.status = 'COMPLETED'
+      item.quizScore = data.quizScore
+      item.completedAt = item.completedAt ?? new Date().toISOString()
+    }
+
+    return data
+  }
+
+  const clearQuizSession = () => {
+    quizSubChapterId.value = null
+    quizQuestions.value = []
+    quizIndex.value = 0
+    quizSelectedKey.value = null
+    quizUiStatus.value = 'IN_PROGRESS'
+    quizAnswers.value = {}
+    quizFinished.value = false
+    quizAttemptResult.value = null
+  }
+
   /** StudyNote용: 커리큘럼 + 소단원 목록 + 이어하기 */
   const fetchStudyNote = async () => {
     if (isLoading.value) return
@@ -203,6 +352,7 @@ export const useStudyStore = defineStore('study', () => {
     continuePosition.value = null
     currentContent.value = null
     clearLesson()
+    clearQuizSession()
     error.value = null
   }
 
@@ -216,6 +366,14 @@ export const useStudyStore = defineStore('study', () => {
     currentPageId,
     isLoading,
     error,
+    quizSubChapterId,
+    quizQuestions,
+    quizIndex,
+    quizSelectedKey,
+    quizUiStatus,
+    quizAnswers,
+    quizFinished,
+    quizAttemptResult,
     activeCurriculumItem,
     chapterTitle,
     progressPercent,
@@ -226,6 +384,12 @@ export const useStudyStore = defineStore('study', () => {
     pageTotal,
     currentPage,
     isLastPage,
+    quizQuestionTotal,
+    quizCurrentQuestion,
+    quizQuestionNumber,
+    quizIsLastQuestion,
+    quizIsGraded,
+    quizCorrectCount,
     fetchCurriculum,
     fetchLearningProgress,
     fetchContinuePosition,
@@ -236,6 +400,13 @@ export const useStudyStore = defineStore('study', () => {
     goNextPage,
     goPrevPage,
     fetchStudyNote,
+    startSubChapterQuiz,
+    selectQuizOption,
+    submitCurrentQuizQuestion,
+    retryCurrentQuizQuestion,
+    goNextQuizQuestion,
+    completeQuizAttempt,
+    clearQuizSession,
     clearLesson,
     clearStudy,
   }
