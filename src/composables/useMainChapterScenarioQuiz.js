@@ -2,9 +2,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
-import { SCORE_PER_QUESTION } from '@/constants/quizPolicy.js'
-
-const OPTION_TONES = ['green', 'blue', 'pink', 'yellow']
 
 export const useMainChapterScenarioQuiz = () => {
   const route = useRoute()
@@ -36,34 +33,70 @@ export const useMainChapterScenarioQuiz = () => {
   const scenarioTitle = computed(() => scenarioDetail.value?.title ?? '시나리오 퀴즈')
   const rewardStar = computed(() => scenarioDetail.value?.rewardStar ?? 0)
 
-  const statusBadge = computed(() => {
+  const chapterTitle = computed(
+    () => scenarioDetail.value?.content?.chapterTitle || scenarioTitle.value,
+  )
+  const chapterSubtitle = computed(
+    () => scenarioDetail.value?.content?.chapterSubtitle || '금융 상담 실전',
+  )
+
+  const stampLabel = computed(() => {
+    if (scenarioPhase.value === 'INTRO') return '상담실'
     if (scenarioPhase.value === 'RESULT') {
-      return { label: '완료', class: 'border-[#3d7a4a] text-[#3d7a4a]' }
+      return `${scenarioStepTotal.value}/${scenarioStepTotal.value}`
     }
-    if (scenarioPhase.value === 'INTRO') {
-      return { label: '브리핑', class: 'border-[rgba(193,127,36,0.9)] text-[#c17f24]' }
-    }
-    const map = {
-      IN_PROGRESS: { label: '상담 중', class: 'border-[rgba(193,127,36,0.9)] text-[#c17f24]' },
-      SELECTED: { label: '답 선택', class: 'border-[#c17f24] text-[#c17f24]' },
-      CORRECT: { label: '정답!', class: 'border-[rgba(193,127,36,0.9)] text-[#c17f24]' },
-      WRONG: { label: '오답', class: 'border-[rgba(209,46,41,0.9)] text-[#d12e29]' },
-    }
-    return map[scenarioUiStatus.value]
+    return `${scenarioStepNumber.value}/${scenarioStepTotal.value}`
   })
 
-  const optionsWithTone = computed(() => {
-    const options = scenarioCurrentStep.value?.options ?? []
-    return options.map((opt, i) => ({
-      ...opt,
-      tone: OPTION_TONES[i % OPTION_TONES.length],
-    }))
+  const progressRatio = computed(() => {
+    if (scenarioPhase.value === 'INTRO') return '33%'
+    if (scenarioPhase.value === 'RESULT' || !scenarioStepTotal.value) return '100%'
+    return `${Math.round((scenarioStepNumber.value / scenarioStepTotal.value) * 100)}%`
   })
+
+  const showClientScene = computed(
+    () => scenarioPhase.value === 'PLAY' || scenarioPhase.value === 'RESULT',
+  )
+
+  const scenarioOptions = computed(() => scenarioCurrentStep.value?.options ?? [])
+
+  const stepCorrectOption = computed(() => {
+    const step = scenarioCurrentStep.value
+    if (!step) return null
+    return step.options?.find((opt) => opt.key === step.correctKey) ?? null
+  })
+
+  const stepSelectedOption = computed(() => {
+    const step = scenarioCurrentStep.value
+    const key = scenarioSelectedKey.value
+    if (!step || !key) return null
+    return step.options?.find((opt) => opt.key === key) ?? null
+  })
+
+  const correctOption = computed(() => {
+    const steps = scenarioDetail.value?.content?.steps ?? []
+    const lastCorrect = [...steps].reverse().find((step) => step.correctKey)
+    const step = lastCorrect || scenarioCurrentStep.value
+    return step?.options?.find((opt) => opt.key === step.correctKey) ?? null
+  })
+
+  const evaluationScore = computed(() => {
+    if (scenarioAttemptResult.value?.quizScore != null) {
+      return scenarioAttemptResult.value.quizScore
+    }
+    if (scenarioUiStatus.value === 'CORRECT') return 92
+    if (scenarioUiStatus.value === 'WRONG') return 28
+    return 0
+  })
+
+  const evaluationTone = computed(() => (scenarioUiStatus.value === 'WRONG' ? 'fail' : 'pass'))
+
+  const evaluationStamp = computed(() => (scenarioUiStatus.value === 'WRONG' ? '부적합' : '최적'))
 
   const primaryLabel = computed(() => {
     if (scenarioUiStatus.value === 'WRONG') return '다시 풀기'
-    if (scenarioIsGraded.value) return scenarioIsLastStep.value ? '결과 보기' : '다음 문항 →'
-    return '선택 제출'
+    if (scenarioIsGraded.value) return scenarioIsLastStep.value ? '결과 확인' : '다음 문항'
+    return '결과 확인'
   })
 
   const primaryEnabled = computed(() => {
@@ -141,16 +174,16 @@ export const useMainChapterScenarioQuiz = () => {
     studyStore.submitCurrentScenarioStep()
   }
 
+  const retryScenario = async () => {
+    await loadScenario()
+  }
+
   const goToMainChapter = () => {
     studyStore.clearScenarioSession()
     router.push({
       name: 'learning-main-chapter',
       params: { mainChapterId: mainChapterId.value },
     })
-  }
-
-  const giveUp = () => {
-    goToMainChapter()
   }
 
   return {
@@ -161,7 +194,11 @@ export const useMainChapterScenarioQuiz = () => {
     rewardStar,
     opening,
     conditions,
-    statusBadge,
+    chapterTitle,
+    chapterSubtitle,
+    stampLabel,
+    progressRatio,
+    showClientScene,
     scenarioPhase,
     scenarioCurrentStep,
     scenarioStepTotal,
@@ -170,15 +207,20 @@ export const useMainChapterScenarioQuiz = () => {
     scenarioUiStatus,
     scenarioCorrectCount,
     scenarioAttemptResult,
-    optionsWithTone,
-    scorePerQuestion: SCORE_PER_QUESTION,
+    scenarioOptions,
+    stepCorrectOption,
+    stepSelectedOption,
+    correctOption,
+    evaluationScore,
+    evaluationTone,
+    evaluationStamp,
     primaryLabel,
     primaryEnabled,
     optionVariant,
     startGame,
     selectOption,
     onPrimaryAction,
-    giveUp,
+    retryScenario,
     goToMainChapter,
   }
 }

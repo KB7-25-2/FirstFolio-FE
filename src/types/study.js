@@ -220,26 +220,51 @@
  * 시나리오 공문서(오프닝)
  * @typedef {object} ScenarioOpening
  * @property {string} documentTitle
- * @property {string} greeting
+ * @property {string} [docNo]
+ * @property {string} [docDate]
+ * @property {string} [orgName]
+ * @property {string} [title]
  * @property {string} mission
+ * @property {string} [issuerLabel]
+ * @property {string} [issuerName]
  * @property {string} [startLabel]
  */
 
 /**
- * 시나리오 페르소나
+ * 시나리오 페르소나 (고객 프로필 카드)
  * @typedef {object} ScenarioPersona
  * @property {string} name
- * @property {string} role
- * @property {string} summary
+ * @property {string} age
+ * @property {string} job
+ * @property {string} monthlyIncome
+ * @property {string} monthlySaving
  */
 
 /**
- * 시나리오 조건(시황·제약·페르소나)
+ * 시나리오 고객 요구사항 카드
+ * @typedef {object} ScenarioRequirements
+ * @property {string} assets
+ * @property {string} risk
+ * @property {string} goal
+ */
+
+/**
+ * 시나리오 조건(시황·페르소나·요구사항)
  * @typedef {object} ScenarioConditions
  * @property {ScenarioPersona} persona
+ * @property {ScenarioRequirements} requirements
  * @property {string} marketTitle
+ * @property {string} [marketDate]
  * @property {string[]} marketBullets
- * @property {string[]} constraints
+ * @property {string[]} [constraints]
+ */
+
+/**
+ * 시나리오 선택지 (label + 설명)
+ * @typedef {object} ScenarioOption
+ * @property {string} key
+ * @property {string} label
+ * @property {string} [description]
  */
 
 /**
@@ -247,8 +272,9 @@
  * @typedef {object} ScenarioStep
  * @property {number} stepId
  * @property {number} order
- * @property {string} prompt
- * @property {QuizOption[]} options
+ * @property {string} prompt 고객 시나리오 본문
+ * @property {string} [paperTitle]
+ * @property {ScenarioOption[]} options
  * @property {string} correctKey
  * @property {string} explanation
  */
@@ -257,6 +283,8 @@
  * 시나리오 content JSON
  * @typedef {object} ScenarioContent
  * @property {string} scenarioKey
+ * @property {string} [chapterTitle]
+ * @property {string} [chapterSubtitle]
  * @property {ScenarioOpening} opening
  * @property {ScenarioConditions} conditions
  * @property {ScenarioStep[]} steps
