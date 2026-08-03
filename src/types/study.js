@@ -198,4 +198,106 @@
  * @property {string} route
  */
 
+/**
+ * 대단원 챕터 게임 시나리오 요약 (목록 항목)
+ * @typedef {object} ChapterGameScenarioSummary
+ * @property {number} scenarioId
+ * @property {string} title
+ * @property {boolean} completed
+ */
+
+/**
+ * 대단원 챕터 게임 (GET …/main-chapters/:id/chapter-game)
+ * @typedef {object} ChapterGame
+ * @property {number} chapterGameId
+ * @property {number} mainChapterId
+ * @property {string} title
+ * @property {boolean} unlocked
+ * @property {ChapterGameScenarioSummary[]} scenarios
+ */
+
+/**
+ * 시나리오 공문서(오프닝)
+ * @typedef {object} ScenarioOpening
+ * @property {string} documentTitle
+ * @property {string} greeting
+ * @property {string} mission
+ * @property {string} [startLabel]
+ */
+
+/**
+ * 시나리오 페르소나
+ * @typedef {object} ScenarioPersona
+ * @property {string} name
+ * @property {string} role
+ * @property {string} summary
+ */
+
+/**
+ * 시나리오 조건(시황·제약·페르소나)
+ * @typedef {object} ScenarioConditions
+ * @property {ScenarioPersona} persona
+ * @property {string} marketTitle
+ * @property {string[]} marketBullets
+ * @property {string[]} constraints
+ */
+
+/**
+ * 시나리오 스텝(클립보드 문항)
+ * @typedef {object} ScenarioStep
+ * @property {number} stepId
+ * @property {number} order
+ * @property {string} prompt
+ * @property {QuizOption[]} options
+ * @property {string} correctKey
+ * @property {string} explanation
+ */
+
+/**
+ * 시나리오 content JSON
+ * @typedef {object} ScenarioContent
+ * @property {string} scenarioKey
+ * @property {ScenarioOpening} opening
+ * @property {ScenarioConditions} conditions
+ * @property {ScenarioStep[]} steps
+ */
+
+/**
+ * 시나리오 상세 (GET …/scenarios/:id)
+ * @typedef {object} ScenarioDetail
+ * @property {number} scenarioId
+ * @property {string} title
+ * @property {number} rewardStar
+ * @property {ScenarioContent} content
+ */
+
+/**
+ * 시나리오 문항별 제출 답안
+ * @typedef {object} ScenarioAnswerItem
+ * @property {number} stepId
+ * @property {string} selectedKey
+ */
+
+/**
+ * 시나리오 오답 이력
+ * @typedef {object} ScenarioWrongAnswer
+ * @property {number} stepId
+ * @property {string} selectedKey
+ * @property {string} correctKey
+ */
+
+/**
+ * 시나리오 응시·채점 결과
+ * @typedef {object} ScenarioAttemptResult
+ * @property {number} scenarioId
+ * @property {number} mainChapterId
+ * @property {number} totalCount
+ * @property {number} correctCount
+ * @property {number} quizScore 0–100
+ * @property {number} rewardStar
+ * @property {number} pointsGranted
+ * @property {ScenarioWrongAnswer[]} wrongAnswers
+ * @property {{ stepId: number, selectedKey: string, isCorrect: boolean }[]} gradedAnswers
+ */
+
 export {}

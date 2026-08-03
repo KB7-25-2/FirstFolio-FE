@@ -12,6 +12,10 @@ import { ALLOW_DUPLICATE_POINT_GRANT, POINTS_PER_CORRECT } from '@/constants/qui
  * @typedef {import('@/types/study.js').QuizAnswerItem} QuizAnswerItem
  * @typedef {import('@/types/study.js').QuizAttemptResult} QuizAttemptResult
  * @typedef {import('@/types/study.js').QuizWrongAnswer} QuizWrongAnswer
+ * @typedef {import('@/types/study.js').ChapterGame} ChapterGame
+ * @typedef {import('@/types/study.js').ScenarioDetail} ScenarioDetail
+ * @typedef {import('@/types/study.js').ScenarioAnswerItem} ScenarioAnswerItem
+ * @typedef {import('@/types/study.js').ScenarioAttemptResult} ScenarioAttemptResult
  */
 
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -990,6 +994,222 @@ export const submitQuizAttempt = async (payload) => {
       totalCount,
       correctCount,
       quizScore,
+      pointsGranted,
+      wrongAnswers,
+      gradedAnswers,
+    },
+  }
+}
+
+/** @type {Map<number, ChapterGame>} mainChapterId → chapter game */
+const MOCK_CHAPTER_GAMES = new Map([
+  [
+    2,
+    {
+      chapterGameId: 50,
+      mainChapterId: 2,
+      title: '예금 실전 퀴즈',
+      unlocked: true,
+      scenarios: [
+        {
+          scenarioId: 501,
+          title: '첫 월급을 받은 사회초년생',
+          completed: false,
+        },
+      ],
+    },
+  ],
+])
+
+/** scenarioId → detail */
+const MOCK_SCENARIOS = {
+  501: {
+    scenarioId: 501,
+    title: '첫 월급을 받은 사회초년생',
+    rewardStar: 50,
+    content: {
+      scenarioKey: 'first-salary-portfolio',
+      opening: {
+        documentTitle: '공 문 서',
+        greeting: '금융 상담실에 오신 것을 환영합니다.',
+        mission:
+          '첫 월급을 받은 사회초년생의 상담을 맡아 주세요. 시황과 제약 조건을 보고, 알맞은 예·적금 선택을 도와줍니다.',
+        startLabel: '게임 시작 →',
+      },
+      conditions: {
+        persona: {
+          name: '김민준',
+          role: '사회초년생 · 첫 월급',
+          summary: '월급 220만 원. 비상금은 거의 없고, 6개월 뒤 이사를 계획 중입니다.',
+        },
+        marketTitle: '오늘의 금융 시황',
+        marketBullets: [
+          '시중은행 정기예금 금리 연 3.2% 수준',
+          '적금 우대금리 조건이 까다로워지는 추세',
+          '단기 유동성 수요가 늘어난 달',
+        ],
+        constraints: [
+          '원금 손실은 원하지 않음',
+          '6개월 내 일부 인출 가능성',
+          '매달 30만 원까지 저축 가능',
+        ],
+      },
+      steps: [
+        {
+          stepId: 9001,
+          order: 1,
+          prompt: '비상금이 거의 없는 민준 씨에게 먼저 권할 선택으로 적절한 것은?',
+          options: [
+            { key: '1', label: '전액을 장기 정기예금에 묶는다' },
+            { key: '2', label: '생활비·비상금용 보통예금을 먼저 확보한다' },
+            { key: '3', label: '전액 주식형 펀드에 넣는다' },
+            { key: '4', label: '대출로 투자 자금을 만든다' },
+          ],
+          correctKey: '2',
+          explanation:
+            '비상금이 부족하면 먼저 꺼내 쓰기 쉬운 보통예금 등으로 유동성을 확보하는 것이 안전합니다.',
+        },
+        {
+          stepId: 9002,
+          order: 2,
+          prompt: '매달 30만 원을 모으려면 어떤 방식이 더 맞을까요?',
+          options: [
+            { key: '1', label: '한꺼번에 목돈을 넣는 정기예금만' },
+            { key: '2', label: '매월 나눠 넣는 적금' },
+            { key: '3', label: '만기 없는 투기성 상품만' },
+            { key: '4', label: '저축하지 않고 현금 보관' },
+          ],
+          correctKey: '2',
+          explanation: '매월 일정액을 모으는 목표에는 적금이 잘 맞습니다.',
+        },
+        {
+          stepId: 9003,
+          order: 3,
+          prompt: '6개월 뒤 이사 자금이 필요할 수 있다면?',
+          options: [
+            { key: '1', label: '5년 만기 상품에만 넣는다' },
+            { key: '2', label: '중도 인출·단기 만기를 고려한다' },
+            { key: '3', label: '전부 암호화폐에 투자한다' },
+            { key: '4', label: '만기를 무시한다' },
+          ],
+          correctKey: '2',
+          explanation: '단기 자금 수요가 있으면 만기·중도해지 조건을 먼저 확인해야 합니다.',
+        },
+      ],
+    },
+  },
+}
+
+/** 시나리오 포인트 중복 지급 방지 — scenarioId */
+const MOCK_SCENARIO_POINT_GRANTED = new Set()
+
+/**
+ * 대단원 챕터 게임 조회 (목업)
+ * @param {number} mainChapterId
+ * @returns {Promise<{ data: ChapterGame }>}
+ */
+export const getChapterGame = async (mainChapterId) => {
+  await delay()
+  const game = MOCK_CHAPTER_GAMES.get(Number(mainChapterId))
+  if (!game) {
+    throw new StudyApiError('CHAPTER_GAME_NOT_FOUND', '챕터 게임을 찾을 수 없다.', 404)
+  }
+  if (!game.unlocked) {
+    throw new StudyApiError('CHAPTER_GAME_LOCKED', '아직 잠긴 챕터 게임이다.', 403)
+  }
+  return { data: structuredClone(game) }
+}
+
+/**
+ * 시나리오 상세 조회 (목업)
+ * @param {number} scenarioId
+ * @returns {Promise<{ data: ScenarioDetail }>}
+ */
+export const getScenario = async (scenarioId) => {
+  await delay()
+  const row = MOCK_SCENARIOS[Number(scenarioId)]
+  if (!row) {
+    throw new StudyApiError('SCENARIO_NOT_FOUND', '시나리오를 찾을 수 없다.', 404)
+  }
+  return { data: structuredClone(row) }
+}
+
+/**
+ * 시나리오 응시 제출·채점 (목업)
+ * @param {{ scenarioId: number, mainChapterId: number, answers: ScenarioAnswerItem[] }} payload
+ * @returns {Promise<{ data: ScenarioAttemptResult }>}
+ */
+export const submitScenarioAttempt = async (payload) => {
+  await delay(120)
+  const { scenarioId, mainChapterId, answers } = payload
+  if (!scenarioId || !mainChapterId || !answers?.length) {
+    throw new StudyApiError('INVALID_ATTEMPT', '제출 데이터가 올바르지 않다.', 400)
+  }
+
+  const scenario = MOCK_SCENARIOS[scenarioId]
+  if (!scenario) {
+    throw new StudyApiError('SCENARIO_NOT_FOUND', '시나리오를 찾을 수 없다.', 404)
+  }
+
+  const stepMap = new Map(scenario.content.steps.map((step) => [step.stepId, step]))
+  const gradedAnswers = []
+  const wrongAnswers = []
+  let correctCount = 0
+
+  for (const answer of answers) {
+    const step = stepMap.get(answer.stepId)
+    if (!step) {
+      throw new StudyApiError('STEP_NOT_FOUND', `스텝 ${answer.stepId}를 찾을 수 없다.`, 404)
+    }
+    const isCorrect = answer.selectedKey === step.correctKey
+    if (isCorrect) correctCount += 1
+    else {
+      wrongAnswers.push({
+        stepId: answer.stepId,
+        selectedKey: answer.selectedKey,
+        correctKey: step.correctKey,
+      })
+    }
+    gradedAnswers.push({
+      stepId: answer.stepId,
+      selectedKey: answer.selectedKey,
+      isCorrect,
+    })
+  }
+
+  const totalCount = answers.length
+  const quizScore = totalCount ? Math.round((correctCount / totalCount) * 100) : 0
+  let pointsGranted = correctCount * POINTS_PER_CORRECT
+  if (!ALLOW_DUPLICATE_POINT_GRANT && MOCK_SCENARIO_POINT_GRANTED.has(scenarioId)) {
+    pointsGranted = 0
+  } else if (pointsGranted > 0) {
+    MOCK_SCENARIO_POINT_GRANTED.add(scenarioId)
+  }
+
+  const game = MOCK_CHAPTER_GAMES.get(Number(mainChapterId))
+  if (game) {
+    const summary = game.scenarios.find((s) => s.scenarioId === scenarioId)
+    if (summary) summary.completed = true
+  }
+
+  const progressItem = MOCK_LEARNING_PROGRESS.find(
+    (item) => item.mainChapterId === mainChapterId && item.entryType === 'SCENARIO_QUIZ',
+  )
+  if (progressItem) {
+    progressItem.status = 'COMPLETED'
+    progressItem.quizScore = quizScore
+    progressItem.completedAt = progressItem.completedAt ?? new Date().toISOString()
+    progressItem.updatedAt = new Date().toISOString()
+  }
+
+  return {
+    data: {
+      scenarioId,
+      mainChapterId,
+      totalCount,
+      correctCount,
+      quizScore,
+      rewardStar: scenario.rewardStar,
       pointsGranted,
       wrongAnswers,
       gradedAnswers,
