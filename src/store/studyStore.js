@@ -1,14 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
+  getChapterGame,
   getContinuePosition,
   getCurriculum,
   getLearningProgress,
   getLessonPages,
   getQuizQuestions,
+  getScenario,
   getSubChapterContent,
   saveLessonProgress,
   submitQuizAttempt,
+  submitScenarioAttempt,
 } from '@/services/studyService.js'
 import { useUserStore } from '@/store/userStore.js'
 
@@ -34,6 +37,20 @@ export const useStudyStore = defineStore('study', () => {
   const quizAnswers = ref({})
   const quizFinished = ref(false)
   const quizAttemptResult = ref(null)
+
+  /** 대단원 시나리오 퀴즈 세션 (소단원 퀴즈와 분리) */
+  const scenarioMainChapterId = ref(null)
+  const scenarioChapterGame = ref(null)
+  const scenarioDetail = ref(null)
+  /** @type {import('vue').Ref<'INTRO' | 'PLAY' | 'RESULT'>} */
+  const scenarioPhase = ref('INTRO')
+  const scenarioStepIndex = ref(0)
+  const scenarioSelectedKey = ref(null)
+  /** @type {import('vue').Ref<'IN_PROGRESS' | 'SELECTED' | 'CORRECT' | 'WRONG'>} */
+  const scenarioUiStatus = ref('IN_PROGRESS')
+  /** @type {import('vue').Ref<Record<number, string>>} stepId → selectedKey */
+  const scenarioAnswers = ref({})
+  const scenarioAttemptResult = ref(null)
 
   /** StudyNote에 표시할 활성 대단원 */
   const activeCurriculumItem = computed(
@@ -81,6 +98,24 @@ export const useStudyStore = defineStore('study', () => {
     let count = 0
     for (const q of quizQuestions.value) {
       if (quizAnswers.value[q.questionId] === q.correctAnswerJson?.key) count += 1
+    }
+    return count
+  })
+
+  const scenarioSteps = computed(() => scenarioDetail.value?.content?.steps ?? [])
+  const scenarioStepTotal = computed(() => scenarioSteps.value.length)
+  const scenarioCurrentStep = computed(() => scenarioSteps.value[scenarioStepIndex.value] ?? null)
+  const scenarioStepNumber = computed(() => scenarioStepIndex.value + 1)
+  const scenarioIsLastStep = computed(
+    () => scenarioStepTotal.value > 0 && scenarioStepIndex.value >= scenarioStepTotal.value - 1,
+  )
+  const scenarioIsGraded = computed(
+    () => scenarioUiStatus.value === 'CORRECT' || scenarioUiStatus.value === 'WRONG',
+  )
+  const scenarioCorrectCount = computed(() => {
+    let count = 0
+    for (const step of scenarioSteps.value) {
+      if (scenarioAnswers.value[step.stepId] === step.correctKey) count += 1
     }
     return count
   })
@@ -316,6 +351,139 @@ export const useStudyStore = defineStore('study', () => {
     quizAttemptResult.value = null
   }
 
+  const resetScenarioStepUi = () => {
+    scenarioSelectedKey.value = null
+    scenarioUiStatus.value = 'IN_PROGRESS'
+  }
+
+  const clearScenarioSession = () => {
+    scenarioMainChapterId.value = null
+    scenarioChapterGame.value = null
+    scenarioDetail.value = null
+    scenarioPhase.value = 'INTRO'
+    scenarioStepIndex.value = 0
+    scenarioSelectedKey.value = null
+    scenarioUiStatus.value = 'IN_PROGRESS'
+    scenarioAnswers.value = {}
+    scenarioAttemptResult.value = null
+  }
+
+  /**
+   * 대단원 시나리오 퀴즈 세션 시작 — chapter game → 미완료 scenario 로드
+   * @param {number} mainChapterId
+   */
+  const startMainChapterScenarioQuiz = async (mainChapterId) => {
+    clearScenarioSession()
+    scenarioMainChapterId.value = mainChapterId
+
+    const { data: game } = await getChapterGame(mainChapterId)
+    scenarioChapterGame.value = game
+
+    const target = game.scenarios.find((s) => !s.completed) ?? game.scenarios[0] ?? null
+    if (!target) {
+      throw Object.assign(new Error('시나리오가 없습니다.'), { code: 'SCENARIO_NOT_FOUND' })
+    }
+
+    const { data: detail } = await getScenario(target.scenarioId)
+    if (!detail.content?.steps?.length) {
+      throw Object.assign(new Error('시나리오 문항이 없습니다.'), { code: 'STEPS_NOT_FOUND' })
+    }
+
+    scenarioDetail.value = detail
+    scenarioPhase.value = 'INTRO'
+    scenarioStepIndex.value = 0
+    resetScenarioStepUi()
+  }
+
+  const beginScenarioPlay = () => {
+    if (!scenarioDetail.value) return
+    scenarioPhase.value = 'PLAY'
+    scenarioStepIndex.value = 0
+    scenarioAnswers.value = {}
+    scenarioAttemptResult.value = null
+    resetScenarioStepUi()
+  }
+
+  const selectScenarioOption = (key) => {
+    if (scenarioPhase.value !== 'PLAY' || scenarioIsGraded.value) return
+    scenarioSelectedKey.value = key
+    scenarioUiStatus.value = 'SELECTED'
+  }
+
+  const submitCurrentScenarioStep = () => {
+    const step = scenarioCurrentStep.value
+    if (!step || scenarioUiStatus.value !== 'SELECTED' || !scenarioSelectedKey.value) return false
+
+    scenarioAnswers.value = {
+      ...scenarioAnswers.value,
+      [step.stepId]: scenarioSelectedKey.value,
+    }
+    scenarioUiStatus.value = scenarioSelectedKey.value === step.correctKey ? 'CORRECT' : 'WRONG'
+    return true
+  }
+
+  const retryCurrentScenarioStep = () => {
+    const step = scenarioCurrentStep.value
+    if (!step) return
+    const next = { ...scenarioAnswers.value }
+    delete next[step.stepId]
+    scenarioAnswers.value = next
+    resetScenarioStepUi()
+  }
+
+  /**
+   * @returns {boolean} true면 마지막 문항 → RESULT 진입 대기
+   */
+  const goNextScenarioStep = () => {
+    if (scenarioIsLastStep.value) {
+      scenarioPhase.value = 'RESULT'
+      return true
+    }
+    scenarioStepIndex.value += 1
+    resetScenarioStepUi()
+    return false
+  }
+
+  /**
+   * 시나리오 전체 제출·채점·포인트
+   * @returns {Promise<import('@/types/study.js').ScenarioAttemptResult | null>}
+   */
+  const completeScenarioAttempt = async () => {
+    const mainChapterId = scenarioMainChapterId.value
+    const scenarioId = scenarioDetail.value?.scenarioId
+    if (!mainChapterId || !scenarioId || !scenarioSteps.value.length) return null
+
+    const answers = scenarioSteps.value.map((step) => ({
+      stepId: step.stepId,
+      selectedKey: scenarioAnswers.value[step.stepId] ?? '',
+    }))
+
+    const { data } = await submitScenarioAttempt({ scenarioId, mainChapterId, answers })
+    scenarioAttemptResult.value = data
+    scenarioPhase.value = 'RESULT'
+
+    if (data.pointsGranted > 0) {
+      const userStore = useUserStore()
+      await userStore.addPoints(data.pointsGranted)
+    }
+
+    if (scenarioChapterGame.value) {
+      const summary = scenarioChapterGame.value.scenarios.find((s) => s.scenarioId === scenarioId)
+      if (summary) summary.completed = true
+    }
+
+    const item = learningItems.value.find(
+      (row) => row.mainChapterId === mainChapterId && row.entryType === 'SCENARIO_QUIZ',
+    )
+    if (item) {
+      item.status = 'COMPLETED'
+      item.quizScore = data.quizScore
+      item.completedAt = item.completedAt ?? new Date().toISOString()
+    }
+
+    return data
+  }
+
   /** StudyNote용: 커리큘럼 + 소단원 목록 + 이어하기 */
   const fetchStudyNote = async () => {
     if (isLoading.value) return
@@ -353,6 +521,7 @@ export const useStudyStore = defineStore('study', () => {
     currentContent.value = null
     clearLesson()
     clearQuizSession()
+    clearScenarioSession()
     error.value = null
   }
 
@@ -374,6 +543,15 @@ export const useStudyStore = defineStore('study', () => {
     quizAnswers,
     quizFinished,
     quizAttemptResult,
+    scenarioMainChapterId,
+    scenarioChapterGame,
+    scenarioDetail,
+    scenarioPhase,
+    scenarioStepIndex,
+    scenarioSelectedKey,
+    scenarioUiStatus,
+    scenarioAnswers,
+    scenarioAttemptResult,
     activeCurriculumItem,
     chapterTitle,
     progressPercent,
@@ -390,6 +568,13 @@ export const useStudyStore = defineStore('study', () => {
     quizIsLastQuestion,
     quizIsGraded,
     quizCorrectCount,
+    scenarioSteps,
+    scenarioStepTotal,
+    scenarioCurrentStep,
+    scenarioStepNumber,
+    scenarioIsLastStep,
+    scenarioIsGraded,
+    scenarioCorrectCount,
     fetchCurriculum,
     fetchLearningProgress,
     fetchContinuePosition,
@@ -407,6 +592,14 @@ export const useStudyStore = defineStore('study', () => {
     goNextQuizQuestion,
     completeQuizAttempt,
     clearQuizSession,
+    startMainChapterScenarioQuiz,
+    beginScenarioPlay,
+    selectScenarioOption,
+    submitCurrentScenarioStep,
+    retryCurrentScenarioStep,
+    goNextScenarioStep,
+    completeScenarioAttempt,
+    clearScenarioSession,
     clearLesson,
     clearStudy,
   }
