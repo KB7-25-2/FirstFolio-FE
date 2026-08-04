@@ -507,7 +507,7 @@ export const useStudyStore = defineStore('study', () => {
       item.completedAt = item.completedAt ?? new Date().toISOString()
     }
 
-    await fetchContinuePosition()
+    await Promise.all([fetchCurriculum(), fetchContinuePosition()])
 
     return data
   }

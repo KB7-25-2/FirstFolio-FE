@@ -37,6 +37,7 @@ const {
   selectOption,
   onPrimaryAction,
   goToMainChapter,
+  goToRoadmap,
 } = useMainChapterScenarioQuiz()
 </script>
 
@@ -253,7 +254,8 @@ const {
           <ScenarioResultPanel
             :subject-name="chapterTitle"
             congrats-message="수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다. 앞으로도 꾸준히 학습하며 상담 역량을 키워 보세요."
-            @confirm="goToMainChapter"
+            confirm-label="학습 로드맵으로"
+            @confirm="goToRoadmap"
           />
         </ScenarioClipboardBoard>
       </div>

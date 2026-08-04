@@ -10,6 +10,10 @@ defineProps({
     type: String,
     default: '수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다.',
   },
+  confirmLabel: {
+    type: String,
+    default: '학습 목록으로',
+  },
 })
 
 defineEmits(['confirm'])
@@ -70,7 +74,7 @@ defineEmits(['confirm'])
       class="mt-8 flex h-11 w-full items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec] shadow-[0_3px_6px_rgba(139,80,20,0.35)]"
       @click="$emit('confirm')"
     >
-      학습 목록으로
+      {{ confirmLabel }}
     </button>
   </div>
 </template>

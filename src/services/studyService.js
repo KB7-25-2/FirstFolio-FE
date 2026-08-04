@@ -513,9 +513,34 @@ const getLessonProgressForChapter = (mainChapterId) =>
  * 대단원 내 모든 LESSON 수료 여부
  * @param {number} mainChapterId
  */
-const areAllLessonsCompleted = (mainChapterId) => {
-  const lessons = getLessonProgressForChapter(mainChapterId)
-  return lessons.length > 0 && lessons.every((item) => item.status === 'COMPLETED')
+// const areAllLessonsCompleted = (mainChapterId) => {
+//   const lessons = getLessonProgressForChapter(mainChapterId)
+//   return lessons.length > 0 && lessons.every((item) => item.status === 'COMPLETED')
+// }
+
+/**
+ * 시나리오 수료 시 해당 대단원 COMPLETED + 다음 LOCKED 대단원 ACTIVE
+ * @param {number} completedMainChapterId
+ */
+const promoteNextCurriculumChapter = (completedMainChapterId) => {
+  const items = MOCK_CURRICULUM_RESPONSE.data.items
+  const completed = items.find((item) => item.main_chapter_id === completedMainChapterId)
+  if (!completed) return
+
+  const now = new Date().toISOString()
+  completed.status = 'COMPLETED'
+  completed.progress_percent = 100
+  completed.completed_at = completed.completed_at ?? now
+
+  const next = items
+    .filter((item) => item.display_order > completed.display_order && item.status === 'LOCKED')
+    .sort((a, b) => a.display_order - b.display_order)[0]
+
+  if (next) {
+    next.status = 'ACTIVE'
+    next.progress_percent = 0
+    next.completed_at = null
+  }
 }
 
 /**
@@ -569,7 +594,7 @@ const recomputeContinuePosition = () => {
       item.status !== 'COMPLETED',
   )
 
-  if (scenarioProgress || areAllLessonsCompleted(mainChapterId)) {
+  if (scenarioProgress) {
     MOCK_CONTINUE_POSITION = {
       data: {
         curriculum_item_id: activeChapter.curriculum_item_id,
@@ -581,6 +606,12 @@ const recomputeContinuePosition = () => {
         route: `/learning/main-chapters/${mainChapterId}/scenario-quiz`,
       },
     }
+    return
+  }
+
+  // ACTIVE인데 전부 수료된 경우(다음 대단원 없음) → 이어하기 없음
+  if (activeChapter.status !== 'ACTIVE') {
+    MOCK_CONTINUE_POSITION = { data: null }
     return
   }
 
@@ -1374,6 +1405,7 @@ export const submitScenarioAttempt = async (payload) => {
     progressItem.updatedAt = new Date().toISOString()
   }
 
+  promoteNextCurriculumChapter(mainChapterId)
   recomputeContinuePosition()
 
   return {

@@ -186,6 +186,12 @@ export const useMainChapterScenarioQuiz = () => {
     })
   }
 
+  /** 수료 후 로드맵으로 — 커리큘럼 ACTIVE/COMPLETED 반영 확인 */
+  const goToRoadmap = () => {
+    studyStore.clearScenarioSession()
+    router.push({ name: 'learning' })
+  }
+
   return {
     mainChapterId,
     isLoading,
@@ -222,5 +228,6 @@ export const useMainChapterScenarioQuiz = () => {
     onPrimaryAction,
     retryScenario,
     goToMainChapter,
+    goToRoadmap,
   }
 }
