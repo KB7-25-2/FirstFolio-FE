@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
@@ -62,6 +62,10 @@ const loadChapter = async (mainChapterId) => {
 }
 
 onMounted(() => {
+  loadChapter(routeMainChapterId.value)
+})
+
+onActivated(() => {
   loadChapter(routeMainChapterId.value)
 })
 

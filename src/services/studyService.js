@@ -204,9 +204,6 @@ const MOCK_LEARNING_PROGRESS = [
   },
 ]
 
-/** 선행 미충족으로 콘텐츠 조회가 막히는 소단원 ID */
-const MOCK_PREREQUISITE_BLOCKED = new Set([105])
-
 /** 소단원 콘텐츠 접근 정보 목업 (snake_case) — sub_chapter_id 키 */
 const MOCK_SUB_CHAPTER_CONTENT = {
   101: {
@@ -679,6 +676,20 @@ export const getLearningProgress = async (mainChapterId) => {
 }
 
 /**
+ * 직전 LESSON이 미완료면 선행 차단
+ * @param {number} subChapterId
+ */
+const isPrerequisiteBlocked = (subChapterId) => {
+  const raw = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
+  if (!raw) return false
+  const lessons = getLessonProgressForChapter(raw.main_chapter_id)
+  const index = lessons.findIndex((item) => item.subChapterId === subChapterId)
+  if (index <= 0) return false
+  const previous = lessons[index - 1]
+  return Boolean(previous && previous.status !== 'COMPLETED')
+}
+
+/**
  * 소단원 메타 + 백엔드 발급 콘텐츠 접근 정보 조회 (목업)
  * - 클라이언트는 content_url만 사용하고 S3 경로를 조합하지 않는다.
  * - 완료한 소단원도 재열람 가능하다.
@@ -688,7 +699,7 @@ export const getLearningProgress = async (mainChapterId) => {
  */
 export const getSubChapterContent = async (subChapterId) => {
   await delay()
-  if (MOCK_PREREQUISITE_BLOCKED.has(subChapterId)) {
+  if (isPrerequisiteBlocked(subChapterId)) {
     throw new StudyApiError('PREREQUISITE_REQUIRED', '선행 학습이 필요하다.', 403)
   }
   const raw = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
