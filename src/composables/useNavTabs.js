@@ -40,7 +40,10 @@ export const useNavTabs = () => {
   const route = useRoute()
   const router = useRouter()
 
-  const activeTab = computed(() => route.name)
+  const activeTab = computed(() => {
+    const matched = NAV_TABS.find((tab) => route.path.startsWith(tab.path))
+    return matched?.name ?? route.name
+  })
   const isActive = (name) => activeTab.value === name
   const navigate = (path) => router.push(path)
 

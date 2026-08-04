@@ -1,0 +1,98 @@
+export const mockPortfolioSummary = {
+  totalAssetValue: 30000000,
+  cashBalance: 6000000,
+  profitLossAmount: 0,
+  goalAchievementRate: 80,
+  holdings: [
+    {
+      holdingId: 1,
+      productId: 101,
+      displayName: '정기예금',
+      assetType: 'DEPOSIT_SAVINGS',
+      cycleSummary: '예금 · 서비스 6일 만기 · 실제 6개월',
+      quantity: 1,
+      unitPrice: 15000000,
+      principalAmount: 15000000,
+      highlighted: false,
+    },
+    {
+      holdingId: 2,
+      productId: 102,
+      displayName: '배당주 바구니',
+      assetType: 'STOCK',
+      cycleSummary: '주식 · 6시간마다 배당 · 실제 분기 1회',
+      quantity: 10,
+      unitPrice: 500000,
+      principalAmount: 5000000,
+      highlighted: true,
+    },
+    {
+      holdingId: 3,
+      productId: 103,
+      displayName: '국채 펀드',
+      assetType: 'BOND',
+      cycleSummary: '채권 · 6시간마다 이자 · 실제 월 1회',
+      quantity: 4,
+      unitPrice: 1000000,
+      principalAmount: 4000000,
+      highlighted: false,
+    },
+  ],
+  aiFeedback:
+    '예금 비중 50%로 높아요. 서비스 내 6일 만기(실제 6개월)인 예금을 일부 조정하고, 6시간마다 배당·이자가 반영되는 상품으로 분산을 넣어보세요. — 시간 압축 시뮬레이션에서 더 정확한 경로를 확인할 수 있어요.',
+}
+
+export const mockPurchasableProducts = [
+  {
+    productId: 101,
+    displayName: '정기예금',
+    assetType: 'DEPOSIT_SAVINGS',
+    riskLevel: '저위험',
+    cycleSummary: '서비스 6일 만기 · 실제 6개월',
+    unitPrice: 15000000,
+    quantityFixed: true,
+  },
+  {
+    productId: 104,
+    displayName: '성장주 체험팩',
+    assetType: 'STOCK',
+    riskLevel: '위험 중상',
+    cycleSummary: '1~2시간마다 가격 · 실제 장중 실시간',
+    unitPrice: 500000,
+    quantityFixed: false,
+  },
+  {
+    productId: 102,
+    displayName: '배당주 바구니',
+    assetType: 'STOCK',
+    riskLevel: '위험 중',
+    cycleSummary: '6시간마다 배당 · 실제 분기 1회',
+    unitPrice: 500000,
+    quantityFixed: false,
+  },
+  {
+    productId: 105,
+    displayName: '주식형 ETF',
+    assetType: 'FUND',
+    riskLevel: '위험 중하',
+    cycleSummary: '1~2시간마다 가격 · 실제 장중 실시간',
+    unitPrice: 250000,
+    quantityFixed: false,
+  },
+  {
+    productId: 103,
+    displayName: '국채 펀드',
+    assetType: 'BOND',
+    riskLevel: '저위험',
+    cycleSummary: '6시간마다 이자 · 실제 월 1회',
+    unitPrice: 1000000,
+    quantityFixed: false,
+  },
+]
+
+export const mockTimeCompressionRules = [
+  { productName: '정기예금', compressedCycle: '서비스 내 6일 만기', realCycle: '실제 6개월 만기' },
+  { productName: '국채 펀드', compressedCycle: '6시간마다 이자', realCycle: '실제 월 1회' },
+  { productName: '배당주 바구니', compressedCycle: '6시간마다 배당', realCycle: '실제 분기 1회' },
+  { productName: '주식·ETF', compressedCycle: '1~2시간마다 가격', realCycle: '실제 장중 실시간' },
+]
