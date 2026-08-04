@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { getUserProfile } from '@/services/userService.js'
+import { getUserProfile, applyPointBalanceDelta } from '@/services/userService.js'
 
 export const useUserStore = defineStore('user', () => {
   const profile = ref(null)
@@ -32,6 +32,20 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  /**
+   * 퀴즈 등 보상 포인트 가산 (목업)
+   * @param {number} amount
+   */
+  const addPoints = async (amount) => {
+    if (!amount || amount <= 0) return profile.value
+    if (!profile.value) {
+      await fetchProfile()
+    }
+    const { data } = await applyPointBalanceDelta(amount)
+    profile.value = data
+    return data
+  }
+
   const clearProfile = () => {
     profile.value = null
     error.value = null
@@ -47,6 +61,7 @@ export const useUserStore = defineStore('user', () => {
     pointBalanceDisplay,
     greeting,
     fetchProfile,
+    addPoints,
     clearProfile,
   }
 })

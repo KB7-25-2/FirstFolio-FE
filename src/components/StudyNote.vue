@@ -25,13 +25,29 @@ const checklistLabel = (item) => {
 
 const ruledOffsets = computed(() => Array.from({ length: 14 }, (_, index) => 48 + index * 22))
 
+/**
+ * continue.route 문자열을 named route로 해석 (경로 변경에도 깨지지 않게)
+ * @param {string} routePath
+ */
+const resolveContinueLocation = (routePath) => {
+  const resolved = router.resolve(routePath)
+  if (resolved.matched.length) {
+    return {
+      name: resolved.name,
+      params: resolved.params,
+      query: resolved.query,
+    }
+  }
+  return { name: 'learning' }
+}
+
 const onContinue = (event) => {
   event.stopPropagation()
   if (!continueRoute.value) {
     router.push({ name: 'learning' })
     return
   }
-  router.push(continueRoute.value)
+  router.push(resolveContinueLocation(continueRoute.value))
 }
 
 const goLearning = () => {

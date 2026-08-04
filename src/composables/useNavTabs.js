@@ -40,7 +40,10 @@ export const useNavTabs = () => {
   const route = useRoute()
   const router = useRouter()
 
-  const activeTab = computed(() => route.name)
+  const activeTab = computed(() => {
+    const tabMeta = [...route.matched].reverse().find((record) => record.meta.navTab)?.meta.navTab
+    return tabMeta ?? route.name
+  })
   const isActive = (name) => activeTab.value === name
   const navigate = (path) => router.push(path)
 
