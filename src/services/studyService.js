@@ -92,7 +92,11 @@ const MOCK_CURRICULUM_RESPONSE = {
   },
 }
 
-/** @type {LearningProgressItem[]} */
+/**
+ * 시드: 예·적금(2) — 1~2교시 수료, 3교시(103) 진행 중, 시나리오 잠금
+ * 시나리오 수료 후 promote 시 채권(3) ACTIVE → 소단원 mock 전엔 시간표 딥링크
+ * @type {LearningProgressItem[]}
+ */
 const MOCK_LEARNING_PROGRESS = [
   {
     progressId: 201,
@@ -513,10 +517,25 @@ const getLessonProgressForChapter = (mainChapterId) =>
  * 대단원 내 모든 LESSON 수료 여부
  * @param {number} mainChapterId
  */
-// const areAllLessonsCompleted = (mainChapterId) => {
-//   const lessons = getLessonProgressForChapter(mainChapterId)
-//   return lessons.length > 0 && lessons.every((item) => item.status === 'COMPLETED')
-// }
+const areAllLessonsCompleted = (mainChapterId) => {
+  const lessons = getLessonProgressForChapter(mainChapterId)
+  return lessons.length > 0 && lessons.every((item) => item.status === 'COMPLETED')
+}
+
+/**
+ * ACTIVE 대단원 progress_percent를 LESSON 수료 비율로 동기화
+ * @param {number} mainChapterId
+ */
+const syncCurriculumProgressPercent = (mainChapterId) => {
+  const item = MOCK_CURRICULUM_RESPONSE.data.items.find(
+    (row) => row.main_chapter_id === mainChapterId,
+  )
+  if (!item || item.status === 'COMPLETED') return
+  const lessons = getLessonProgressForChapter(mainChapterId)
+  if (!lessons.length) return
+  const done = lessons.filter((row) => row.status === 'COMPLETED').length
+  item.progress_percent = Math.round((done / lessons.length) * 100)
+}
 
 /**
  * 시나리오 수료 시 해당 대단원 COMPLETED + 다음 LOCKED 대단원 ACTIVE
@@ -562,6 +581,23 @@ const recomputeContinuePosition = () => {
 
   const mainChapterId = activeChapter.main_chapter_id
   const lessons = getLessonProgressForChapter(mainChapterId)
+
+  // 다음 대단원 ACTIVE 직후 등 — 소단원 mock이 아직 없으면 시간표로
+  if (!lessons.length) {
+    MOCK_CONTINUE_POSITION = {
+      data: {
+        curriculum_item_id: activeChapter.curriculum_item_id,
+        main_chapter_id: mainChapterId,
+        sub_chapter_id: null,
+        content_version_id: null,
+        last_page_id: null,
+        progress_percent: activeChapter.progress_percent ?? 0,
+        route: `/learning/main-chapters/${mainChapterId}`,
+      },
+    }
+    return
+  }
+
   const inProgress = lessons.find((item) => item.status === 'IN_PROGRESS')
   const incomplete = lessons.find((item) => item.status !== 'COMPLETED')
   const targetLesson = inProgress ?? incomplete
@@ -792,6 +828,7 @@ export const saveLessonProgress = async (subChapterId, payload) => {
     } else if (!progressItem.startedAt) {
       progressItem.startedAt = new Date().toISOString()
     }
+    syncCurriculumProgressPercent(progressItem.mainChapterId)
   }
 
   recomputeContinuePosition()
@@ -1124,6 +1161,15 @@ export const submitQuizAttempt = async (payload) => {
     content.progress.completed_at = content.progress.completed_at ?? new Date().toISOString()
   }
 
+  const mainChapterId = progressItem?.mainChapterId ?? content?.main_chapter_id
+  if (mainChapterId) {
+    syncCurriculumProgressPercent(mainChapterId)
+    if (areAllLessonsCompleted(mainChapterId)) {
+      const game = MOCK_CHAPTER_GAMES.get(Number(mainChapterId))
+      if (game) game.unlocked = true
+    }
+  }
+
   recomputeContinuePosition()
 
   return {
@@ -1139,7 +1185,9 @@ export const submitQuizAttempt = async (payload) => {
   }
 }
 
-/** @type {Map<number, ChapterGame>} mainChapterId → chapter game */
+/** @type {Map<number, ChapterGame>} mainChapterId → chapter game
+ * unlocked는 시드 false — 전체 LESSON 수료 시 submitQuizAttempt / getChapterGame에서 해금
+ */
 const MOCK_CHAPTER_GAMES = new Map([
   [
     2,
@@ -1147,7 +1195,7 @@ const MOCK_CHAPTER_GAMES = new Map([
       chapterGameId: 50,
       mainChapterId: 2,
       title: '예금 실전 퀴즈',
-      unlocked: true,
+      unlocked: false,
       scenarios: [
         {
           scenarioId: 501,
@@ -1317,9 +1365,11 @@ export const getChapterGame = async (mainChapterId) => {
   if (!game) {
     throw new StudyApiError('CHAPTER_GAME_NOT_FOUND', '챕터 게임을 찾을 수 없다.', 404)
   }
-  if (!game.unlocked) {
+  const unlocked = game.unlocked || areAllLessonsCompleted(Number(mainChapterId))
+  if (!unlocked) {
     throw new StudyApiError('CHAPTER_GAME_LOCKED', '아직 잠긴 챕터 게임이다.', 403)
   }
+  if (!game.unlocked) game.unlocked = true
   return { data: structuredClone(game) }
 }
 

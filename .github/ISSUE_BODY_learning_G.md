@@ -19,5 +19,11 @@
 - 선행: 이슈 A~F
 - Figma 플로우: https://www.figma.com/design/GVO1hxcyoYFiUjpCMZ7Gwa/Firstfolio?node-id=1207-2130
 - 홈 학습 이어하기 요구: `PROJECT_SPEC` §5.3
-- 수료·재응시·포인트 중복 지급은 미확정 — 임시 가정은 설정값으로 분리하고 이 이슈/Epic에 명시
+- 수료·재응시·포인트 중복 지급은 미확정 — [`src/constants/quizPolicy.js`](../src/constants/quizPolicy.js)의 `ALLOW_DUPLICATE_POINT_GRANT` / `POINTS_PER_CORRECT`만 사용 (현재 재응시 시 포인트 재지급 안 함)
 - E2E 자동화 필수는 아님. 수동 스모크 체크리스트로 충분
+
+## Mock 시드 (진도·이어하기)
+
+- 커리큘럼: 기초 COMPLETED, 예·적금 ACTIVE, 채권~펀드 LOCKED
+- 예·적금 진행: 1~2교시 COMPLETED, 3교시(103) IN_PROGRESS, 시나리오 NOT_STARTED·챕터 게임 잠금
+- 전체 LESSON 수료 시 챕터 게임 해금 + 시나리오 CTA / 시나리오 수료 시 다음 대단원 ACTIVE

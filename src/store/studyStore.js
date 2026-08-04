@@ -361,7 +361,11 @@ export const useStudyStore = defineStore('study', () => {
       item.completedAt = item.completedAt ?? new Date().toISOString()
     }
 
+    const mainChapterId = currentContent.value?.mainChapterId ?? item?.mainChapterId
     await fetchContinuePosition()
+    if (mainChapterId) {
+      await fetchLearningProgress(mainChapterId)
+    }
 
     return data
   }
