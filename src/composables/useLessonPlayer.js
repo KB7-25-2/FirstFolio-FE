@@ -104,6 +104,13 @@ export const useLessonPlayer = () => {
     await studyStore.goNextPage()
   }
 
+  const isFirstPage = computed(() => pageIndex.value <= 0)
+
+  const goPrevCut = async () => {
+    if (isFirstPage.value) return
+    await studyStore.goPrevPage()
+  }
+
   const stopLearning = () => {
     const mainChapterId = currentContent.value?.mainChapterId
     if (mainChapterId) {
@@ -120,6 +127,7 @@ export const useLessonPlayer = () => {
     currentPage,
     pageTotal,
     isLastPage,
+    isFirstPage,
     isLoading,
     error,
     learnMoreOpen,
@@ -132,6 +140,7 @@ export const useLessonPlayer = () => {
     onTouchStart,
     onTouchEnd,
     onPrimaryAction,
+    goPrevCut,
     stopLearning,
   }
 }

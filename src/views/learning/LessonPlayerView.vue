@@ -10,6 +10,7 @@ const {
   currentPage,
   pageTotal,
   isLastPage,
+  isFirstPage,
   isLoading,
   error,
   learnMoreOpen,
@@ -22,6 +23,7 @@ const {
   onTouchStart,
   onTouchEnd,
   onPrimaryAction,
+  goPrevCut,
   stopLearning,
 } = useLessonPlayer()
 </script>
@@ -71,13 +73,21 @@ const {
     />
 
     <template #footer>
-      <div class="mt-4 flex gap-4">
+      <div class="mt-4 flex gap-3">
         <button
           type="button"
           class="flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
           @click="stopLearning"
         >
           학습 중단
+        </button>
+        <button
+          type="button"
+          class="flex h-12 flex-1 items-center justify-center rounded border-[1.5px] border-[rgba(245,237,217,0.45)] font-serif text-[15px] font-bold text-[#f5edd9] disabled:opacity-40"
+          :disabled="!!error || isLoading || !currentPage || isFirstPage"
+          @click="goPrevCut"
+        >
+          ← 이전 컷
         </button>
         <button
           type="button"
