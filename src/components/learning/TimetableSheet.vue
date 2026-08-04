@@ -13,6 +13,8 @@ defineProps({
   chapterLocked: { type: Boolean, default: false },
   /** 전체 LESSON 수료 후 실전 시나리오 퀴즈 CTA */
   showScenarioCta: { type: Boolean, default: false },
+  scenarioTitle: { type: String, default: '대단원 실전 퀴즈' },
+  scenarioSubtitle: { type: String, default: '배운 내용을 실전 상황에서 점검해요' },
 })
 
 defineEmits(['select-period', 'start-scenario'])
@@ -63,10 +65,7 @@ defineEmits(['select-period', 'start-scenario'])
           </p>
         </div>
 
-        <div
-          v-else
-          class="mt-2 flex max-h-[360px] flex-col gap-2 overflow-x-hidden overflow-y-auto pb-6"
-        >
+        <div v-else class="mt-2 flex max-h-[360px] flex-col gap-2 overflow-y-auto py-0.5 pb-6">
           <SubChapterPeriodRow
             v-for="period in periods"
             :key="`${period.order}-${period.subChapterId ?? period.title}`"
@@ -80,10 +79,29 @@ defineEmits(['select-period', 'start-scenario'])
           <button
             v-if="showScenarioCta"
             type="button"
-            class="memo-selectable mt-1 flex h-11 w-full items-center justify-center rounded-[6px] bg-[#c17f24] font-serif text-[13px] font-bold text-[#fff8ec] shadow-[0_2px_6px_rgba(139,80,20,0.3)]"
+            class="flex h-14 w-full shrink-0 cursor-pointer items-center gap-2.5 overflow-hidden border-[1.5px] border-[#c17f24] bg-[#fae8a8] p-2.5 text-left shadow-[0_2px_6px_rgba(139,80,20,0.25)] transition-shadow duration-200 ease-out hover:shadow-[0_2px_10px_rgba(139,80,20,0.35)]"
             @click="$emit('start-scenario')"
           >
-            대단원 실전 퀴즈 시작 →
+            <span
+              class="flex size-9 shrink-0 items-center justify-center rounded bg-[#c17f24] font-serif text-[9px] font-black leading-none text-[#f5edd9]"
+            >
+              최종
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate font-serif text-[13px] font-bold text-[#29211a]">
+                {{ scenarioTitle }}
+              </span>
+              <span
+                class="mt-0.5 block truncate font-serif text-[10px] text-[rgba(139,100,60,0.65)]"
+              >
+                {{ scenarioSubtitle }}
+              </span>
+            </span>
+            <span
+              class="shrink-0 rounded-[3px] bg-[rgba(193,127,36,0.2)] px-1.5 py-[3px] font-serif text-[9px] font-black text-[#c17f24]"
+            >
+              시작 →
+            </span>
           </button>
         </div>
 

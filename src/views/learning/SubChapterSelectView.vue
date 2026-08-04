@@ -12,7 +12,8 @@ import TimetableSheet from '@/components/learning/TimetableSheet.vue'
 const route = useRoute()
 const router = useRouter()
 const studyStore = useStudyStore()
-const { curriculumItems, learningItems, scenarioQuizReady } = storeToRefs(studyStore)
+const { curriculumItems, learningItems, scenarioQuizReady, scenarioQuizItem } =
+  storeToRefs(studyStore)
 
 const isLoading = ref(false)
 const error = ref(null)
@@ -34,8 +35,16 @@ const unitIndexLabel = computed(() => {
 
 const periods = computed(() => {
   if (currentChapter.value?.status === 'LOCKED') return []
-  return withScheduleStatus(learningItems.value)
+  return withScheduleStatus(learningItems.value).filter(
+    (item) => item.entryType !== 'SCENARIO_QUIZ',
+  )
 })
+
+const scenarioCtaTitle = computed(() => scenarioQuizItem.value?.title ?? '대단원 실전 퀴즈')
+
+const scenarioCtaSubtitle = computed(
+  () => scenarioQuizItem.value?.periodSubtitle ?? '배운 내용을 실전 상황에서 점검해요',
+)
 
 const chapterDisplay = computed(() =>
   currentChapter.value ? getMainChapterDisplay(currentChapter.value.mainChapterId) : null,
@@ -108,12 +117,6 @@ const onTouchEnd = (event) => {
 const openPeriod = async (period) => {
   actionError.value = null
   if (period.scheduleStatus === 'LOCKED') return
-
-  if (period.entryType === 'SCENARIO_QUIZ') {
-    startScenarioQuiz()
-    return
-  }
-
   if (!period.subChapterId) return
 
   try {
@@ -166,7 +169,7 @@ const startScenarioQuiz = () => {
       <div class="relative mx-auto w-full max-w-[300px]">
         <button
           type="button"
-          class="memo-selectable absolute top-16 left-0 z-10 flex h-[160px] w-7 -translate-x-1/2 items-center justify-center rounded-r bg-[#e5dec7]/90 font-serif text-[10px] text-[rgba(41,33,26,0.45)] disabled:opacity-30"
+          class="absolute top-16 left-0 z-10 flex h-[160px] w-7 -translate-x-1/2 items-center justify-center rounded-r bg-[#e5dec7]/90 font-serif text-[10px] text-[rgba(41,33,26,0.45)] transition-opacity duration-200 hover:opacity-90 disabled:opacity-30"
           :disabled="activeIndex <= 0"
           aria-label="이전 대단원"
           @click="goPrev"
@@ -181,13 +184,15 @@ const startScenarioQuiz = () => {
           :periods="periods"
           :chapter-locked="currentChapter.status === 'LOCKED'"
           :show-scenario-cta="scenarioQuizReady"
+          :scenario-title="scenarioCtaTitle"
+          :scenario-subtitle="scenarioCtaSubtitle"
           @select-period="openPeriod"
           @start-scenario="startScenarioQuiz"
         />
 
         <button
           type="button"
-          class="memo-selectable absolute top-16 right-0 z-10 flex h-[160px] w-7 translate-x-1/2 items-center justify-center rounded-l bg-[#fff1a3]/90 font-serif text-[10px] text-[rgba(41,33,26,0.45)] disabled:opacity-30"
+          class="absolute top-16 right-0 z-10 flex h-[160px] w-7 translate-x-1/2 items-center justify-center rounded-l bg-[#fff1a3]/90 font-serif text-[10px] text-[rgba(41,33,26,0.45)] transition-opacity duration-200 hover:opacity-90 disabled:opacity-30"
           :disabled="activeIndex >= sortedCurriculum.length - 1"
           aria-label="다음 대단원"
           @click="goNext"

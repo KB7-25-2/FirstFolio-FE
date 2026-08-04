@@ -43,7 +43,7 @@ const rowClass = {
 <template>
   <button
     type="button"
-    class="memo-selectable flex h-14 w-full items-center gap-2.5 overflow-hidden p-2.5 text-left disabled:cursor-not-allowed"
+    class="flex h-14 w-full cursor-pointer items-center gap-2.5 overflow-hidden p-2.5 text-left transition-shadow duration-200 ease-out hover:shadow-[0_2px_8px_rgba(139,80,20,0.18)] disabled:cursor-not-allowed disabled:hover:shadow-none"
     :class="rowClass[scheduleStatus] ?? rowClass.LOCKED"
     :disabled="scheduleStatus === 'LOCKED'"
     @click="$emit('select')"
