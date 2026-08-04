@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import {
   getPortfolioSummary,
   sellHolding as sellHoldingApi,
@@ -28,8 +28,11 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
     try {
       const { data } = await getPortfolioSummary()
+      // 실제 API 응답도 목데이터와 동일하게 어댑터를 거친다.
+      // 백엔드 응답 구조가 확정/변경돼도 여기(portfolioMapper.js)만 고치면 된다.
       summary.value = mapPortfolioSummaryResponse(data)
     } catch (err) {
+      // 백엔드 준비 전까지는 개발 환경에서만 목데이터로 대체해 화면을 확인할 수 있게 한다.
       if (import.meta.env.DEV) {
         console.warn('[portfolioStore] 포트폴리오 API 호출 실패 — 목데이터로 대체합니다.', err)
         summary.value = mapPortfolioSummaryResponse(structuredClone(mockPortfolioSummary))
@@ -82,6 +85,8 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     }
   }
 
+  // holdingId 보유 상품을 quantity개만큼 판매한다.
+  // 백엔드가 준비되기 전(DEV, API 실패)에는 로컬 summary를 직접 갱신해 즉시 반영한다.
   const sellHolding = async (holdingId, quantity) => {
     try {
       const { data } = await sellHoldingApi(holdingId, { quantity })
@@ -109,9 +114,11 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       summary.value.holdings = summary.value.holdings.filter((item) => item.holdingId !== holdingId)
     }
 
+    // 총자산/비중 등 파생값을 최신 holdings·cashBalance 기준으로 다시 계산한다.
     summary.value = recomputePortfolioSummary(summary.value)
   }
 
+  // product를 quantity개만큼 구매한다. 이미 보유 중인 상품이면 수량을 합산한다.
   const buyProduct = async (product, quantity) => {
     try {
       const { data } = await purchaseProductApi(product.productId, { quantity })
@@ -153,6 +160,31 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     summary.value = recomputePortfolioSummary(summary.value)
   }
 
+  // --- 홈 화면 위젯(components/PortfolioSummary.vue) 호환용 별칭 ---
+  // 그 컴포넌트는 storeToRefs로 portfolioSummary/allocationView/totalAssetsDisplay를
+  // 기대하고, fetchPortfolioSummary()를 호출한다. 데이터 원본은 그대로 summary이고
+  // 여기서는 그 모양만 맞춰서 파생시킨다 (진짜 데이터는 한 곳(summary)에서만 관리).
+  const portfolioSummary = computed(() => {
+    if (summary.value) return { available: true }
+    return { available: false, reason: error.value }
+  })
+
+  const allocationView = computed(
+    () =>
+      summary.value?.allocations.map((item) => ({
+        assetType: item.label,
+        label: item.label,
+        ratio: item.ratio,
+        color: item.color,
+      })) ?? [],
+  )
+
+  const totalAssetsDisplay = computed(() =>
+    summary.value ? summary.value.totalAssetValue.toLocaleString('ko-KR') : '0',
+  )
+
+  const fetchPortfolioSummary = fetchSummary
+
   return {
     summary,
     purchasableProducts,
@@ -164,5 +196,10 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     fetchTimeCompressionRules,
     sellHolding,
     buyProduct,
+    // 홈 위젯 호환용 별칭
+    portfolioSummary,
+    allocationView,
+    totalAssetsDisplay,
+    fetchPortfolioSummary,
   }
 })
