@@ -73,6 +73,29 @@ export const useStudyStore = defineStore('study', () => {
 
   const maxTotalScore = computed(() => learningItems.value.length * 100)
 
+  /** LESSON 항목만 (시나리오 제외) */
+  const lessonItems = computed(() =>
+    learningItems.value.filter((item) => item.entryType !== 'SCENARIO_QUIZ'),
+  )
+
+  const allLessonsCompleted = computed(
+    () =>
+      lessonItems.value.length > 0 &&
+      lessonItems.value.every((item) => item.status === 'COMPLETED'),
+  )
+
+  const scenarioQuizItem = computed(
+    () => learningItems.value.find((item) => item.entryType === 'SCENARIO_QUIZ') ?? null,
+  )
+
+  /** 전체 LESSON 수료 + 시나리오 미완료 → 실전 퀴즈 진입 가능 */
+  const scenarioQuizReady = computed(
+    () =>
+      allLessonsCompleted.value &&
+      Boolean(scenarioQuizItem.value) &&
+      scenarioQuizItem.value.status !== 'COMPLETED',
+  )
+
   const pageIndex = computed(() => {
     if (!currentPageId.value || !lessonPages.value.length) return 0
     const index = lessonPages.value.findIndex((page) => page.id === currentPageId.value)
@@ -563,6 +586,9 @@ export const useStudyStore = defineStore('study', () => {
     continueRoute,
     totalScore,
     maxTotalScore,
+    allLessonsCompleted,
+    scenarioQuizReady,
+    scenarioQuizItem,
     pageIndex,
     pageTotal,
     currentPage,

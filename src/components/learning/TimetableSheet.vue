@@ -11,9 +11,11 @@ defineProps({
   /** @type {import('vue').PropType<Array>} */
   periods: { type: Array, default: () => [] },
   chapterLocked: { type: Boolean, default: false },
+  /** 전체 LESSON 수료 후 실전 시나리오 퀴즈 CTA */
+  showScenarioCta: { type: Boolean, default: false },
 })
 
-defineEmits(['select-period'])
+defineEmits(['select-period', 'start-scenario'])
 </script>
 
 <template>
@@ -74,10 +76,19 @@ defineEmits(['select-period'])
             :schedule-status="period.scheduleStatus"
             @select="$emit('select-period', period)"
           />
+
+          <button
+            v-if="showScenarioCta"
+            type="button"
+            class="memo-selectable mt-1 flex h-11 w-full items-center justify-center rounded-[6px] bg-[#c17f24] font-serif text-[13px] font-bold text-[#fff8ec] shadow-[0_2px_6px_rgba(139,80,20,0.3)]"
+            @click="$emit('start-scenario')"
+          >
+            대단원 실전 퀴즈 시작 →
+          </button>
         </div>
 
         <p
-          v-if="!chapterLocked && periods.length"
+          v-if="!chapterLocked && periods.length && !showScenarioCta"
           class="pointer-events-none absolute bottom-3 left-0 w-full text-center font-pen text-[13px] text-[rgba(139,100,60,0.55)]"
         >
           위로 밀어 다음 교시 보기

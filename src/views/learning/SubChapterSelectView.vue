@@ -12,7 +12,7 @@ import TimetableSheet from '@/components/learning/TimetableSheet.vue'
 const route = useRoute()
 const router = useRouter()
 const studyStore = useStudyStore()
-const { curriculumItems, learningItems } = storeToRefs(studyStore)
+const { curriculumItems, learningItems, scenarioQuizReady } = storeToRefs(studyStore)
 
 const isLoading = ref(false)
 const error = ref(null)
@@ -110,10 +110,7 @@ const openPeriod = async (period) => {
   if (period.scheduleStatus === 'LOCKED') return
 
   if (period.entryType === 'SCENARIO_QUIZ') {
-    router.push({
-      name: 'learning-scenario-quiz',
-      params: { mainChapterId: currentChapter.value.mainChapterId },
-    })
+    startScenarioQuiz()
     return
   }
 
@@ -136,6 +133,14 @@ const openPeriod = async (period) => {
       actionError.value = err?.message || '학습 콘텐츠를 불러오지 못했습니다.'
     }
   }
+}
+
+const startScenarioQuiz = () => {
+  if (!currentChapter.value || currentChapter.value.status === 'LOCKED') return
+  router.push({
+    name: 'learning-scenario-quiz',
+    params: { mainChapterId: currentChapter.value.mainChapterId },
+  })
 }
 </script>
 
@@ -175,7 +180,9 @@ const openPeriod = async (period) => {
           :unit-index="unitIndexLabel"
           :periods="periods"
           :chapter-locked="currentChapter.status === 'LOCKED'"
+          :show-scenario-cta="scenarioQuizReady"
           @select-period="openPeriod"
+          @start-scenario="startScenarioQuiz"
         />
 
         <button
