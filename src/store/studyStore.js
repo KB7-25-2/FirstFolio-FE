@@ -1,19 +1,56 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
+  getChapterGame,
   getContinuePosition,
   getCurriculum,
   getLearningProgress,
+  getLessonPages,
+  getQuizQuestions,
+  getScenario,
   getSubChapterContent,
+  saveLessonProgress,
+  submitQuizAttempt,
+  submitScenarioAttempt,
 } from '@/services/studyService.js'
+import { useUserStore } from '@/store/userStore.js'
 
 export const useStudyStore = defineStore('study', () => {
   const curriculumItems = ref([])
   const learningItems = ref([])
   const continuePosition = ref(null)
   const currentContent = ref(null)
+  const lessonPages = ref([])
+  const lessonQuizQuestionIds = ref([])
+  const currentPageId = ref(null)
   const isLoading = ref(false)
   const error = ref(null)
+
+  /** 소단원 퀴즈 세션 */
+  const quizSubChapterId = ref(null)
+  const quizQuestions = ref([])
+  const quizIndex = ref(0)
+  const quizSelectedKey = ref(null)
+  /** @type {import('vue').Ref<'IN_PROGRESS' | 'SELECTED' | 'CORRECT' | 'WRONG'>} */
+  const quizUiStatus = ref('IN_PROGRESS')
+  /** @type {import('vue').Ref<Record<number, string>>} questionId → selectedKey */
+  const quizAnswers = ref({})
+  const quizFinished = ref(false)
+  const quizAttemptResult = ref(null)
+
+  /** 대단원 시나리오 퀴즈 세션 (소단원 퀴즈와 분리) */
+  const scenarioMainChapterId = ref(null)
+  const scenarioChapterGame = ref(null)
+  const scenarioDetail = ref(null)
+  /** @type {import('vue').Ref<'INTRO' | 'PLAY' | 'RESULT'>} */
+  const scenarioPhase = ref('INTRO')
+  const scenarioStepIndex = ref(0)
+  const scenarioSelectedKey = ref(null)
+  /** @type {import('vue').Ref<'IN_PROGRESS' | 'SELECTED' | 'CORRECT' | 'WRONG'>} */
+  const scenarioUiStatus = ref('IN_PROGRESS')
+  /** @type {import('vue').Ref<Record<number, string>>} stepId → selectedKey */
+  const scenarioAnswers = ref({})
+  const scenarioAttemptResult = ref(null)
 
   /** StudyNote에 표시할 활성 대단원 */
   const activeCurriculumItem = computed(
@@ -36,9 +73,86 @@ export const useStudyStore = defineStore('study', () => {
 
   const maxTotalScore = computed(() => learningItems.value.length * 100)
 
+  /** LESSON 항목만 (시나리오 제외) */
+  const lessonItems = computed(() =>
+    learningItems.value.filter((item) => item.entryType !== 'SCENARIO_QUIZ'),
+  )
+
+  const allLessonsCompleted = computed(
+    () =>
+      lessonItems.value.length > 0 &&
+      lessonItems.value.every((item) => item.status === 'COMPLETED'),
+  )
+
+  const scenarioQuizItem = computed(
+    () => learningItems.value.find((item) => item.entryType === 'SCENARIO_QUIZ') ?? null,
+  )
+
+  /** 전체 LESSON 수료 + 시나리오 미완료 → 실전 퀴즈 진입 가능 */
+  const scenarioQuizReady = computed(
+    () =>
+      allLessonsCompleted.value &&
+      Boolean(scenarioQuizItem.value) &&
+      scenarioQuizItem.value.status !== 'COMPLETED',
+  )
+
+  const pageIndex = computed(() => {
+    if (!currentPageId.value || !lessonPages.value.length) return 0
+    const index = lessonPages.value.findIndex((page) => page.id === currentPageId.value)
+    return index >= 0 ? index : 0
+  })
+
+  const pageTotal = computed(() => lessonPages.value.length)
+
+  const currentPage = computed(() => lessonPages.value[pageIndex.value] ?? null)
+
+  const isLastPage = computed(() => pageTotal.value > 0 && pageIndex.value >= pageTotal.value - 1)
+
+  const quizQuestionTotal = computed(() => quizQuestions.value.length)
+  const quizCurrentQuestion = computed(() => quizQuestions.value[quizIndex.value] ?? null)
+  const quizQuestionNumber = computed(() => quizIndex.value + 1)
+  const quizIsLastQuestion = computed(
+    () => quizQuestionTotal.value > 0 && quizIndex.value >= quizQuestionTotal.value - 1,
+  )
+  const quizIsGraded = computed(
+    () => quizUiStatus.value === 'CORRECT' || quizUiStatus.value === 'WRONG',
+  )
+  const quizCorrectCount = computed(() => {
+    let count = 0
+    for (const q of quizQuestions.value) {
+      if (quizAnswers.value[q.questionId] === q.correctAnswerJson?.key) count += 1
+    }
+    return count
+  })
+
+  const scenarioSteps = computed(() => scenarioDetail.value?.content?.steps ?? [])
+  const scenarioStepTotal = computed(() => scenarioSteps.value.length)
+  const scenarioCurrentStep = computed(() => scenarioSteps.value[scenarioStepIndex.value] ?? null)
+  const scenarioStepNumber = computed(() => scenarioStepIndex.value + 1)
+  const scenarioIsLastStep = computed(
+    () => scenarioStepTotal.value > 0 && scenarioStepIndex.value >= scenarioStepTotal.value - 1,
+  )
+  const scenarioIsGraded = computed(
+    () => scenarioUiStatus.value === 'CORRECT' || scenarioUiStatus.value === 'WRONG',
+  )
+  const scenarioCorrectCount = computed(() => {
+    let count = 0
+    for (const step of scenarioSteps.value) {
+      if (scenarioAnswers.value[step.stepId] === step.correctKey) count += 1
+    }
+    return count
+  })
+
   const fetchCurriculum = async () => {
-    const { data } = await getCurriculum()
-    curriculumItems.value = data.items
+    try {
+      const { data } = await getCurriculum()
+      curriculumItems.value = data.items
+    } catch (err) {
+      if (err?.code === 'CURRICULUM_NOT_FOUND') {
+        curriculumItems.value = []
+      }
+      throw err
+    }
   }
 
   const fetchLearningProgress = async (mainChapterId) => {
@@ -64,8 +178,341 @@ export const useStudyStore = defineStore('study', () => {
    * @param {number} subChapterId
    */
   const fetchSubChapterContent = async (subChapterId) => {
-    const { data } = await getSubChapterContent(subChapterId)
-    currentContent.value = data
+    try {
+      const { data } = await getSubChapterContent(subChapterId)
+      currentContent.value = data
+      return data
+    } catch (err) {
+      currentContent.value = null
+      throw err
+    }
+  }
+
+  /**
+   * 메타 + 소단원 강좌 JSON 로드 후 초기 page id 설정
+   * @param {number} subChapterId
+   * @param {string | null} [preferredPageId] route.query.page (= pages[].id)
+   */
+  const fetchLessonContent = async (subChapterId, preferredPageId = null) => {
+    const meta = await fetchSubChapterContent(subChapterId)
+    const { data } = await getLessonPages(meta.contentUrl)
+    const pages = (data.pages ?? []).slice().sort((a, b) => a.order - b.order)
+    lessonPages.value = pages
+    lessonQuizQuestionIds.value = data.subChapterQuiz?.questionIds ?? []
+
+    const fromPreferred =
+      preferredPageId && pages.some((page) => page.id === preferredPageId) ? preferredPageId : null
+    const fromProgress =
+      meta.progress?.lastPageId && pages.some((page) => page.id === meta.progress.lastPageId)
+        ? meta.progress.lastPageId
+        : null
+
+    currentPageId.value = fromPreferred || fromProgress || pages[0]?.id || null
+
+    return { meta, lesson: data, pages }
+  }
+
+  /**
+   * @param {string} pageId pages[].id
+   * @param {{ persist?: boolean }} [options]
+   */
+  const setCurrentPage = async (pageId, options = {}) => {
+    const { persist = true } = options
+    if (!lessonPages.value.some((page) => page.id === pageId)) return
+    currentPageId.value = pageId
+    if (persist) {
+      await saveProgress(pageId)
+    }
+  }
+
+  /**
+   * @param {string} [pageId]
+   */
+  const saveProgress = async (pageId) => {
+    const subChapterId = currentContent.value?.subChapterId
+    const lastPageId = pageId ?? currentPageId.value
+    if (!subChapterId || !lastPageId) return null
+
+    const { data } = await saveLessonProgress(subChapterId, { lastPageId })
+    if (currentContent.value?.progress) {
+      currentContent.value.progress.lastPageId = data.lastPageId
+      currentContent.value.progress.status = data.status
+    }
+    await fetchContinuePosition()
+    return data
+  }
+
+  const goNextPage = async () => {
+    if (isLastPage.value) return false
+    const next = lessonPages.value[pageIndex.value + 1]
+    if (!next) return false
+    await setCurrentPage(next.id)
+    return true
+  }
+
+  const goPrevPage = async () => {
+    if (pageIndex.value <= 0) return false
+    const prev = lessonPages.value[pageIndex.value - 1]
+    if (!prev) return false
+    await setCurrentPage(prev.id)
+    return true
+  }
+
+  const resetQuizQuestionUi = () => {
+    quizSelectedKey.value = null
+    quizUiStatus.value = 'IN_PROGRESS'
+  }
+
+  /**
+   * 소단원 퀴즈 세션 시작 — questionIds 없으면 강좌 JSON 재조회
+   * @param {number} subChapterId
+   */
+  const startSubChapterQuiz = async (subChapterId) => {
+    clearQuizSession()
+    quizSubChapterId.value = subChapterId
+
+    if (
+      !lessonQuizQuestionIds.value.length ||
+      currentContent.value?.subChapterId !== subChapterId
+    ) {
+      await fetchLessonContent(subChapterId)
+    }
+
+    const ids = lessonQuizQuestionIds.value
+    if (!ids.length) {
+      throw Object.assign(new Error('퀴즈 문항이 없습니다.'), { code: 'QUESTIONS_NOT_FOUND' })
+    }
+
+    const { data } = await getQuizQuestions(ids)
+    quizQuestions.value = data.items
+    quizIndex.value = 0
+    resetQuizQuestionUi()
+  }
+
+  const selectQuizOption = (key) => {
+    if (quizFinished.value || quizIsGraded.value) return
+    quizSelectedKey.value = key
+    quizUiStatus.value = 'SELECTED'
+  }
+
+  const submitCurrentQuizQuestion = () => {
+    const question = quizCurrentQuestion.value
+    if (!question || quizUiStatus.value !== 'SELECTED' || !quizSelectedKey.value) return false
+
+    quizAnswers.value = {
+      ...quizAnswers.value,
+      [question.questionId]: quizSelectedKey.value,
+    }
+    const correctKey = question.correctAnswerJson?.key
+    quizUiStatus.value = quizSelectedKey.value === correctKey ? 'CORRECT' : 'WRONG'
+    return true
+  }
+
+  const retryCurrentQuizQuestion = () => {
+    const question = quizCurrentQuestion.value
+    if (!question) return
+    const next = { ...quizAnswers.value }
+    delete next[question.questionId]
+    quizAnswers.value = next
+    resetQuizQuestionUi()
+  }
+
+  const goNextQuizQuestion = () => {
+    if (quizIsLastQuestion.value) {
+      quizFinished.value = true
+      return true
+    }
+    quizIndex.value += 1
+    resetQuizQuestionUi()
+    return false
+  }
+
+  /**
+   * 전체 답안 제출·채점 (결과 화면 진입 시)
+   * @returns {Promise<import('@/types/study.js').QuizAttemptResult | null>}
+   */
+  const completeQuizAttempt = async () => {
+    const subChapterId = quizSubChapterId.value
+    if (!subChapterId || !quizQuestions.value.length) return null
+
+    const answers = quizQuestions.value.map((q) => ({
+      questionId: q.questionId,
+      selectedKey: quizAnswers.value[q.questionId] ?? '',
+    }))
+
+    const { data } = await submitQuizAttempt({ subChapterId, answers })
+    quizAttemptResult.value = data
+
+    if (data.pointsGranted > 0) {
+      const userStore = useUserStore()
+      await userStore.addPoints(data.pointsGranted)
+    }
+
+    if (currentContent.value?.subChapterId === subChapterId && currentContent.value.progress) {
+      currentContent.value.progress.status = 'COMPLETED'
+      currentContent.value.progress.completedAt =
+        currentContent.value.progress.completedAt ?? new Date().toISOString()
+    }
+
+    const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
+    if (item) {
+      item.status = 'COMPLETED'
+      item.quizScore = data.quizScore
+      item.completedAt = item.completedAt ?? new Date().toISOString()
+    }
+
+    const mainChapterId = currentContent.value?.mainChapterId ?? item?.mainChapterId
+    await fetchContinuePosition()
+    if (mainChapterId) {
+      await fetchLearningProgress(mainChapterId)
+    }
+
+    return data
+  }
+
+  const clearQuizSession = () => {
+    quizSubChapterId.value = null
+    quizQuestions.value = []
+    quizIndex.value = 0
+    quizSelectedKey.value = null
+    quizUiStatus.value = 'IN_PROGRESS'
+    quizAnswers.value = {}
+    quizFinished.value = false
+    quizAttemptResult.value = null
+  }
+
+  const resetScenarioStepUi = () => {
+    scenarioSelectedKey.value = null
+    scenarioUiStatus.value = 'IN_PROGRESS'
+  }
+
+  const clearScenarioSession = () => {
+    scenarioMainChapterId.value = null
+    scenarioChapterGame.value = null
+    scenarioDetail.value = null
+    scenarioPhase.value = 'INTRO'
+    scenarioStepIndex.value = 0
+    scenarioSelectedKey.value = null
+    scenarioUiStatus.value = 'IN_PROGRESS'
+    scenarioAnswers.value = {}
+    scenarioAttemptResult.value = null
+  }
+
+  /**
+   * 대단원 시나리오 퀴즈 세션 시작 — chapter game → 미완료 scenario 로드
+   * @param {number} mainChapterId
+   */
+  const startMainChapterScenarioQuiz = async (mainChapterId) => {
+    clearScenarioSession()
+    scenarioMainChapterId.value = mainChapterId
+
+    const { data: game } = await getChapterGame(mainChapterId)
+    scenarioChapterGame.value = game
+
+    const target = game.scenarios.find((s) => !s.completed) ?? game.scenarios[0] ?? null
+    if (!target) {
+      throw Object.assign(new Error('시나리오가 없습니다.'), { code: 'SCENARIO_NOT_FOUND' })
+    }
+
+    const { data: detail } = await getScenario(target.scenarioId)
+    if (!detail.content?.steps?.length) {
+      throw Object.assign(new Error('시나리오 문항이 없습니다.'), { code: 'STEPS_NOT_FOUND' })
+    }
+
+    scenarioDetail.value = detail
+    scenarioPhase.value = 'INTRO'
+    scenarioStepIndex.value = 0
+    resetScenarioStepUi()
+  }
+
+  const beginScenarioPlay = () => {
+    if (!scenarioDetail.value) return
+    scenarioPhase.value = 'PLAY'
+    scenarioStepIndex.value = 0
+    scenarioAnswers.value = {}
+    scenarioAttemptResult.value = null
+    resetScenarioStepUi()
+  }
+
+  const selectScenarioOption = (key) => {
+    if (scenarioPhase.value !== 'PLAY' || scenarioIsGraded.value) return
+    scenarioSelectedKey.value = key
+    scenarioUiStatus.value = 'SELECTED'
+  }
+
+  const submitCurrentScenarioStep = () => {
+    const step = scenarioCurrentStep.value
+    if (!step || scenarioUiStatus.value !== 'SELECTED' || !scenarioSelectedKey.value) return false
+
+    scenarioAnswers.value = {
+      ...scenarioAnswers.value,
+      [step.stepId]: scenarioSelectedKey.value,
+    }
+    scenarioUiStatus.value = scenarioSelectedKey.value === step.correctKey ? 'CORRECT' : 'WRONG'
+    return true
+  }
+
+  const retryCurrentScenarioStep = () => {
+    const step = scenarioCurrentStep.value
+    if (!step) return
+    const next = { ...scenarioAnswers.value }
+    delete next[step.stepId]
+    scenarioAnswers.value = next
+    resetScenarioStepUi()
+  }
+
+  /**
+   * @returns {boolean} true면 마지막 문항 → RESULT 진입 대기
+   */
+  const goNextScenarioStep = () => {
+    if (scenarioIsLastStep.value) {
+      scenarioPhase.value = 'RESULT'
+      return true
+    }
+    scenarioStepIndex.value += 1
+    resetScenarioStepUi()
+    return false
+  }
+
+  /**
+   * 시나리오 전체 제출·채점·포인트
+   * @returns {Promise<import('@/types/study.js').ScenarioAttemptResult | null>}
+   */
+  const completeScenarioAttempt = async () => {
+    const mainChapterId = scenarioMainChapterId.value
+    const scenarioId = scenarioDetail.value?.scenarioId
+    if (!mainChapterId || !scenarioId || !scenarioSteps.value.length) return null
+
+    const answers = scenarioSteps.value.map((step) => ({
+      stepId: step.stepId,
+      selectedKey: scenarioAnswers.value[step.stepId] ?? '',
+    }))
+
+    const { data } = await submitScenarioAttempt({ scenarioId, mainChapterId, answers })
+    scenarioAttemptResult.value = data
+    scenarioPhase.value = 'RESULT'
+
+    if (data.pointsGranted > 0) {
+      const userStore = useUserStore()
+      await userStore.addPoints(data.pointsGranted)
+    }
+
+    if (scenarioChapterGame.value) {
+      const summary = scenarioChapterGame.value.scenarios.find((s) => s.scenarioId === scenarioId)
+      if (summary) summary.completed = true
+    }
+
+    const item = learningItems.value.find(
+      (row) => row.mainChapterId === mainChapterId && row.entryType === 'SCENARIO_QUIZ',
+    )
+    if (item) {
+      item.status = 'COMPLETED'
+      item.quizScore = data.quizScore
+      item.completedAt = item.completedAt ?? new Date().toISOString()
+    }
+
+    await Promise.all([fetchCurriculum(), fetchContinuePosition()])
+
     return data
   }
 
@@ -93,11 +540,20 @@ export const useStudyStore = defineStore('study', () => {
     }
   }
 
+  const clearLesson = () => {
+    lessonPages.value = []
+    lessonQuizQuestionIds.value = []
+    currentPageId.value = null
+  }
+
   const clearStudy = () => {
     curriculumItems.value = []
     learningItems.value = []
     continuePosition.value = null
     currentContent.value = null
+    clearLesson()
+    clearQuizSession()
+    clearScenarioSession()
     error.value = null
   }
 
@@ -106,19 +562,80 @@ export const useStudyStore = defineStore('study', () => {
     learningItems,
     continuePosition,
     currentContent,
+    lessonPages,
+    lessonQuizQuestionIds,
+    currentPageId,
     isLoading,
     error,
+    quizSubChapterId,
+    quizQuestions,
+    quizIndex,
+    quizSelectedKey,
+    quizUiStatus,
+    quizAnswers,
+    quizFinished,
+    quizAttemptResult,
+    scenarioMainChapterId,
+    scenarioChapterGame,
+    scenarioDetail,
+    scenarioPhase,
+    scenarioStepIndex,
+    scenarioSelectedKey,
+    scenarioUiStatus,
+    scenarioAnswers,
+    scenarioAttemptResult,
     activeCurriculumItem,
     chapterTitle,
     progressPercent,
     continueRoute,
     totalScore,
     maxTotalScore,
+    allLessonsCompleted,
+    scenarioQuizReady,
+    scenarioQuizItem,
+    pageIndex,
+    pageTotal,
+    currentPage,
+    isLastPage,
+    quizQuestionTotal,
+    quizCurrentQuestion,
+    quizQuestionNumber,
+    quizIsLastQuestion,
+    quizIsGraded,
+    quizCorrectCount,
+    scenarioSteps,
+    scenarioStepTotal,
+    scenarioCurrentStep,
+    scenarioStepNumber,
+    scenarioIsLastStep,
+    scenarioIsGraded,
+    scenarioCorrectCount,
     fetchCurriculum,
     fetchLearningProgress,
     fetchContinuePosition,
     fetchSubChapterContent,
+    fetchLessonContent,
+    setCurrentPage,
+    saveProgress,
+    goNextPage,
+    goPrevPage,
     fetchStudyNote,
+    startSubChapterQuiz,
+    selectQuizOption,
+    submitCurrentQuizQuestion,
+    retryCurrentQuizQuestion,
+    goNextQuizQuestion,
+    completeQuizAttempt,
+    clearQuizSession,
+    startMainChapterScenarioQuiz,
+    beginScenarioPlay,
+    selectScenarioOption,
+    submitCurrentScenarioStep,
+    retryCurrentScenarioStep,
+    goNextScenarioStep,
+    completeScenarioAttempt,
+    clearScenarioSession,
+    clearLesson,
     clearStudy,
   }
 })

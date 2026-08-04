@@ -27,8 +27,38 @@ const router = createRouter({
         },
         {
           path: 'learning',
-          name: 'learning',
-          component: () => import('@/views/LearningView.vue'),
+          component: () => import('@/views/learning/LearningShellView.vue'),
+          meta: { navTab: 'learning' },
+          children: [
+            {
+              path: '',
+              name: 'learning',
+              component: () => import('@/views/learning/LearningRoadmapView.vue'),
+            },
+            {
+              path: 'main-chapters/:mainChapterId',
+              name: 'learning-main-chapter',
+              component: () => import('@/views/learning/SubChapterSelectView.vue'),
+            },
+            {
+              path: 'sub-chapters/:subChapterId',
+              name: 'learning-lesson',
+              component: () => import('@/views/learning/LessonPlayerView.vue'),
+              meta: { hideNavbar: true },
+            },
+            {
+              path: 'sub-chapters/:subChapterId/quiz',
+              name: 'learning-quiz',
+              component: () => import('@/views/learning/SubChapterQuizView.vue'),
+              meta: { hideNavbar: true },
+            },
+            {
+              path: 'main-chapters/:mainChapterId/scenario-quiz',
+              name: 'learning-scenario-quiz',
+              component: () => import('@/views/learning/MainChapterScenarioQuizView.vue'),
+              meta: { hideNavbar: true },
+            },
+          ],
         },
         {
           path: 'portfolios',
@@ -43,6 +73,7 @@ const router = createRouter({
                 title: '포트폴리오',
                 subtitle: '보유 자산 · 교육용 만기/이자 주기를 확인하세요',
                 showBankruptcyAction: true,
+                navTab: 'portfolios',
               },
             },
             {
@@ -52,6 +83,7 @@ const router = createRouter({
               meta: {
                 title: '상품 구매',
                 subtitle: '모의 상품을 둘러보고 포트폴리오에 담아보세요',
+                navTab: 'portfolios',
               },
             },
             {
@@ -61,6 +93,7 @@ const router = createRouter({
               meta: {
                 title: '시간 압축',
                 subtitle: '교육용 시간과 실제 상품 주기를 함께 비교해요',
+                navTab: 'portfolios',
               },
             },
           ],

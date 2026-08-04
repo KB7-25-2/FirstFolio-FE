@@ -47,6 +47,23 @@ const mapUserProfile = (raw) => ({
 })
 
 /**
+ * 포인트 잔액 변경 (목업) — 퀴즈 보상 등
+ * @param {number} delta
+ * @returns {Promise<{ data: UserProfile }>}
+ */
+export const applyPointBalanceDelta = async (delta) => {
+  await delay(50)
+  if (!MOCK_USER_PROFILE_RESPONSE?.data) {
+    throw new UserApiError('UNAUTHORIZED', '인증이 필요하다.', 401)
+  }
+  MOCK_USER_PROFILE_RESPONSE.data.point_balance = Math.max(
+    0,
+    (MOCK_USER_PROFILE_RESPONSE.data.point_balance ?? 0) + delta,
+  )
+  return { data: mapUserProfile(structuredClone(MOCK_USER_PROFILE_RESPONSE.data)) }
+}
+
+/**
  * 로그인 사용자 공개 프로필 조회 (목업)
  * GET /users/me
  * TODO: API 연동 시 apiClient.get('/users/me') 로 교체
