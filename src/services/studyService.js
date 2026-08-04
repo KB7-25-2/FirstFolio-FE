@@ -490,8 +490,8 @@ const MOCK_LESSON_JSON_BY_URL = {
   ),
 }
 
-/** 이어하기 목업 — ACTIVE 대단원(예·적금) */
-const MOCK_CONTINUE_POSITION = {
+/** 이어하기 목업 — ACTIVE 대단원(예·적금). 진도 변경 시 recomputeContinuePosition으로 갱신 */
+let MOCK_CONTINUE_POSITION = {
   data: {
     curriculum_item_id: 502,
     main_chapter_id: 2,
@@ -501,6 +501,103 @@ const MOCK_CONTINUE_POSITION = {
     progress_percent: 50,
     route: '/learning/sub-chapters/103?page=page-2',
   },
+}
+
+/**
+ * 대단원 내 LESSON 진행 목록 (order 순)
+ * @param {number} mainChapterId
+ */
+const getLessonProgressForChapter = (mainChapterId) =>
+  MOCK_LEARNING_PROGRESS.filter(
+    (item) => item.mainChapterId === mainChapterId && item.entryType === 'LESSON',
+  ).sort((a, b) => a.order - b.order)
+
+/**
+ * 대단원 내 모든 LESSON 수료 여부
+ * @param {number} mainChapterId
+ */
+const areAllLessonsCompleted = (mainChapterId) => {
+  const lessons = getLessonProgressForChapter(mainChapterId)
+  return lessons.length > 0 && lessons.every((item) => item.status === 'COMPLETED')
+}
+
+/**
+ * 진행도·커리큘럼 기준으로 이어하기 위치 재계산
+ * StudyNote「이어서 →」및 getContinuePosition 응답에 반영
+ */
+const recomputeContinuePosition = () => {
+  const items = MOCK_CURRICULUM_RESPONSE.data.items
+  const activeChapter =
+    items.find((item) => item.status === 'ACTIVE') ??
+    items
+      .filter((item) => item.status !== 'LOCKED')
+      .sort((a, b) => b.display_order - a.display_order)[0]
+
+  if (!activeChapter) {
+    MOCK_CONTINUE_POSITION = { data: null }
+    return
+  }
+
+  const mainChapterId = activeChapter.main_chapter_id
+  const lessons = getLessonProgressForChapter(mainChapterId)
+  const inProgress = lessons.find((item) => item.status === 'IN_PROGRESS')
+  const incomplete = lessons.find((item) => item.status !== 'COMPLETED')
+  const targetLesson = inProgress ?? incomplete
+
+  if (targetLesson) {
+    const pageQuery = targetLesson.lastPageId ? `?page=${targetLesson.lastPageId}` : ''
+    MOCK_CONTINUE_POSITION = {
+      data: {
+        curriculum_item_id: activeChapter.curriculum_item_id,
+        main_chapter_id: mainChapterId,
+        sub_chapter_id: targetLesson.subChapterId,
+        content_version_id: targetLesson.contentVersionId,
+        last_page_id: targetLesson.lastPageId ?? null,
+        progress_percent:
+          targetLesson.status === 'COMPLETED'
+            ? 100
+            : targetLesson.status === 'IN_PROGRESS'
+              ? 50
+              : 0,
+        route: `/learning/sub-chapters/${targetLesson.subChapterId}${pageQuery}`,
+      },
+    }
+    return
+  }
+
+  const scenarioProgress = MOCK_LEARNING_PROGRESS.find(
+    (item) =>
+      item.mainChapterId === mainChapterId &&
+      item.entryType === 'SCENARIO_QUIZ' &&
+      item.status !== 'COMPLETED',
+  )
+
+  if (scenarioProgress || areAllLessonsCompleted(mainChapterId)) {
+    MOCK_CONTINUE_POSITION = {
+      data: {
+        curriculum_item_id: activeChapter.curriculum_item_id,
+        main_chapter_id: mainChapterId,
+        sub_chapter_id: null,
+        content_version_id: null,
+        last_page_id: null,
+        progress_percent: 100,
+        route: `/learning/main-chapters/${mainChapterId}/scenario-quiz`,
+      },
+    }
+    return
+  }
+
+  MOCK_CONTINUE_POSITION = {
+    data: {
+      curriculum_item_id: activeChapter.curriculum_item_id,
+      main_chapter_id: mainChapterId,
+      sub_chapter_id: lessons[0]?.subChapterId ?? null,
+      content_version_id: lessons[0]?.contentVersionId ?? null,
+      last_page_id: null,
+      progress_percent: activeChapter.progress_percent ?? 0,
+      route: `/learning/main-chapters/${mainChapterId}`,
+    },
+  }
 }
 
 /**
@@ -655,10 +752,7 @@ export const saveLessonProgress = async (subChapterId, payload) => {
     }
   }
 
-  if (MOCK_CONTINUE_POSITION.data?.sub_chapter_id === subChapterId) {
-    MOCK_CONTINUE_POSITION.data.last_page_id = lastPageId
-    MOCK_CONTINUE_POSITION.data.route = `/learning/sub-chapters/${subChapterId}?page=${lastPageId}`
-  }
+  recomputeContinuePosition()
 
   return {
     data: {
@@ -988,6 +1082,8 @@ export const submitQuizAttempt = async (payload) => {
     content.progress.completed_at = content.progress.completed_at ?? new Date().toISOString()
   }
 
+  recomputeContinuePosition()
+
   return {
     data: {
       subChapterId,
@@ -1267,6 +1363,8 @@ export const submitScenarioAttempt = async (payload) => {
     progressItem.updatedAt = new Date().toISOString()
   }
 
+  recomputeContinuePosition()
+
   return {
     data: {
       scenarioId,
@@ -1288,6 +1386,7 @@ export const submitScenarioAttempt = async (payload) => {
  */
 export const getContinuePosition = async () => {
   await delay()
+  recomputeContinuePosition()
   if (!MOCK_CONTINUE_POSITION?.data) {
     throw new StudyApiError('CONTINUE_POSITION_NOT_FOUND', '이어갈 미완료 학습이 없다.', 404)
   }

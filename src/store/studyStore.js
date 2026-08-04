@@ -215,6 +215,7 @@ export const useStudyStore = defineStore('study', () => {
       currentContent.value.progress.lastPageId = data.lastPageId
       currentContent.value.progress.status = data.status
     }
+    await fetchContinuePosition()
     return data
   }
 
@@ -336,6 +337,8 @@ export const useStudyStore = defineStore('study', () => {
       item.quizScore = data.quizScore
       item.completedAt = item.completedAt ?? new Date().toISOString()
     }
+
+    await fetchContinuePosition()
 
     return data
   }
@@ -480,6 +483,8 @@ export const useStudyStore = defineStore('study', () => {
       item.quizScore = data.quizScore
       item.completedAt = item.completedAt ?? new Date().toISOString()
     }
+
+    await fetchContinuePosition()
 
     return data
   }

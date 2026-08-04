@@ -191,8 +191,8 @@
  * @typedef {object} ContinuePosition
  * @property {number} curriculumItemId
  * @property {number} mainChapterId
- * @property {number} subChapterId
- * @property {number} contentVersionId
+ * @property {number | null} subChapterId
+ * @property {number | null} contentVersionId
  * @property {string | null} lastPageId
  * @property {number} progressPercent
  * @property {string} route
