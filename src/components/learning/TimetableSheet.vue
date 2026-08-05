@@ -15,6 +15,7 @@ defineProps({
   showScenarioCta: { type: Boolean, default: false },
   scenarioTitle: { type: String, default: '대단원 실전 퀴즈' },
   scenarioSubtitle: { type: String, default: '배운 내용을 실전 상황에서 점검해요' },
+  showScrollHint: { type: Boolean, default: true },
 })
 
 defineEmits(['select-period', 'start-scenario'])
@@ -106,7 +107,7 @@ defineEmits(['select-period', 'start-scenario'])
         </div>
 
         <p
-          v-if="!chapterLocked && periods.length && !showScenarioCta"
+          v-if="!chapterLocked && periods.length && !showScenarioCta && showScrollHint"
           class="pointer-events-none absolute bottom-3 left-0 w-full text-center font-pen text-[13px] text-[rgba(139,100,60,0.55)]"
         >
           위로 밀어 다음 교시 보기
