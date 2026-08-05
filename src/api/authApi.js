@@ -1,5 +1,7 @@
 import apiClient from '@/api/index.js'
 
+export const signUp = (credentials) => apiClient.post('/auth/signup', credentials)
+
 export const login = (credentials) => apiClient.post('/auth/login', credentials)
 
 export const logout = () => apiClient.post('/auth/logout')
