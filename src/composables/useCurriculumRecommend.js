@@ -6,16 +6,8 @@ import { useCurriculumStore } from '@/store/curriculumStore.js'
 export const useCurriculumRecommend = () => {
   const router = useRouter()
   const curriculumStore = useCurriculumStore()
-  const {
-    requiredItem,
-    recommendationPool,
-    cartCandidates,
-    selectedCourseCount,
-    orderedItems,
-    isLoading,
-    isConfirming,
-    error,
-  } = storeToRefs(curriculumStore)
+  const { selectedCourseCount, orderedItems, availableItems, isLoading, isConfirming, error } =
+    storeToRefs(curriculumStore)
 
   const actionError = ref('')
 
@@ -31,12 +23,8 @@ export const useCurriculumRecommend = () => {
     curriculumStore.toggleChapter(mainChapterId)
   }
 
-  const onMoveUp = (index) => {
-    curriculumStore.moveOrderedItem(index, -1)
-  }
-
-  const onMoveDown = (index) => {
-    curriculumStore.moveOrderedItem(index, 1)
+  const onReorder = (fromIndex, toIndex) => {
+    curriculumStore.reorderOrderedItems(fromIndex, toIndex)
   }
 
   const onConfirm = async () => {
@@ -54,19 +42,15 @@ export const useCurriculumRecommend = () => {
   }
 
   return {
-    requiredItem,
-    recommendationPool,
-    cartCandidates,
     selectedCourseCount,
     orderedItems,
+    availableItems,
     isLoading,
     isConfirming,
     error,
     actionError,
-    isSelected: curriculumStore.isSelected,
     onToggle,
-    onMoveUp,
-    onMoveDown,
+    onReorder,
     onConfirm,
     goResult,
   }

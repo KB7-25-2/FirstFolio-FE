@@ -32,6 +32,27 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     () => orderedItems.value.find((i) => i.sourceType === 'REQUIRED') ?? null,
   )
 
+  /** 장바구니에 담기지 않은 후보 (추천·정답 풀) */
+  const availableItems = computed(() => {
+    const selected = new Set(orderedItems.value.map((i) => i.mainChapterId))
+    const seen = new Set()
+    const pool = [
+      ...recommendationPool.value.map((item) => ({
+        ...item,
+        sourceType: 'LEVEL_TEST_WRONG',
+      })),
+      ...cartCandidates.value.map((item) => ({
+        ...item,
+        sourceType: 'CART',
+      })),
+    ]
+    return pool.filter((item) => {
+      if (selected.has(item.mainChapterId) || seen.has(item.mainChapterId)) return false
+      seen.add(item.mainChapterId)
+      return true
+    })
+  })
+
   const selectedCourseCount = computed(() => orderedItems.value.length)
 
   const selectedAssetIds = computed(() =>
@@ -98,14 +119,24 @@ export const useCurriculumStore = defineStore('curriculum', () => {
   }
 
   const moveOrderedItem = (index, direction) => {
-    const target = index + direction
-    if (target < 0 || target >= orderedItems.value.length) return
-    if (orderedItems.value[index]?.sourceType === 'REQUIRED') return
-    if (target === 0) return
+    reorderOrderedItems(index, index + direction)
+  }
+
+  /**
+   * 장바구니 순서 변경 (FOUNDATION index 0 고정)
+   * @param {number} fromIndex
+   * @param {number} toIndex
+   */
+  const reorderOrderedItems = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return
+    if (fromIndex <= 0 || toIndex <= 0) return
+    const len = orderedItems.value.length
+    if (fromIndex >= len || toIndex >= len) return
+    if (orderedItems.value[fromIndex]?.sourceType === 'REQUIRED') return
 
     const next = [...orderedItems.value]
-    const [row] = next.splice(index, 1)
-    next.splice(target, 0, row)
+    const [row] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, row)
     orderedItems.value = ensureFoundation(next)
   }
 
@@ -195,12 +226,14 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     cartCandidates,
     recommendationPool,
     requiredItem,
+    availableItems,
     selectedCourseCount,
     selectedAssetIds,
     orderedItems,
     isSelected,
     toggleChapter,
     moveOrderedItem,
+    reorderOrderedItems,
     fetchDraft,
     persistDraft,
     confirm,

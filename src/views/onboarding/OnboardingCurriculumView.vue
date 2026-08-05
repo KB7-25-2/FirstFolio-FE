@@ -1,61 +1,61 @@
 <script setup>
+import { computed } from 'vue'
+import ChapterProgress from '@/components/learning/ChapterProgress.vue'
 import CurriculumRecommendNote from '@/components/onboarding/CurriculumRecommendNote.vue'
 import { useCurriculumRecommend } from '@/composables/useCurriculumRecommend.js'
 
 const {
-  requiredItem,
-  recommendationPool,
-  cartCandidates,
   selectedCourseCount,
   orderedItems,
+  availableItems,
   isLoading,
   isConfirming,
   error,
   actionError,
-  isSelected,
   onToggle,
-  onMoveUp,
-  onMoveDown,
+  onReorder,
   onConfirm,
   goResult,
 } = useCurriculumRecommend()
+
+const selectedOptionalCount = computed(
+  () => orderedItems.value.filter((i) => i.sourceType !== 'REQUIRED').length,
+)
+
+const progressTitle = computed(() => `필수 1 + 선택 ${selectedOptionalCount.value}`)
+
+const progressTotal = computed(() =>
+  Math.max(1, orderedItems.value.length + availableItems.value.length),
+)
 </script>
 
 <template>
   <div class="mx-auto flex mobile-frame flex-col overflow-hidden bg-[#0d1117]">
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-10 pb-3">
-      <div class="relative w-full max-w-[359px] self-center">
-        <div
-          class="pointer-events-none absolute top-[-6px] left-1/2 z-20 h-3.5 w-[58px] -translate-x-1/2 -rotate-[2deg] border-[0.5px] border-white/25 bg-[var(--study-tape)]"
-          aria-hidden="true"
+      <p class="font-serif text-[10px] tracking-[0.4px] text-[#f2b859]">
+        STEP 4 · CURRICULUM ORDER
+      </p>
+      <h1 class="mt-1.5 font-serif text-[22px] leading-snug font-black text-[#f5edd9]">
+        학습 순서를 정해보세요
+      </h1>
+
+      <div class="mt-4 w-full max-w-[359px] self-center">
+        <ChapterProgress
+          chapter-label="INCLUDED"
+          :title="progressTitle"
+          :current="selectedCourseCount"
+          :total="progressTotal"
         />
-        <div
-          class="-rotate-[0.6deg] rounded-[3px] border border-[rgba(212,184,150,0.55)] bg-[#fff4c8] px-4 pt-4 pb-3.5 shadow-[0_3px_10px_rgba(0,0,0,0.28)]"
-        >
-          <p class="font-serif text-[10px] tracking-wide text-[rgba(139,100,60,0.55)]">
-            STEP 3 · 개인 커리큘럼
-          </p>
-          <h1 class="mt-1.5 font-pen text-[26px] leading-tight text-[#212b5c]">
-            오답은 넣고, 정답은 장바구니에서
-          </h1>
-          <p class="mt-1.5 font-serif text-[12px] leading-relaxed text-[rgba(61,31,8,0.7)]">
-            추가·제거·순서 변경을 한 화면에서 정한 뒤 확정해요
-          </p>
-        </div>
       </div>
 
       <div class="mt-5 w-full max-w-[359px] self-center">
         <CurriculumRecommendNote
-          :required-item="requiredItem"
-          :recommendations="recommendationPool"
-          :cart-candidates="cartCandidates"
           :ordered-items="orderedItems"
+          :available-items="availableItems"
           :course-count="selectedCourseCount"
-          :is-selected="isSelected"
           :loading="isLoading"
           @toggle="onToggle"
-          @move-up="onMoveUp"
-          @move-down="onMoveDown"
+          @reorder="onReorder"
         />
       </div>
       <p v-if="error || actionError" class="mt-3 text-center font-serif text-xs text-red-300">
