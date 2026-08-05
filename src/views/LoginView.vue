@@ -1,7 +1,4 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/store/authStore.js'
 import AuthPageHeader from '@/components/auth/AuthPageHeader.vue'
 import AuthDocTabs from '@/components/auth/AuthDocTabs.vue'
 import AuthClipboardBoard from '@/components/auth/AuthClipboardBoard.vue'
@@ -11,103 +8,28 @@ import AuthRememberCheck from '@/components/auth/AuthRememberCheck.vue'
 import AuthSignature from '@/components/auth/AuthSignature.vue'
 import AuthEnterCta from '@/components/auth/AuthEnterCta.vue'
 import AuthMethodCard from '@/components/auth/AuthMethodCard.vue'
+import { useLoginView } from '@/composables/useLoginView.js'
 
-const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
-
-const activeTab = ref('login')
-const signupStep = ref('method')
-const signupMethod = ref('email')
-
-const nickname = ref('')
-const email = ref(authStore.rememberedEmail || '')
-const password = ref('')
-const passwordConfirm = ref('')
-const rememberMe = ref(Boolean(authStore.rememberedEmail))
-const error = ref('')
-const isLoading = ref(false)
-
-const todayLabel = computed(() => {
-  const now = new Date()
-  const yyyy = now.getFullYear()
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  return `${yyyy}. ${mm}. ${dd}`
-})
-
-const isLogin = computed(() => activeTab.value === 'login')
-const clipboardHeader = computed(() => (isLogin.value ? '입 장 서 류' : '등 록 서 류'))
-const signatureName = computed(() => nickname.value || '김투자')
-
-const switchTab = (tab) => {
-  activeTab.value = tab
-  error.value = ''
-  if (tab === 'signup') {
-    signupStep.value = 'method'
-  }
-}
-
-const handleLogin = async () => {
-  isLoading.value = true
-  error.value = ''
-
-  try {
-    await authStore.login(
-      {
-        email: email.value,
-        password: password.value,
-      },
-      { remember: rememberMe.value },
-    )
-
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/home'
-    await router.push(redirect)
-  } catch (err) {
-    error.value = err?.message || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.'
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleSignupMethodNext = () => {
-  error.value = ''
-  if (signupMethod.value === 'google') {
-    error.value = 'Google 회원가입은 준비 중입니다.'
-    return
-  }
-  signupStep.value = 'form'
-}
-
-const handleSignupSubmit = () => {
-  if (password.value !== passwordConfirm.value) {
-    error.value = '비밀번호가 일치하지 않습니다.'
-    return
-  }
-  error.value = '회원가입은 준비 중입니다.'
-}
-
-const handleSubmit = async () => {
-  if (isLogin.value) {
-    await handleLogin()
-    return
-  }
-
-  if (signupStep.value === 'method') {
-    handleSignupMethodNext()
-    return
-  }
-
-  handleSignupSubmit()
-}
-
-const handleGoogleContinue = () => {
-  error.value = 'Google 로그인은 준비 중입니다.'
-}
-
-const handleForgotPassword = () => {
-  error.value = '비밀번호 찾기는 준비 중입니다.'
-}
+const {
+  activeTab,
+  signupStep,
+  signupMethod,
+  nickname,
+  email,
+  password,
+  passwordConfirm,
+  rememberMe,
+  error,
+  isLoading,
+  todayLabel,
+  isLogin,
+  clipboardHeader,
+  signatureName,
+  switchTab,
+  handleSubmit,
+  handleGoogleContinue,
+  handleForgotPassword,
+} = useLoginView()
 </script>
 
 <template>
@@ -115,7 +37,7 @@ const handleForgotPassword = () => {
     <div class="mobile-frame relative flex flex-col items-center overflow-hidden px-3 pt-10 pb-6">
       <AuthPageHeader />
 
-      <div class="mt-5">
+      <div class="mt-3">
         <AuthDocTabs :model-value="activeTab" @update:model-value="switchTab" />
       </div>
 
@@ -123,7 +45,7 @@ const handleForgotPassword = () => {
         <AuthClipboardBoard :header-title="clipboardHeader">
           <!-- 로그인 -->
           <template v-if="isLogin">
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2">
               <div
                 class="flex items-start justify-between font-serif text-[9px] text-[var(--auth-doc-meta)]"
               >
