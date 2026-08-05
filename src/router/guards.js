@@ -1,6 +1,4 @@
-import { hasToken, setToken } from '@/utils/token.js'
-
-const DEV_BYPASS_TOKEN = 'dev-bypass-token'
+import { hasToken } from '@/utils/token.js'
 
 export const setupAuthGuard = (router) => {
   router.beforeEach((to) => {
@@ -8,8 +6,10 @@ export const setupAuthGuard = (router) => {
     const guestOnly = to.matched.some((record) => record.meta.guestOnly)
 
     if (requiresAuth && !hasToken()) {
-      // 백엔드 미연결 시 홈/학습 UI 미리보기용 임시 토큰
-      setToken(DEV_BYPASS_TOKEN)
+      return {
+        path: '/login',
+        query: { redirect: to.fullPath },
+      }
     }
 
     if (guestOnly && hasToken()) {

@@ -60,14 +60,14 @@ const handleLogin = async () => {
       },
       { remember: rememberMe.value },
     )
-  } catch {
-    // TODO: API 연동 전 임시 처리 — 로그인 실패 시 개발용 토큰으로 바이패스
-    localStorage.setItem(import.meta.env.VITE_TOKEN_KEY || 'access_token', 'dev-bypass-token')
-  }
 
-  isLoading.value = false
-  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/home'
-  await router.push(redirect)
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/home'
+    await router.push(redirect)
+  } catch (err) {
+    error.value = err?.message || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.'
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const handleSignupMethodNext = () => {

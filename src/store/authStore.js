@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { login as loginApi, logout as logoutApi } from '@/api/authApi.js'
+import { login as loginApi, logout as logoutApi } from '@/services/authService.js'
 import { setToken, removeToken, hasToken } from '@/utils/token.js'
 import { useUserStore } from '@/store/userStore.js'
 import router from '@/router/index.js'
