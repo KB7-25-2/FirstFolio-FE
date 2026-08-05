@@ -28,7 +28,7 @@ const goPointMarket = () => {
 }
 
 const goPortfolios = () => {
-  router.push({ name: 'portfolios' })
+  router.push({ name: 'portfolio-holdings' })
 }
 </script>
 
