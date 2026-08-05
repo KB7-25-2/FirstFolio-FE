@@ -9,7 +9,7 @@ const {
   orderedItems,
   availableItems,
   isLoading,
-  isConfirming,
+  isSaving,
   error,
   actionError,
   onToggle,
@@ -74,11 +74,11 @@ const progressTotal = computed(() =>
       <button
         type="button"
         class="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec] disabled:opacity-60"
-        :class="{ 'btn-hover': !isConfirming }"
-        :disabled="isConfirming || !orderedItems.length"
+        :class="{ 'btn-hover': !isSaving }"
+        :disabled="isSaving || !orderedItems.length"
         @click="onConfirm"
       >
-        {{ isConfirming ? '확정 중…' : '구성 확정 →' }}
+        {{ isSaving ? '저장 중…' : '구성 확정 →' }}
       </button>
     </div>
   </div>

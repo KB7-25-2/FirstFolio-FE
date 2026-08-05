@@ -36,6 +36,12 @@ const router = createRouter({
       meta: { requiresAuth: true, onboarding: true, hideNavbar: true },
     },
     {
+      path: '/onboarding/curriculum-confirm',
+      name: 'onboarding-curriculum-confirm',
+      component: () => import('@/views/onboarding/OnboardingCurriculumConfirmView.vue'),
+      meta: { requiresAuth: true, onboarding: true, hideNavbar: true },
+    },
+    {
       path: '/onboarding/diagnosis',
       redirect: { name: 'onboarding-intro' },
     },

@@ -4,7 +4,11 @@ import { useLevelTestStore } from '@/store/levelTestStore.js'
 
 const LEVEL_TEST_ENTRY = '/onboarding/intro'
 
-const POST_TEST_ROUTES = new Set(['onboarding-result', 'onboarding-curriculum'])
+const POST_TEST_ROUTES = new Set([
+  'onboarding-result',
+  'onboarding-curriculum',
+  'onboarding-curriculum-confirm',
+])
 const PRE_TEST_ROUTES = new Set(['onboarding-intro', 'onboarding-quiz'])
 
 const isOnboardingRoute = (to) =>
