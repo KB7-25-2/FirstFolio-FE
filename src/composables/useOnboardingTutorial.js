@@ -60,7 +60,7 @@ export const useOnboardingTutorial = () => {
   const authStore = useAuthStore()
   const levelTestStore = useLevelTestStore()
 
-  /** @type {import('vue').Ref<'tutorial' | 'diagnosisIntro' | 'started'>} */
+  /** @type {import('vue').Ref<'tutorial' | 'diagnosisIntro' | 'quiz' | 'result'>} */
   const phase = ref('tutorial')
   const startError = ref('')
   const isStarting = ref(false)
@@ -89,15 +89,32 @@ export const useOnboardingTutorial = () => {
   /** 02 → 레벨 테스트 응시 시작 */
   const onDiagnosisStart = async () => {
     startError.value = ''
+
+    if (levelTestStore.attempt?.status === 'IN_PROGRESS') {
+      phase.value = 'quiz'
+      return
+    }
+
     isStarting.value = true
     try {
       await levelTestStore.start()
-      phase.value = 'started'
+      phase.value = 'quiz'
     } catch (err) {
       startError.value = err?.message || '레벨 테스트를 시작할 수 없습니다.'
     } finally {
       isStarting.value = false
     }
+  }
+
+  /** 퀴즈 → 진단 안내 (응시 세션 유지) */
+  const goDiagnosisIntro = () => {
+    startError.value = ''
+    phase.value = 'diagnosisIntro'
+  }
+
+  /** 제출 완료 → 결과 */
+  const goResult = () => {
+    phase.value = 'result'
   }
 
   return {
@@ -111,7 +128,9 @@ export const useOnboardingTutorial = () => {
     tipRuledOffsets,
     onLater,
     goTutorial,
+    goDiagnosisIntro,
     onTutorialStart,
     onDiagnosisStart,
+    goResult,
   }
 }

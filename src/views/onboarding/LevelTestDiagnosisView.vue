@@ -1,11 +1,15 @@
 <script setup>
+import LearningLayout from '@/components/learning/LearningLayout.vue'
+import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
+import QuizExamPaper from '@/components/learning/QuizExamPaper.vue'
+import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
 import TimetableSheet from '@/components/learning/TimetableSheet.vue'
 import { useOnboardingTutorial } from '@/composables/useOnboardingTutorial.js'
+import { useLevelTestQuiz } from '@/composables/useLevelTestQuiz.js'
 import penguin from '@/assets/study/penguin.png'
 
 const {
-  levelTestStore,
   phase,
   startError,
   isStarting,
@@ -15,9 +19,45 @@ const {
   tipRuledOffsets,
   onLater,
   goTutorial,
+  goDiagnosisIntro,
   onTutorialStart,
   onDiagnosisStart,
+  goResult,
 } = useOnboardingTutorial()
+
+const {
+  currentQuestion,
+  questionTotal,
+  questionNumber,
+  isFirstQuestion,
+  examTitle,
+  subject,
+  statusBadge,
+  optionsWithTone,
+  primaryLabel,
+  primaryEnabled,
+  actionError,
+  storeError,
+  chapterResults,
+  recommendations,
+  cartCandidates,
+  optionVariant,
+  selectOption,
+  onPrimaryAction,
+  goPrev,
+} = useLevelTestQuiz()
+
+const ASSET_LABELS = {
+  DEPOSIT_SAVINGS: '예·적금',
+  BOND: '채권',
+  STOCK: '주식',
+  FUND: '펀드',
+}
+
+const onQuizPrimary = async () => {
+  const result = await onPrimaryAction()
+  if (result === 'submitted') goResult()
+}
 </script>
 
 <template>
@@ -144,7 +184,6 @@ const {
           />
         </div>
 
-        <!-- 하단 팁 노트 -->
         <div class="relative mt-5 w-[280px] self-center">
           <div
             class="pointer-events-none absolute top-[-6px] left-1/2 z-20 h-3.5 w-[58px] -translate-x-1/2 -rotate-[3deg] border-[0.5px] border-white/25 bg-[var(--study-tape)]"
@@ -194,35 +233,131 @@ const {
       </p>
     </template>
 
-    <!-- CTA 이후 임시 (퀴즈 UI는 후속 이슈) -->
-    <div v-else class="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 pt-10 pb-8">
-      <p class="font-serif text-[10px] tracking-wide text-[rgba(245,237,217,0.5)]">
-        FIRSTFOLIO · DIAGNOSIS
-      </p>
-      <h1 class="mt-2 font-serif text-[22px] font-black text-[#f5edd9]">금융 기초 진단</h1>
-
-      <div v-if="levelTestStore.attempt" class="mt-8">
-        <LearningNotePaper surface-class="bg-[#f5edd9]">
-          <div class="px-4 py-4">
-            <p class="font-serif text-[12px] text-[rgba(139,100,60,0.7)]">
-              응시 ID {{ levelTestStore.attempt.attemptId }} ·
-              {{ levelTestStore.attempt.questions.length }}문항
-            </p>
-            <ul class="mt-3 flex flex-col gap-2">
-              <li
-                v-for="(q, index) in levelTestStore.attempt.questions"
-                :key="q.questionId"
-                class="font-serif text-[12px] text-[rgba(61,31,8,0.85)]"
+    <!-- 03–06 진단 퀴즈 (소단원 퀴즈 UI 재사용) -->
+    <LearningLayout v-else-if="phase === 'quiz'" immersive class="!px-0 !pt-0 !pb-0">
+      <template #header>
+        <div class="px-4 pt-4">
+          <LearningPageHeader title="시험지" eyebrow="FIRSTFOLIO · DIAGNOSIS">
+            <template #badge>
+              <span
+                class="rotate-3 rounded border-[1.5px] px-2 py-0.5 font-serif text-[10px] font-black"
+                :class="statusBadge.class"
               >
-                {{ index + 1 }}. {{ q.prompt }}
-              </li>
-            </ul>
-            <p class="mt-4 font-pen text-[18px] text-[rgba(139,100,60,0.45)]">
-              진단 퀴즈 화면은 다음 이슈에서 연결됩니다
+                {{ statusBadge.label }}
+              </span>
+            </template>
+          </LearningPageHeader>
+        </div>
+      </template>
+
+      <div class="px-4">
+        <p v-if="!currentQuestion" class="font-serif text-sm text-[rgba(245,237,217,0.55)]">
+          불러오는 중…
+        </p>
+
+        <LearningNotePaper v-else ruled surface-class="bg-[#faf5eb]">
+          <QuizExamPaper
+            :exam-title="examTitle"
+            :subject="subject"
+            :question-index="questionNumber"
+            :question-total="questionTotal"
+            :score-per-question="25"
+          >
+            <div class="relative flex gap-2">
+              <p class="relative z-[1] shrink-0 font-serif text-[13px] font-black text-[#29211a]">
+                문 {{ questionNumber }}.
+              </p>
+              <p
+                class="relative z-[1] font-serif text-[14px] leading-[22px] font-bold whitespace-pre-line text-[#29211a]"
+              >
+                {{ currentQuestion.prompt }}
+              </p>
+            </div>
+
+            <div class="mt-5 flex flex-col gap-3">
+              <QuizChoiceOption
+                v-for="opt in optionsWithTone"
+                :key="opt.key"
+                :option-key="opt.key"
+                :label="opt.label"
+                :tone="opt.tone"
+                :variant="optionVariant(opt.key)"
+                @select="selectOption"
+              />
+            </div>
+
+            <p class="mt-8 font-pen text-[15px] text-[rgba(33,43,92,0.75)]">
+              보기 번호를 골라 답을 쓰세요
             </p>
-          </div>
+          </QuizExamPaper>
         </LearningNotePaper>
+
+        <p
+          v-if="actionError || storeError"
+          class="mt-3 text-center font-serif text-xs text-red-300"
+        >
+          {{ actionError || storeError }}
+        </p>
       </div>
+
+      <template #footer>
+        <div class="mt-4 flex gap-4 px-4 pb-6">
+          <button
+            type="button"
+            class="btn-hover flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
+            @click="isFirstQuestion ? goDiagnosisIntro() : goPrev()"
+          >
+            {{ isFirstQuestion ? '이전' : '이전 문항' }}
+          </button>
+          <button
+            type="button"
+            class="flex h-12 flex-1 items-center justify-center rounded font-serif text-[15px] font-bold text-[#f5edd9] disabled:cursor-not-allowed disabled:opacity-70"
+            :class="[
+              primaryEnabled ? 'bg-[#c17f24]' : 'bg-[#c3b097]',
+              { 'btn-hover': primaryEnabled },
+            ]"
+            :disabled="!primaryEnabled"
+            @click="onQuizPrimary"
+          >
+            {{ primaryLabel }}
+          </button>
+        </div>
+      </template>
+    </LearningLayout>
+
+    <!-- 제출 후 임시 결과 (결과 UI 본문은 후속) -->
+    <div
+      v-else-if="phase === 'result'"
+      class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-10 pb-8"
+    >
+      <p class="font-serif text-[10px] tracking-wide text-[rgba(245,237,217,0.5)]">
+        FIRSTFOLIO · RESULT
+      </p>
+      <h1 class="mt-2 font-serif text-[22px] font-black text-[#f5edd9]">진단 결과</h1>
+
+      <LearningNotePaper class="mt-6" surface-class="bg-[#f5edd9]">
+        <div class="px-4 py-4">
+          <p class="font-pen text-[22px] text-[#212b5c]">채점이 완료됐어요</p>
+          <ul class="mt-4 flex flex-col gap-2">
+            <li
+              v-for="row in chapterResults"
+              :key="row.mainChapterId"
+              class="flex items-center justify-between font-serif text-[13px] text-[#29211a]"
+            >
+              <span>{{ ASSET_LABELS[row.assetType] ?? row.assetType }}</span>
+              <span :class="row.isCorrect ? 'text-[#3d7a4a]' : 'text-[#c12e24]'">
+                {{ row.isCorrect ? '정답' : '오답' }}
+              </span>
+            </li>
+          </ul>
+          <p class="mt-4 font-serif text-[11px] text-[rgba(61,31,8,0.65)]">
+            추천 {{ recommendations.length }}개 · 장바구니 후보 {{ cartCandidates.length }}개
+          </p>
+          <p class="mt-2 font-pen text-[16px] text-[rgba(139,100,60,0.45)]">
+            커리큘럼 담기 화면은 다음 이슈에서 연결됩니다
+          </p>
+        </div>
+      </LearningNotePaper>
     </div>
   </div>
 </template>
