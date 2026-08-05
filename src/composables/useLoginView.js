@@ -1,6 +1,8 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/authStore.js'
+import { useLevelTestStore } from '@/store/levelTestStore.js'
+import { resolvePostAuthPath } from '@/router/guards.js'
 
 export const useLoginView = () => {
   const route = useRoute()
@@ -52,8 +54,10 @@ export const useLoginView = () => {
         { remember: rememberMe.value },
       )
 
-      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/home'
-      await router.push(redirect)
+      const levelTestStore = useLevelTestStore()
+      const completed = await levelTestStore.ensureStatus()
+      const fallbackHome = typeof route.query.redirect === 'string' ? route.query.redirect : '/home'
+      await router.push(resolvePostAuthPath(completed, fallbackHome))
     } catch (err) {
       error.value = err?.message || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.'
     } finally {
