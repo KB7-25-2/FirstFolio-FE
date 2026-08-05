@@ -87,9 +87,18 @@ export const usePortfolioStore = defineStore('portfolio', () => {
       summary.value = mapPortfolioDetailResponse(data.data ?? data, buildProductsById())
     } catch (err) {
       // 백엔드 준비 전까지는 개발 환경에서만 목데이터로 대체해 화면을 확인할 수 있게 한다.
+      // 단, 이미 로컬 상태가 있으면(매수/매도로 바뀐 상태 포함) 덮어쓰지 않는다 —
+      // 안 그러면 탭을 옮길 때마다 방금 한 거래가 원본 목데이터로 리셋돼버린다.
       if (import.meta.env.DEV) {
-        console.warn('[portfolioStore] 포트폴리오 API 호출 실패 — 목데이터로 대체합니다.', err)
-        summary.value = normalizeLocalSummary(structuredClone(mockPortfolioSummary))
+        if (!summary.value) {
+          console.warn('[portfolioStore] 포트폴리오 API 호출 실패 — 목데이터로 대체합니다.', err)
+          summary.value = normalizeLocalSummary(structuredClone(mockPortfolioSummary))
+        } else {
+          console.warn(
+            '[portfolioStore] 포트폴리오 API 호출 실패 — 기존 로컬 상태를 유지합니다.',
+            err,
+          )
+        }
       } else {
         error.value = err.message
         throw err
