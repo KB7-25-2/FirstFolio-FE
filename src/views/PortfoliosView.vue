@@ -1,19 +1,44 @@
 <script setup>
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import PortfolioTabs from '@/components/portfolio/PortfolioTabs.vue'
+import BankruptcyConfirmModal from '@/components/portfolio/BankruptcyConfirmModal.vue'
+import { usePortfolioStore } from '@/store/portfolioStore.js'
 import portfolioBg from '@/assets/portfolio/portfolio-bg.png'
 
 const route = useRoute()
-const router = useRouter()
+const store = usePortfolioStore()
 
 const title = computed(() => route.meta.title ?? '포트폴리오')
 const subtitle = computed(() => route.meta.subtitle ?? '')
 const showBankruptcyAction = computed(() => Boolean(route.meta.showBankruptcyAction))
 
-// TODO: 파산 신청 확인 모달/페이지 연결 (오조작 방지 확인 절차 필요 — FR-PF-08)
-const handleBankruptcyClick = () => {
-  router.push({ name: 'portfolio-holdings', query: { bankruptcy: 'confirm' } })
+const isBankruptcyModalOpen = ref(false)
+const isResetting = ref(false)
+const resetError = ref(null)
+
+const openBankruptcyModal = () => {
+  resetError.value = null
+  isBankruptcyModalOpen.value = true
+}
+
+const closeBankruptcyModal = () => {
+  if (isResetting.value) return
+  isBankruptcyModalOpen.value = false
+}
+
+const handleResetConfirm = async () => {
+  isResetting.value = true
+  resetError.value = null
+
+  try {
+    await store.resetPortfolio()
+    isBankruptcyModalOpen.value = false
+  } catch (err) {
+    resetError.value = err.message || '초기화 처리 중 문제가 발생했어요.'
+  } finally {
+    isResetting.value = false
+  }
 }
 </script>
 
@@ -36,7 +61,7 @@ const handleBankruptcyClick = () => {
         v-if="showBankruptcyAction"
         type="button"
         class="shrink-0 rounded-full border border-[var(--pf-danger-border)] bg-[var(--pf-danger-bg)] px-3 py-1.5 text-xs font-bold whitespace-nowrap text-[var(--pf-danger-text)]"
-        @click="handleBankruptcyClick"
+        @click="openBankruptcyModal"
       >
         파산 신청
       </button>
@@ -45,5 +70,13 @@ const handleBankruptcyClick = () => {
     <PortfolioTabs />
 
     <RouterView />
+
+    <BankruptcyConfirmModal
+      v-if="isBankruptcyModalOpen"
+      :is-submitting="isResetting"
+      :error-message="resetError"
+      @close="closeBankruptcyModal"
+      @confirm="handleResetConfirm"
+    />
   </div>
 </template>
