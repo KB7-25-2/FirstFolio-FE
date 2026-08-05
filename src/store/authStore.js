@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { login as loginApi, logout as logoutApi } from '@/services/authService.js'
 import { setToken, removeToken, hasToken } from '@/utils/token.js'
 import { useUserStore } from '@/store/userStore.js'
+import { useLevelTestStore } from '@/store/levelTestStore.js'
 import router from '@/router/index.js'
 
 const REMEMBER_KEY = 'auth_remember_email'
@@ -41,6 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       removeToken()
       useUserStore().clearProfile()
+      useLevelTestStore().clearSession()
       await router.push({ path: '/login' })
     }
   }

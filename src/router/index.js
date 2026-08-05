@@ -12,6 +12,12 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/onboarding/diagnosis',
+      name: 'onboarding-diagnosis',
+      component: () => import('@/views/onboarding/LevelTestDiagnosisView.vue'),
+      meta: { requiresAuth: true, onboarding: true, hideNavbar: true },
+    },
+    {
       path: '/',
       redirect: '/home',
     },
