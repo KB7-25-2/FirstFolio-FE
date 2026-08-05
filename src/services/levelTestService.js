@@ -1,12 +1,17 @@
 /**
  * 레벨 테스트 mock 서비스
- * POST /level-tests/attempts (시작)
+ * - POST /level-tests/attempts
+ * - PUT  /level-tests/attempts/:attemptId/answers
+ * - POST /level-tests/attempts/:attemptId/submit
  * TODO: API 연동 시 levelTestApi로 교체
  */
 
 /**
  * @typedef {import('@/types/levelTest.js').LevelTestAttempt} LevelTestAttempt
  * @typedef {import('@/types/levelTest.js').LevelTestQuestion} LevelTestQuestion
+ * @typedef {import('@/types/levelTest.js').LevelTestAnswerItem} LevelTestAnswerItem
+ * @typedef {import('@/types/levelTest.js').LevelTestSaveAnswersResult} LevelTestSaveAnswersResult
+ * @typedef {import('@/types/levelTest.js').LevelTestSubmitResult} LevelTestSubmitResult
  */
 
 const STORAGE_KEY = 'level_test_state'
@@ -27,10 +32,15 @@ export class LevelTestApiError extends Error {
   }
 }
 
-/** ASSET 대단원만 — FOUNDATION(포트폴리오 기초) 제외 */
+/**
+ * ASSET 대단원만 — FOUNDATION 제외
+ * choices.id 는 API selected_choice_ids / 퀴즈 optionsJson.key 와 동일
+ */
 const ASSET_QUESTIONS_SEED = [
   {
     question_id: 1001,
+    question_key: 'level-deposit-interest',
+    display_order: 1,
     main_chapter: { main_chapter_id: 2, asset_type: 'DEPOSIT_SAVINGS' },
     question_type: 'SINGLE_CHOICE',
     prompt: '금리가 오르면 예금 이자는?',
@@ -40,11 +50,12 @@ const ASSET_QUESTIONS_SEED = [
       { id: 'C', text: '항상 그대로다' },
       { id: 'D', text: '예금과 관계없다' },
     ],
-    // 제출 전 응답에는 포함하지 않음
     _correct_choice_id: 'A',
   },
   {
     question_id: 1002,
+    question_key: 'level-bond-return',
+    display_order: 2,
     main_chapter: { main_chapter_id: 3, asset_type: 'BOND' },
     question_type: 'SINGLE_CHOICE',
     prompt: '채권을 사면 투자자가 받는 것은?',
@@ -58,6 +69,8 @@ const ASSET_QUESTIONS_SEED = [
   },
   {
     question_id: 1003,
+    question_key: 'level-stock-risk',
+    display_order: 3,
     main_chapter: { main_chapter_id: 4, asset_type: 'STOCK' },
     question_type: 'SINGLE_CHOICE',
     prompt: '주식 투자의 특징으로 알맞은 것은?',
@@ -71,6 +84,8 @@ const ASSET_QUESTIONS_SEED = [
   },
   {
     question_id: 1004,
+    question_key: 'level-fund-diversify',
+    display_order: 4,
     main_chapter: { main_chapter_id: 5, asset_type: 'FUND' },
     question_type: 'SINGLE_CHOICE',
     prompt: '펀드의 기본 특징으로 알맞은 것은?',
@@ -84,8 +99,15 @@ const ASSET_QUESTIONS_SEED = [
   },
 ]
 
+const CORRECT_BY_QUESTION_ID = Object.fromEntries(
+  ASSET_QUESTIONS_SEED.map((q) => [q.question_id, q._correct_choice_id]),
+)
+
 /**
- * @returns {{ completed: boolean, attempt: object | null }}
+ * @returns {{
+ *   completed: boolean,
+ *   attempt: object | null,
+ * }}
  */
 const readState = () => {
   try {
@@ -108,19 +130,25 @@ const writeState = (state) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
 }
 
+const nowIso = () => new Date().toISOString()
+
 /**
+ * 공개 문항 — 소단원 퀴즈와 동일한 optionsJson 형태
  * @param {object} raw
  * @returns {LevelTestQuestion}
  */
 const mapQuestionPublic = (raw) => ({
   questionId: raw.question_id,
-  mainChapter: {
-    mainChapterId: raw.main_chapter.main_chapter_id,
-    assetType: raw.main_chapter.asset_type,
-  },
+  questionKey: raw.question_key,
   questionType: raw.question_type,
   prompt: raw.prompt,
-  choices: raw.choices.map((c) => ({ id: c.id, text: c.text })),
+  optionsJson: (raw.choices || []).map((c) => ({
+    key: c.id,
+    label: c.text,
+  })),
+  mainChapterId: raw.main_chapter.main_chapter_id,
+  assetType: raw.main_chapter.asset_type,
+  displayOrder: raw.display_order,
 })
 
 /**
@@ -131,7 +159,45 @@ const mapAttempt = (rawAttempt) => ({
   attemptId: rawAttempt.attempt_id,
   status: rawAttempt.status,
   questions: (rawAttempt.questions || []).map(mapQuestionPublic),
+  updatedAt: rawAttempt.updated_at ?? null,
 })
+
+/**
+ * @param {object} raw
+ * @returns {LevelTestSubmitResult}
+ */
+const mapSubmitResult = (raw) => ({
+  attemptId: raw.attempt_id,
+  status: raw.status,
+  results: (raw.results || []).map((r) => ({
+    mainChapterId: r.main_chapter_id,
+    assetType: r.asset_type,
+    isCorrect: r.is_correct,
+  })),
+  recommendations: (raw.recommendations || []).map((r) => ({
+    mainChapterId: r.main_chapter_id,
+    sourceType: r.source_type,
+  })),
+  cartCandidates: (raw.cart_candidates || []).map((c) => ({
+    mainChapterId: c.main_chapter_id,
+    assetType: c.asset_type,
+  })),
+})
+
+/**
+ * @param {number} attemptId
+ */
+const requireInProgressAttempt = (attemptId) => {
+  const state = readState()
+  const attempt = state.attempt
+  if (!attempt || attempt.attempt_id !== attemptId) {
+    throw new LevelTestApiError('ATTEMPT_NOT_FOUND', '응시를 찾을 수 없다.', 404)
+  }
+  if (attempt.status === 'COMPLETED' || state.completed) {
+    throw new LevelTestApiError('ATTEMPT_ALREADY_SUBMITTED', '이미 제출된 응시다.', 409)
+  }
+  return { state, attempt }
+}
 
 /**
  * 레벨 테스트 완료 여부 조회 (목업)
@@ -146,9 +212,6 @@ export const getLevelTestStatus = async () => {
 /**
  * 레벨 테스트 응시 시작
  * POST /level-tests/attempts
- * - 미완료 응시가 있으면 기존 응시 반환
- * - 완료했으면 409 LEVEL_TEST_ALREADY_COMPLETED
- * - 정답·해설은 포함하지 않음
  * @returns {Promise<{ data: LevelTestAttempt }>}
  */
 export const startLevelTest = async () => {
@@ -174,6 +237,9 @@ export const startLevelTest = async () => {
   const attempt = {
     attempt_id: 2001,
     status: 'IN_PROGRESS',
+    updated_at: nowIso(),
+    answers: {},
+    submit_result: null,
     questions: ASSET_QUESTIONS_SEED.map(({ _correct_choice_id, ...publicFields }) =>
       structuredClone(publicFields),
     ),
@@ -184,17 +250,141 @@ export const startLevelTest = async () => {
 }
 
 /**
- * 레벨 테스트 완료 처리 (목업 — 이후 제출 API에서 사용)
- * @returns {Promise<{ data: { completed: boolean } }>}
+ * 레벨 테스트 답안 저장 (채점 없음)
+ * PUT /level-tests/attempts/:attemptId/answers
+ * @param {number} attemptId
+ * @param {{ answers: LevelTestAnswerItem[] }} payload
+ * @returns {Promise<{ data: LevelTestSaveAnswersResult }>}
  */
-export const completeLevelTest = async () => {
-  await delay(50)
-  const state = readState()
-  if (state.attempt) {
-    state.attempt.status = 'COMPLETED'
+export const saveLevelTestAnswers = async (attemptId, payload) => {
+  await delay()
+  const { state, attempt } = requireInProgressAttempt(attemptId)
+
+  const answers = payload?.answers
+  if (!Array.isArray(answers) || answers.length === 0) {
+    throw new LevelTestApiError('VALIDATION_ERROR', 'answers가 필요하다.', 400)
   }
-  writeState({ completed: true, attempt: state.attempt })
-  return { data: { completed: true } }
+
+  const questionIds = new Set((attempt.questions || []).map((q) => q.question_id))
+  const nextAnswers = { ...(attempt.answers || {}) }
+
+  for (const item of answers) {
+    const questionId = item.questionId ?? item.question_id
+    const selected = item.selectedChoiceIds ?? item.selected_choice_ids ?? []
+
+    if (!questionIds.has(questionId)) {
+      throw new LevelTestApiError(
+        'VALIDATION_ERROR',
+        `응시 문항에 포함되지 않은 question_id: ${questionId}`,
+        400,
+      )
+    }
+    if (!Array.isArray(selected) || selected.length === 0) {
+      throw new LevelTestApiError('VALIDATION_ERROR', 'selected_choice_ids가 필요하다.', 400)
+    }
+
+    nextAnswers[questionId] = [...selected]
+  }
+
+  attempt.answers = nextAnswers
+  attempt.updated_at = nowIso()
+  writeState({ ...state, attempt })
+
+  return {
+    data: {
+      attemptId: attempt.attempt_id,
+      savedAnswerCount: Object.keys(nextAnswers).length,
+      status: attempt.status,
+      updatedAt: attempt.updated_at,
+    },
+  }
+}
+
+/**
+ * 레벨 테스트 제출·채점
+ * POST /level-tests/attempts/:attemptId/submit
+ * - 필수 답안 모두 필요
+ * - 재제출 시 최초 결과 반환
+ * @param {number} attemptId
+ * @returns {Promise<{ data: LevelTestSubmitResult }>}
+ */
+export const submitLevelTest = async (attemptId) => {
+  await delay()
+  const state = readState()
+  const attempt = state.attempt
+
+  if (!attempt || attempt.attempt_id !== attemptId) {
+    throw new LevelTestApiError('ATTEMPT_NOT_FOUND', '응시를 찾을 수 없다.', 404)
+  }
+
+  // 동일 응시 재제출 → 최초 결과
+  if (attempt.submit_result) {
+    return { data: mapSubmitResult(structuredClone(attempt.submit_result)) }
+  }
+
+  if (attempt.status === 'COMPLETED' || state.completed) {
+    throw new LevelTestApiError('ATTEMPT_ALREADY_SUBMITTED', '이미 제출된 응시다.', 409)
+  }
+
+  const requiredIds = (attempt.questions || []).map((q) => q.question_id)
+  const answers = attempt.answers || {}
+  const missing = requiredIds.filter((id) => !answers[id]?.length)
+  if (missing.length) {
+    throw new LevelTestApiError(
+      'REQUIRED_ANSWERS_MISSING',
+      '필수 답안이 모두 저장되지 않았다.',
+      409,
+    )
+  }
+
+  /** @type {object[]} */
+  const results = []
+  /** @type {object[]} */
+  const recommendations = []
+  /** @type {object[]} */
+  const cart_candidates = []
+
+  for (const question of attempt.questions) {
+    const qid = question.question_id
+    const selected = answers[qid] || []
+    const correctId = CORRECT_BY_QUESTION_ID[qid]
+    const isCorrect = selected.length === 1 && selected[0] === correctId
+    const mainChapterId = question.main_chapter.main_chapter_id
+    const assetType = question.main_chapter.asset_type
+
+    results.push({
+      main_chapter_id: mainChapterId,
+      asset_type: assetType,
+      is_correct: isCorrect,
+    })
+
+    if (isCorrect) {
+      cart_candidates.push({
+        main_chapter_id: mainChapterId,
+        asset_type: assetType,
+      })
+    } else {
+      recommendations.push({
+        main_chapter_id: mainChapterId,
+        source_type: 'LEVEL_TEST_WRONG',
+      })
+    }
+  }
+
+  const submit_result = {
+    attempt_id: attempt.attempt_id,
+    status: 'COMPLETED',
+    results,
+    recommendations,
+    cart_candidates,
+  }
+
+  attempt.status = 'COMPLETED'
+  attempt.submit_result = submit_result
+  attempt.updated_at = nowIso()
+  writeState({ completed: true, attempt })
+
+  return { data: mapSubmitResult(structuredClone(submit_result)) }
 }
 
 /**
