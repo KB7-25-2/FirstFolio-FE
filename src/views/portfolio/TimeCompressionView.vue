@@ -1,15 +1,14 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
-import VolatilityLineChart from '@/components/portfolio/VolatilityLineChart.vue'
-import CompressionRuleItem from '@/components/portfolio/CompressionRuleItem.vue'
 
 const store = usePortfolioStore()
 
-const selectedProductId = ref(null)
+const carouselEl = ref(null)
+const activeIndex = ref(0)
 
 onMounted(() => {
-  store.fetchTimeCompressionRules()
+  if (!store.purchasableProducts.length) store.fetchPurchasableProducts()
   if (!store.summary) store.fetchSummary()
 })
 
@@ -23,101 +22,108 @@ const heldProductIds = computed(
     ),
 )
 
-// 보유 중인 상품을 맨 위로 정렬 (원래 순서는 각 그룹 내에서 유지)
-const sortedRules = computed(() =>
-  [...store.timeCompressionRules].sort((a, b) => {
-    const aHeld = heldProductIds.value.has(a.productId) ? 0 : 1
-    const bHeld = heldProductIds.value.has(b.productId) ? 0 : 1
-    return aHeld - bHeld
-  }),
+// 주식·펀드는 시간압축 예외(실시간 시세, 만기 없음)라 이 화면 대상이 아니다(FUNC-039).
+// 보유 중인 상품을 맨 앞 슬라이드로 정렬.
+const sortedProducts = computed(() =>
+  store.purchasableProducts
+    .filter((product) => !product.isTimeCompressionExempt)
+    .sort((a, b) => {
+      const aHeld = heldProductIds.value.has(a.productId) ? 0 : 1
+      const bHeld = heldProductIds.value.has(b.productId) ? 0 : 1
+      return aHeld - bHeld
+    }),
 )
 
-// 데이터가 로드되면 기본 선택값을 정렬된 목록의 첫 번째(=보유 상품 우선)로 맞춘다.
+// 스크롤 위치로 현재 몇 번째 슬라이드가 보이는지 계산 (scroll-snap 기반, 별도 JS 드래그 로직 불필요)
+let scrollTimer = null
+const handleScroll = () => {
+  if (scrollTimer) clearTimeout(scrollTimer)
+  scrollTimer = setTimeout(() => {
+    const el = carouselEl.value
+    if (!el || !el.clientWidth) return
+    activeIndex.value = Math.round(el.scrollLeft / el.clientWidth)
+  }, 80)
+}
+
+const goToIndex = (index) => {
+  const el = carouselEl.value
+  if (!el) return
+  el.scrollTo({ left: index * el.clientWidth, behavior: 'smooth' })
+}
+
+// 데이터가 로드되면 첫 슬라이드(=보유 상품 우선)로 스크롤 위치를 맞춘다.
 watch(
-  sortedRules,
-  (rules) => {
-    if (rules.length && selectedProductId.value === null) {
-      selectedProductId.value = rules[0].productId
-    }
+  sortedProducts,
+  async (products) => {
+    if (!products.length) return
+    activeIndex.value = 0
+    await nextTick()
+    if (carouselEl.value) carouselEl.value.scrollTo({ left: 0 })
   },
   { immediate: true },
 )
-
-const selectedRule = computed(
-  () =>
-    sortedRules.value.find((rule) => rule.productId === selectedProductId.value) ??
-    sortedRules.value[0] ??
-    null,
-)
-
-const handleSelect = (rule) => {
-  selectedProductId.value = rule.productId
-}
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
-    <section
-      class="rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
+  <div class="flex flex-col gap-3">
+    <div class="flex items-baseline justify-between">
+      <p class="font-pen text-sm text-[var(--pf-highlight)]">상품별 시간 압축 비교</p>
+      <p class="text-[10px] text-[var(--pf-text-muted)]">옆으로 넘겨서 비교해보세요 →</p>
+    </div>
+
+    <div
+      v-if="sortedProducts.length"
+      ref="carouselEl"
+      class="carousel-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1"
+      style="scrollbar-width: none"
+      @scroll="handleScroll"
     >
-      <p class="font-pen text-sm text-[var(--pf-highlight)]">상품 선택</p>
-      <h2 class="mt-1 font-bold text-[var(--pf-text)]">서비스 내 주기 / 실제 상품</h2>
-      <p class="mt-1 text-xs text-[var(--pf-text-muted)]">
-        아래에서 상품을 선택하면 작동 원리와 그래프가 그 상품 기준으로 바뀌어요.
-      </p>
-
-      <ul class="mt-3 flex max-h- flex-col gap-1 overflow-y-auto pr-1">
-        <CompressionRuleItem
-          v-for="rule in sortedRules"
-          :key="rule.productId"
-          :rule="rule"
-          :is-held="heldProductIds.has(rule.productId)"
-          :is-selected="rule.productId === selectedProductId"
-          @select="handleSelect"
-        />
-      </ul>
-
-      <p
-        v-if="!store.timeCompressionRules.length && store.isLoading"
-        class="mt-2 text-sm text-[var(--pf-text-muted)]"
+      <section
+        v-for="product in sortedProducts"
+        :key="product.productId"
+        class="w-full shrink-0 snap-center rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
       >
-        불러오는 중…
-      </p>
-    </section>
+        <div class="flex items-center gap-1.5">
+          <p class="font-bold text-[var(--pf-text)]">{{ product.displayName }}</p>
+          <span
+            v-if="heldProductIds.has(product.productId)"
+            class="rounded-full bg-[var(--pf-highlight)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--pf-highlight)]"
+          >
+            보유중
+          </span>
+        </div>
+        <p class="mt-0.5 text-xs text-[var(--pf-text-muted)]">{{ product.riskLevel }}</p>
 
-    <section
-      v-if="selectedRule"
-      class="rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
-    >
-      <p class="font-pen text-sm text-[var(--pf-highlight)]">
-        {{ selectedRule.productName }} · 작동 원리는?
-      </p>
-      <h2 class="mt-1 text-lg font-bold text-[var(--pf-text)]">{{ selectedRule.headline }}</h2>
-      <p class="mt-2 text-sm leading-relaxed text-[var(--pf-text-muted)]">
-        {{ selectedRule.description }}
-      </p>
-    </section>
+        <h2 class="mt-3 text-lg font-bold text-[var(--pf-text)]">
+          {{ product.cycleSummary ?? '실시간 시세' }}
+        </h2>
+        <p class="mt-2 text-sm leading-relaxed text-[var(--pf-text-muted)]">
+          서비스 안에서는 압축된 기간으로 빠르게 진행되지만, 실제 상품 기준으로는 위 기간을
+          따릅니다. 계산은 동일 조건에서 재현 가능하게 관리돼요.
+        </p>
+      </section>
+    </div>
 
-    <section
-      v-if="selectedRule"
-      class="rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
-    >
-      <p class="font-pen text-sm text-[var(--pf-highlight)]">예제 예시 (서비스 1일)</p>
-      <h2 class="mt-1 font-bold text-[var(--pf-text)]">변동성 밴드 · 기대 수익률</h2>
+    <p v-else-if="store.isLoading" class="text-sm text-[var(--pf-text-muted)]">불러오는 중…</p>
+    <p v-else class="text-sm text-[var(--pf-text-muted)]">시간 압축이 적용되는 상품이 없어요.</p>
 
-      <VolatilityLineChart
-        :key="selectedRule.productId"
-        :points="selectedRule.points"
-        class="mt-3"
+    <!-- 페이지 인디케이터 (점) -->
+    <div v-if="sortedProducts.length > 1" class="flex justify-center gap-1.5">
+      <button
+        v-for="(product, index) in sortedProducts"
+        :key="product.productId"
+        type="button"
+        class="size-1.5 rounded-full transition-colors"
+        :class="index === activeIndex ? 'bg-[var(--pf-highlight)]' : 'bg-white/20'"
+        :aria-label="`${product.displayName} 보기`"
+        @click="goToIndex(index)"
       />
-
-      <div class="mt-3 flex items-center justify-between text-xs">
-        <span class="text-[var(--pf-positive)]">기대 {{ selectedRule.expectedReturn }}</span>
-        <span class="text-[var(--pf-text-muted)]">변동성 {{ selectedRule.volatility }}</span>
-        <span class="rounded-full bg-white/10 px-2 py-0.5 text-[var(--pf-text-muted)]"
-          >재현 가능</span
-        >
-      </div>
-    </section>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.carousel-scroll::-webkit-scrollbar {
+  display: none;
+}
+</style>
