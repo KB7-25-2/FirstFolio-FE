@@ -6,9 +6,15 @@ import { registerPwa } from '@/pwa/register.js'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faHouse, faBookOpen, faChartPie, faShop } from '@fortawesome/free-solid-svg-icons'
+import {
+  faHouse,
+  faBookOpen,
+  faChartPie,
+  faShop,
+  faArrowRightFromBracket,
+} from '@fortawesome/free-solid-svg-icons'
 
-library.add(faHouse, faBookOpen, faChartPie, faShop)
+library.add(faHouse, faBookOpen, faChartPie, faShop, faArrowRightFromBracket)
 
 import './assets/styles/main.css'
 
