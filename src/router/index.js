@@ -62,8 +62,41 @@ const router = createRouter({
         },
         {
           path: 'portfolios',
-          name: 'portfolios',
           component: () => import('@/views/PortfoliosView.vue'),
+          redirect: { name: 'portfolio-holdings' },
+          children: [
+            {
+              path: 'holdings',
+              name: 'portfolio-holdings',
+              component: () => import('@/views/portfolio/CurrentAssetsView.vue'),
+              meta: {
+                title: '포트폴리오',
+                subtitle: '보유 자산 · 교육용 만기/이자 주기를 확인하세요',
+                showBankruptcyAction: true,
+                navTab: 'portfolios',
+              },
+            },
+            {
+              path: 'purchase',
+              name: 'portfolio-purchase',
+              component: () => import('@/views/portfolio/ProductPurchaseView.vue'),
+              meta: {
+                title: '상품 구매',
+                subtitle: '모의 상품을 둘러보고 포트폴리오에 담아보세요',
+                navTab: 'portfolios',
+              },
+            },
+            {
+              path: 'time-compression',
+              name: 'portfolio-time-compression',
+              component: () => import('@/views/portfolio/TimeCompressionView.vue'),
+              meta: {
+                title: '시간 압축',
+                subtitle: '교육용 시간과 실제 상품 주기를 함께 비교해요',
+                navTab: 'portfolios',
+              },
+            },
+          ],
         },
         {
           path: 'point-market',

@@ -92,10 +92,10 @@ const goPortfolios = () => {
         </div>
 
         <div
-          v-else-if="error || !portfolioSummary.available"
+          v-else-if="error || !portfolioSummary?.available"
           class="py-6 text-center font-serif text-[10px] text-[var(--portfolio-muted)]"
         >
-          {{ error || portfolioSummary.reason || '포트폴리오 정보가 없습니다.' }}
+          {{ error || portfolioSummary?.reason || '포트폴리오 정보가 없습니다.' }}
         </div>
 
         <template v-else>
