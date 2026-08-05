@@ -1,0 +1,17 @@
+/**
+ * POST /auth/signup 요청
+ * @typedef {object} SignupRequest
+ * @property {string} nickname
+ * @property {boolean} required_terms_agreed
+ */
+
+/**
+ * POST /auth/signup 응답 data
+ * @typedef {object} SignupResponse
+ * @property {number} userId
+ * @property {string} nickname
+ * @property {string} roleCode
+ * @property {string} onboardingStep
+ */
+
+export {}

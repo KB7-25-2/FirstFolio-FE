@@ -65,10 +65,24 @@ export const useLoginView = () => {
     }
   }
 
-  const handleSignupMethodNext = () => {
+  const handleGoogleSignup = async () => {
+    isLoading.value = true
+    error.value = ''
+
+    try {
+      await authStore.signupWithGoogle()
+      await router.push('/onboarding/intro')
+    } catch (err) {
+      error.value = err?.message || 'Google 회원가입에 실패했습니다.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const handleSignupMethodNext = async () => {
     error.value = ''
     if (signupMethod.value === 'google') {
-      error.value = 'Google 회원가입은 준비 중입니다.'
+      await handleGoogleSignup()
       return
     }
     signupStep.value = 'form'
@@ -89,7 +103,7 @@ export const useLoginView = () => {
     }
 
     if (signupStep.value === 'method') {
-      handleSignupMethodNext()
+      await handleSignupMethodNext()
       return
     }
 

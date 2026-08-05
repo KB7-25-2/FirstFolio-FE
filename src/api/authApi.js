@@ -1,6 +1,13 @@
 import apiClient from '@/api/index.js'
 
-export const signUp = (credentials) => apiClient.post('/auth/signup', credentials)
+/**
+ * @param {import('@/types/auth.js').SignupRequest} body
+ * @param {string} idToken
+ */
+export const signUp = (body, idToken) =>
+  apiClient.post('/auth/signup', body, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
 
 export const login = (credentials) => apiClient.post('/auth/login', credentials)
 

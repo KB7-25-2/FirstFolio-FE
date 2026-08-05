@@ -1,6 +1,10 @@
-import { defineStore } from 'pinia'
+import { defineStore, acceptHMRUpdate } from 'pinia'
 import { computed, ref } from 'vue'
-import { login as loginApi, logout as logoutApi } from '@/services/authService.js'
+import {
+  login as loginApi,
+  logout as logoutApi,
+  signupWithGoogle as signupWithGoogleApi,
+} from '@/services/authService.js'
 import { setToken, removeToken, hasToken } from '@/utils/token.js'
 import { useUserStore } from '@/store/userStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
@@ -34,6 +38,16 @@ export const useAuthStore = defineStore('auth', () => {
     await userStore.fetchProfile()
   }
 
+  const signupWithGoogle = async () => {
+    const { data, idToken } = await signupWithGoogleApi()
+    setToken(idToken)
+
+    const userStore = useUserStore()
+    await userStore.fetchProfile()
+
+    return data
+  }
+
   const logout = async () => {
     try {
       if (hasToken()) {
@@ -51,6 +65,11 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     rememberedEmail,
     login,
+    signupWithGoogle,
     logout,
   }
 })
+
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useAuthStore, import.meta.hot))
+}

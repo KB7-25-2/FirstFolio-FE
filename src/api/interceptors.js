@@ -22,10 +22,13 @@ const redirectToLogin = async () => {
 export const setupRequestInterceptor = (apiClient) => {
   apiClient.interceptors.request.use(
     (config) => {
-      const token = getToken()
+      const hasAuthorization = config.headers?.Authorization || config.headers?.authorization
 
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+      if (!hasAuthorization) {
+        const token = getToken()
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`
+        }
       }
 
       return config

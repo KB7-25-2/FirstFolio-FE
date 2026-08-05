@@ -147,7 +147,7 @@ const {
                 @select="signupMethod = 'email'"
               />
 
-              <AuthEnterCta type="submit" label="다음 장으로  →" />
+              <AuthEnterCta type="submit" label="다음 장으로  →" :disabled="isLoading" />
 
               <p class="text-center font-serif text-[8px] text-[var(--auth-doc-faint)]">
                 ※ 선택한 방식으로 다음 장의 등록 절차가 진행됩니다.
