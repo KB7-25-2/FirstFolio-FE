@@ -37,7 +37,7 @@ const onLogout = () => {
         </h1>
         <button
           type="button"
-          class="flex size-8 shrink-0 items-center justify-center hover:cursor-pointer rounded-md text-[rgba(245,237,217,0.55)] transition-colors hover:bg-white/5 hover:text-[#f5edd9]"
+          class="btn-hover flex size-8 shrink-0 items-center justify-center rounded-md text-[rgba(245,237,217,0.55)] hover:bg-white/5 hover:text-[#f5edd9]"
           aria-label="로그아웃"
           @click="onLogout"
         >
