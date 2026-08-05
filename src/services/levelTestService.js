@@ -271,6 +271,24 @@ export const getLevelTestStatus = async () => {
 }
 
 /**
+ * 로컬 저장된 응시·제출 결과 복원
+ * @returns {{ completed: boolean, attempt: import('@/types/levelTest.js').LevelTestAttempt | null, submitResult: import('@/types/levelTest.js').LevelTestSubmitResult | null }}
+ */
+export const getStoredLevelTestSession = () => {
+  const state = readState()
+  if (!state.attempt) {
+    return { completed: state.completed, attempt: null, submitResult: null }
+  }
+  return {
+    completed: state.completed,
+    attempt: mapAttempt(structuredClone(state.attempt)),
+    submitResult: state.attempt.submit_result
+      ? mapSubmitResult(structuredClone(state.attempt.submit_result))
+      : null,
+  }
+}
+
+/**
  * 레벨 테스트 응시 시작
  * POST /level-tests/attempts
  * @returns {Promise<{ data: LevelTestAttempt }>}

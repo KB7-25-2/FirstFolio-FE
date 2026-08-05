@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/authStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
 
@@ -56,19 +57,20 @@ export const DIAGNOSIS_PERIODS = [
   },
 ]
 
-export const useOnboardingTutorial = () => {
+/** 안내 화면 (튜토리얼 → 진단 안내) */
+export const useOnboardingIntro = () => {
+  const router = useRouter()
   const authStore = useAuthStore()
   const levelTestStore = useLevelTestStore()
 
-  /** @type {import('vue').Ref<'tutorial' | 'diagnosisIntro' | 'quiz' | 'result' | 'curriculum'>} */
-  const phase = ref('tutorial')
+  /** @type {import('vue').Ref<'tutorial' | 'diagnosisIntro'>} */
+  const step = ref('tutorial')
   const startError = ref('')
   const isStarting = ref(false)
 
   const tutorialRuledOffsets = computed(() =>
     Array.from({ length: 16 }, (_, index) => 52 + index * 22),
   )
-
   const tipRuledOffsets = computed(() => Array.from({ length: 4 }, (_, index) => 28 + index * 20))
 
   const onLater = () => {
@@ -77,28 +79,22 @@ export const useOnboardingTutorial = () => {
 
   const goTutorial = () => {
     startError.value = ''
-    phase.value = 'tutorial'
+    step.value = 'tutorial'
   }
 
-  /** 01 → 02 진단 안내 */
   const onTutorialStart = () => {
     startError.value = ''
-    phase.value = 'diagnosisIntro'
+    step.value = 'diagnosisIntro'
   }
 
-  /** 02 → 레벨 테스트 응시 시작 */
   const onDiagnosisStart = async () => {
     startError.value = ''
-
-    if (levelTestStore.attempt?.status === 'IN_PROGRESS') {
-      phase.value = 'quiz'
-      return
-    }
-
     isStarting.value = true
     try {
-      await levelTestStore.start()
-      phase.value = 'quiz'
+      if (levelTestStore.attempt?.status !== 'IN_PROGRESS') {
+        await levelTestStore.start()
+      }
+      await router.push({ name: 'onboarding-quiz' })
     } catch (err) {
       startError.value = err?.message || '레벨 테스트를 시작할 수 없습니다.'
     } finally {
@@ -106,25 +102,8 @@ export const useOnboardingTutorial = () => {
     }
   }
 
-  /** 퀴즈 → 진단 안내 (응시 세션 유지) */
-  const goDiagnosisIntro = () => {
-    startError.value = ''
-    phase.value = 'diagnosisIntro'
-  }
-
-  /** 제출 완료 → 결과 */
-  const goResult = () => {
-    phase.value = 'result'
-  }
-
-  /** 결과 → 커리큘럼 담기 (후속 이슈에서 본문 연결) */
-  const goCurriculum = () => {
-    phase.value = 'curriculum'
-  }
-
   return {
-    levelTestStore,
-    phase,
+    step,
     startError,
     isStarting,
     tutorialSteps: TUTORIAL_STEPS,
@@ -133,10 +112,7 @@ export const useOnboardingTutorial = () => {
     tipRuledOffsets,
     onLater,
     goTutorial,
-    goDiagnosisIntro,
     onTutorialStart,
     onDiagnosisStart,
-    goResult,
-    goCurriculum,
   }
 }

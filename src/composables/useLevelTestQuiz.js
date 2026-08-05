@@ -1,5 +1,6 @@
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
 
 const OPTION_TONES = ['green', 'blue', 'pink', 'yellow']
@@ -14,9 +15,9 @@ const ASSET_LABELS = {
 
 /**
  * 레벨 테스트(금융 기초 진단) 퀴즈 UI
- * — 소단원 퀴즈와 동일 컴포넌트, 문항별 채점 없이 선택·저장 후 최종 제출
  */
 export const useLevelTestQuiz = () => {
+  const router = useRouter()
   const levelTestStore = useLevelTestStore()
 
   const {
@@ -33,6 +34,15 @@ export const useLevelTestQuiz = () => {
   } = storeToRefs(levelTestStore)
 
   const actionError = ref('')
+
+  onMounted(async () => {
+    if (levelTestStore.attempt?.status === 'IN_PROGRESS') return
+    try {
+      await levelTestStore.start()
+    } catch (err) {
+      actionError.value = err?.message || '퀴즈를 불러오지 못했습니다.'
+    }
+  })
 
   const examTitle = computed(() => '금융 기초 진단 시험')
 
@@ -90,6 +100,7 @@ export const useLevelTestQuiz = () => {
       await levelTestStore.saveAnswers()
       if (isLastQuestion.value) {
         await levelTestStore.submit()
+        await router.push({ name: 'onboarding-result' })
         return 'submitted'
       }
       levelTestStore.goNextQuestion()
@@ -103,6 +114,10 @@ export const useLevelTestQuiz = () => {
   const goPrev = () => {
     actionError.value = ''
     levelTestStore.goPrevQuestion()
+  }
+
+  const goIntro = () => {
+    router.push({ name: 'onboarding-intro' })
   }
 
   return {
@@ -128,5 +143,6 @@ export const useLevelTestQuiz = () => {
     selectOption,
     onPrimaryAction,
     goPrev,
+    goIntro,
   }
 }

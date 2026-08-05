@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
   getLevelTestStatus,
+  getStoredLevelTestSession,
   startLevelTest,
   saveLevelTestAnswers,
   submitLevelTest,
@@ -122,6 +123,9 @@ export const useLevelTestStore = defineStore('levelTest', () => {
     try {
       const { data } = await getLevelTestStatus()
       completed.value = data.completed
+      const session = getStoredLevelTestSession()
+      if (session.attempt) attempt.value = session.attempt
+      if (session.submitResult) submitResult.value = session.submitResult
       return data.completed
     } catch (err) {
       error.value = err?.message || '레벨 테스트 상태를 불러오지 못했습니다.'

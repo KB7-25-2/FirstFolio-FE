@@ -1,6 +1,6 @@
 <script setup>
 /**
- * Figma 07 진단 결과 — CompareNote 스타일 결과표
+ * Figma 07 진단 결과 — 영역/결과/처리 표 (+ NOTE)
  */
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 
@@ -28,7 +28,7 @@ defineProps({
           <p class="text-right font-serif text-[11px] font-bold text-[rgba(61,31,8,0.55)]">처리</p>
         </div>
 
-        <ul class="flex flex-col gap-2 p-2.5">
+        <ul v-if="rows.length" class="flex flex-col gap-2 p-2.5">
           <li
             v-for="row in rows"
             :key="row.mainChapterId"
@@ -55,6 +55,9 @@ defineProps({
             </p>
           </li>
         </ul>
+        <p v-else class="px-3 py-4 font-serif text-[12px] text-[rgba(139,100,60,0.55)]">
+          표시할 진단 영역이 없습니다
+        </p>
       </div>
 
       <div

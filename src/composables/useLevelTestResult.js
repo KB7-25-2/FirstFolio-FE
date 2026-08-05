@@ -10,10 +10,10 @@ export const LEVEL_TEST_ASSET_LABELS = {
   FUND: '펀드',
 }
 
+/** 진단 결과 표 — 레벨 테스트 제출 mock 집계 */
 export const useLevelTestResult = () => {
   const levelTestStore = useLevelTestStore()
-  const { chapterResultRows, recommendations, cartCandidates, isLoading } =
-    storeToRefs(levelTestStore)
+  const { chapterResultRows } = storeToRefs(levelTestStore)
 
   const resultRows = computed(() =>
     chapterResultRows.value.map((row) => ({
@@ -22,10 +22,5 @@ export const useLevelTestResult = () => {
     })),
   )
 
-  return {
-    resultRows,
-    recommendations,
-    cartCandidates,
-    isLoading,
-  }
+  return { resultRows }
 }
