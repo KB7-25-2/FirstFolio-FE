@@ -27,7 +27,7 @@ const conicGradient = computed(() => {
   <div class="relative flex size-24 shrink-0 items-center justify-center">
     <div class="size-24 rounded-full" :style="{ background: conicGradient }" />
     <div
-      class="absolute inset-2.5 flex flex-col items-center justify-center rounded-full bg-[var(--pf-card-bg)] text-center backdrop-blur-md"
+      class="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-[var(--pf-card-bg)] text-center backdrop-blur-md"
     >
       <slot />
     </div>
