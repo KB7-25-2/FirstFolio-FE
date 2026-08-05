@@ -5,7 +5,7 @@ import { useLevelTestStore } from '@/store/levelTestStore.js'
 export const TUTORIAL_STEPS = [
   {
     key: 'questions',
-    title: '기초 질문 4개 풀기',
+    title: '기초 질문 풀기',
     description: '지금 알고 있는 만큼 편하게 답해요',
     toneClass: 'bg-[#e5f2e0]',
   },
@@ -33,25 +33,25 @@ export const DIAGNOSIS_PERIODS = [
   {
     order: 1,
     title: '예·적금',
-    periodSubtitle: '1교시 · 기초 진단',
+    periodSubtitle: '기초 진단',
     scheduleStatus: 'NEXT',
   },
   {
     order: 2,
     title: '채권',
-    periodSubtitle: '2교시 · 기초 진단',
+    periodSubtitle: '기초 진단',
     scheduleStatus: 'NEXT',
   },
   {
     order: 3,
     title: '주식',
-    periodSubtitle: '3교시 · 기초 진단',
+    periodSubtitle: '기초 진단',
     scheduleStatus: 'NEXT',
   },
   {
     order: 4,
     title: '펀드',
-    periodSubtitle: '4교시 · 기초 진단',
+    periodSubtitle: '기초 진단',
     scheduleStatus: 'NEXT',
   },
 ]
@@ -60,7 +60,7 @@ export const useOnboardingTutorial = () => {
   const authStore = useAuthStore()
   const levelTestStore = useLevelTestStore()
 
-  /** @type {import('vue').Ref<'tutorial' | 'diagnosisIntro' | 'quiz' | 'result'>} */
+  /** @type {import('vue').Ref<'tutorial' | 'diagnosisIntro' | 'quiz' | 'result' | 'curriculum'>} */
   const phase = ref('tutorial')
   const startError = ref('')
   const isStarting = ref(false)
@@ -117,6 +117,11 @@ export const useOnboardingTutorial = () => {
     phase.value = 'result'
   }
 
+  /** 결과 → 커리큘럼 담기 (후속 이슈에서 본문 연결) */
+  const goCurriculum = () => {
+    phase.value = 'curriculum'
+  }
+
   return {
     levelTestStore,
     phase,
@@ -132,5 +137,6 @@ export const useOnboardingTutorial = () => {
     onTutorialStart,
     onDiagnosisStart,
     goResult,
+    goCurriculum,
   }
 }

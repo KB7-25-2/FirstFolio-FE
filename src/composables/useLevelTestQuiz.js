@@ -30,9 +30,6 @@ export const useLevelTestQuiz = () => {
     isSaving,
     isSubmitting,
     error,
-    chapterResults,
-    recommendations,
-    cartCandidates,
   } = storeToRefs(levelTestStore)
 
   const actionError = ref('')
@@ -127,9 +124,6 @@ export const useLevelTestQuiz = () => {
     optionsWithTone,
     primaryLabel,
     primaryEnabled,
-    chapterResults,
-    recommendations,
-    cartCandidates,
     optionVariant,
     selectOption,
     onPrimaryAction,

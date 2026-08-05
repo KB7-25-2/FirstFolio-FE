@@ -33,7 +33,7 @@ export class LevelTestApiError extends Error {
 }
 
 /**
- * ASSET 대단원만 — FOUNDATION 제외
+ * ASSET 대단원 문항 시드 — 단원당 문항 수는 가변 (리스트)
  * choices.id 는 API selected_choice_ids / 퀴즈 optionsJson.key 와 동일
  */
 const ASSET_QUESTIONS_SEED = [
@@ -53,9 +53,24 @@ const ASSET_QUESTIONS_SEED = [
     _correct_choice_id: 'A',
   },
   {
+    question_id: 1005,
+    question_key: 'level-deposit-protection',
+    display_order: 2,
+    main_chapter: { main_chapter_id: 2, asset_type: 'DEPOSIT_SAVINGS' },
+    question_type: 'SINGLE_CHOICE',
+    prompt: '예금자 보호 제도가 보장하는 것은?',
+    choices: [
+      { id: 'A', text: '주식 투자 손실 전액' },
+      { id: 'B', text: '일정 한도 내 예금 원금·이자' },
+      { id: 'C', text: '펀드 평가액 전액' },
+      { id: 'D', text: '부동산 시세 하락분' },
+    ],
+    _correct_choice_id: 'B',
+  },
+  {
     question_id: 1002,
     question_key: 'level-bond-return',
-    display_order: 2,
+    display_order: 3,
     main_chapter: { main_chapter_id: 3, asset_type: 'BOND' },
     question_type: 'SINGLE_CHOICE',
     prompt: '채권을 사면 투자자가 받는 것은?',
@@ -68,9 +83,24 @@ const ASSET_QUESTIONS_SEED = [
     _correct_choice_id: 'B',
   },
   {
+    question_id: 1006,
+    question_key: 'level-bond-price',
+    display_order: 4,
+    main_chapter: { main_chapter_id: 3, asset_type: 'BOND' },
+    question_type: 'SINGLE_CHOICE',
+    prompt: '시장 금리가 오르면 기존 채권 가격은 보통?',
+    choices: [
+      { id: 'A', text: '함께 오른다' },
+      { id: 'B', text: '내려가는 경향이 있다' },
+      { id: 'C', text: '항상 그대로다' },
+      { id: 'D', text: '배당이 늘어난다' },
+    ],
+    _correct_choice_id: 'B',
+  },
+  {
     question_id: 1003,
     question_key: 'level-stock-risk',
-    display_order: 3,
+    display_order: 5,
     main_chapter: { main_chapter_id: 4, asset_type: 'STOCK' },
     question_type: 'SINGLE_CHOICE',
     prompt: '주식 투자의 특징으로 알맞은 것은?',
@@ -83,9 +113,24 @@ const ASSET_QUESTIONS_SEED = [
     _correct_choice_id: 'B',
   },
   {
+    question_id: 1007,
+    question_key: 'level-stock-dividend',
+    display_order: 6,
+    main_chapter: { main_chapter_id: 4, asset_type: 'STOCK' },
+    question_type: 'SINGLE_CHOICE',
+    prompt: '주주가 받을 수 있는 수익으로 알맞은 것은?',
+    choices: [
+      { id: 'A', text: '확정 예금 이자만' },
+      { id: 'B', text: '시세 차익과 배당' },
+      { id: 'C', text: '만기 원금만' },
+      { id: 'D', text: '예금자 보호금' },
+    ],
+    _correct_choice_id: 'B',
+  },
+  {
     question_id: 1004,
     question_key: 'level-fund-diversify',
-    display_order: 4,
+    display_order: 7,
     main_chapter: { main_chapter_id: 5, asset_type: 'FUND' },
     question_type: 'SINGLE_CHOICE',
     prompt: '펀드의 기본 특징으로 알맞은 것은?',
@@ -96,6 +141,21 @@ const ASSET_QUESTIONS_SEED = [
       { id: 'D', text: '손실이 날 수 없다' },
     ],
     _correct_choice_id: 'A',
+  },
+  {
+    question_id: 1008,
+    question_key: 'level-fund-nav',
+    display_order: 8,
+    main_chapter: { main_chapter_id: 5, asset_type: 'FUND' },
+    question_type: 'SINGLE_CHOICE',
+    prompt: '펀드 기준가(NAV)가 의미하는 것은?',
+    choices: [
+      { id: 'A', text: '예금 이자율' },
+      { id: 'B', text: '펀드 자산의 1좌당 가치' },
+      { id: 'C', text: '주식 1주의 액면가' },
+      { id: 'D', text: '채권 만기일' },
+    ],
+    _correct_choice_id: 'B',
   },
 ]
 
@@ -170,6 +230,7 @@ const mapSubmitResult = (raw) => ({
   attemptId: raw.attempt_id,
   status: raw.status,
   results: (raw.results || []).map((r) => ({
+    questionId: r.question_id,
     mainChapterId: r.main_chapter_id,
     assetType: r.asset_type,
     isCorrect: r.is_correct,
@@ -226,10 +287,10 @@ export const startLevelTest = async () => {
     return { data: mapAttempt(structuredClone(state.attempt)) }
   }
 
-  if (ASSET_QUESTIONS_SEED.length !== 4) {
+  if (!ASSET_QUESTIONS_SEED.length) {
     throw new LevelTestApiError(
       'LEVEL_TEST_QUESTION_SET_INVALID',
-      '대단원별 공개 문항 구성이 올바르지 않다.',
+      '레벨 테스트 공개 문항이 없다.',
       422,
     )
   }
@@ -339,10 +400,8 @@ export const submitLevelTest = async (attemptId) => {
 
   /** @type {object[]} */
   const results = []
-  /** @type {object[]} */
-  const recommendations = []
-  /** @type {object[]} */
-  const cart_candidates = []
+  /** @type {Map<number, { wrong: boolean, assetType: string, correctCount: number, total: number }>} */
+  const chapterOutcome = new Map()
 
   for (const question of attempt.questions) {
     const qid = question.question_id
@@ -353,20 +412,41 @@ export const submitLevelTest = async (attemptId) => {
     const assetType = question.main_chapter.asset_type
 
     results.push({
+      question_id: qid,
       main_chapter_id: mainChapterId,
       asset_type: assetType,
       is_correct: isCorrect,
     })
 
-    if (isCorrect) {
-      cart_candidates.push({
-        main_chapter_id: mainChapterId,
-        asset_type: assetType,
-      })
-    } else {
+    const prev = chapterOutcome.get(mainChapterId) ?? {
+      wrong: false,
+      assetType,
+      correctCount: 0,
+      total: 0,
+    }
+    chapterOutcome.set(mainChapterId, {
+      wrong: prev.wrong || !isCorrect,
+      assetType,
+      correctCount: prev.correctCount + (isCorrect ? 1 : 0),
+      total: prev.total + 1,
+    })
+  }
+
+  /** @type {object[]} */
+  const recommendations = []
+  /** @type {object[]} */
+  const cart_candidates = []
+
+  for (const [mainChapterId, outcome] of chapterOutcome) {
+    if (outcome.wrong) {
       recommendations.push({
         main_chapter_id: mainChapterId,
         source_type: 'LEVEL_TEST_WRONG',
+      })
+    } else {
+      cart_candidates.push({
+        main_chapter_id: mainChapterId,
+        asset_type: outcome.assetType,
       })
     }
   }

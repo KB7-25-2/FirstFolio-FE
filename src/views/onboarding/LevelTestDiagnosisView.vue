@@ -5,8 +5,12 @@ import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import QuizExamPaper from '@/components/learning/QuizExamPaper.vue'
 import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
 import TimetableSheet from '@/components/learning/TimetableSheet.vue'
+import ChapterProgress from '@/components/learning/ChapterProgress.vue'
+import LevelTestResultNote from '@/components/onboarding/LevelTestResultNote.vue'
 import { useOnboardingTutorial } from '@/composables/useOnboardingTutorial.js'
 import { useLevelTestQuiz } from '@/composables/useLevelTestQuiz.js'
+import { useLevelTestResult } from '@/composables/useLevelTestResult.js'
+import { computed } from 'vue'
 import penguin from '@/assets/study/penguin.png'
 
 const {
@@ -23,6 +27,7 @@ const {
   onTutorialStart,
   onDiagnosisStart,
   goResult,
+  goCurriculum,
 } = useOnboardingTutorial()
 
 const {
@@ -38,21 +43,17 @@ const {
   primaryEnabled,
   actionError,
   storeError,
-  chapterResults,
-  recommendations,
-  cartCandidates,
   optionVariant,
   selectOption,
   onPrimaryAction,
   goPrev,
 } = useLevelTestQuiz()
 
-const ASSET_LABELS = {
-  DEPOSIT_SAVINGS: '예·적금',
-  BOND: '채권',
-  STOCK: '주식',
-  FUND: '펀드',
-}
+const { resultRows } = useLevelTestResult()
+
+const scorePerQuestion = computed(() =>
+  questionTotal.value > 0 ? Math.round(100 / questionTotal.value) : 10,
+)
 
 const onQuizPrimary = async () => {
   const result = await onPrimaryAction()
@@ -177,7 +178,7 @@ const onQuizPrimary = async () => {
           <TimetableSheet
             category-label="금융 기초 진단"
             title="오늘의 시험 과목"
-            description="예·적금 · 채권 · 주식 · 펀드 각 1문항"
+            description="예·적금 · 채권 · 주식 · 펀드 단원별 기초 문항"
             unit-index="DIAG 01"
             :periods="diagnosisPeriods"
             :show-scroll-hint="false"
@@ -261,7 +262,7 @@ const onQuizPrimary = async () => {
             :subject="subject"
             :question-index="questionNumber"
             :question-total="questionTotal"
-            :score-per-question="25"
+            :score-per-question="scorePerQuestion"
           >
             <div class="relative flex gap-2">
               <p class="relative z-[1] shrink-0 font-serif text-[13px] font-black text-[#29211a]">
@@ -325,39 +326,48 @@ const onQuizPrimary = async () => {
       </template>
     </LearningLayout>
 
-    <!-- 제출 후 임시 결과 (결과 UI 본문은 후속) -->
+    <!-- 07 진단 결과 (Figma) -->
+    <template v-else-if="phase === 'result'">
+      <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-10 pb-3">
+        <ChapterProgress chapter-label="DIAGNOSIS" title="진단 결과" :current="4" :total="4" />
+
+        <div class="mt-5 w-full max-w-[359px] self-center">
+          <LevelTestResultNote :rows="resultRows" />
+        </div>
+      </div>
+
+      <div class="flex shrink-0 px-4 pt-2 pb-6">
+        <button
+          type="button"
+          class="btn-hover flex h-12 w-full items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec]"
+          @click="goCurriculum"
+        >
+          추천 보기 →
+        </button>
+      </div>
+    </template>
+
+    <!-- 커리큘럼 담기 placeholder -->
     <div
-      v-else-if="phase === 'result'"
+      v-else-if="phase === 'curriculum'"
       class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-10 pb-8"
     >
-      <p class="font-serif text-[10px] tracking-wide text-[rgba(245,237,217,0.5)]">
-        FIRSTFOLIO · RESULT
-      </p>
-      <h1 class="mt-2 font-serif text-[22px] font-black text-[#f5edd9]">진단 결과</h1>
-
+      <ChapterProgress chapter-label="DIAGNOSIS" title="추천 커리큘럼" :current="4" :total="4" />
       <LearningNotePaper class="mt-6" surface-class="bg-[#f5edd9]">
-        <div class="px-4 py-4">
-          <p class="font-pen text-[22px] text-[#212b5c]">채점이 완료됐어요</p>
-          <ul class="mt-4 flex flex-col gap-2">
-            <li
-              v-for="row in chapterResults"
-              :key="row.mainChapterId"
-              class="flex items-center justify-between font-serif text-[13px] text-[#29211a]"
-            >
-              <span>{{ ASSET_LABELS[row.assetType] ?? row.assetType }}</span>
-              <span :class="row.isCorrect ? 'text-[#3d7a4a]' : 'text-[#c12e24]'">
-                {{ row.isCorrect ? '정답' : '오답' }}
-              </span>
-            </li>
-          </ul>
-          <p class="mt-4 font-serif text-[11px] text-[rgba(61,31,8,0.65)]">
-            추천 {{ recommendations.length }}개 · 장바구니 후보 {{ cartCandidates.length }}개
-          </p>
-          <p class="mt-2 font-pen text-[16px] text-[rgba(139,100,60,0.45)]">
-            커리큘럼 담기 화면은 다음 이슈에서 연결됩니다
+        <div class="px-4 py-5">
+          <p class="font-pen text-[24px] text-[#212b5c]">추천 구성을 준비 중이에요</p>
+          <p class="mt-2 font-serif text-[12px] text-[rgba(61,31,8,0.65)]">
+            커리큘럼 담기·편집 화면은 다음 이슈에서 연결됩니다
           </p>
         </div>
       </LearningNotePaper>
+      <button
+        type="button"
+        class="btn-hover mt-6 flex h-12 w-full items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec]"
+        @click="goResult"
+      >
+        결과로 돌아가기
+      </button>
     </div>
   </div>
 </template>

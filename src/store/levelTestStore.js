@@ -59,7 +59,62 @@ export const useLevelTestStore = defineStore('levelTest', () => {
 
   const recommendations = computed(() => submitResult.value?.recommendations ?? [])
   const cartCandidates = computed(() => submitResult.value?.cartCandidates ?? [])
-  const chapterResults = computed(() => submitResult.value?.results ?? [])
+  /** 문항별 채점 결과 리스트 */
+  const questionResults = computed(() => submitResult.value?.results ?? [])
+
+  /**
+   * 결과 화면용 대단원 집계 행
+   * — 전부 정답: 탄탄 + 장바구니 / 일부 정답: 보통 + 자동 포함 / 전부 오답: 보완 + 자동 포함
+   */
+  const chapterResultRows = computed(() => {
+    /** @type {Map<number, { assetType: string, correct: number, total: number, order: number }>} */
+    const byChapter = new Map()
+
+    for (const q of questions.value) {
+      const prev = byChapter.get(q.mainChapterId) ?? {
+        assetType: q.assetType,
+        correct: 0,
+        total: 0,
+        order: q.displayOrder,
+      }
+      if (q.displayOrder < prev.order) prev.order = q.displayOrder
+      byChapter.set(q.mainChapterId, prev)
+    }
+
+    for (const r of questionResults.value) {
+      const prev = byChapter.get(r.mainChapterId) ?? {
+        assetType: r.assetType,
+        correct: 0,
+        total: 0,
+        order: r.mainChapterId,
+      }
+      prev.total += 1
+      if (r.isCorrect) prev.correct += 1
+      byChapter.set(r.mainChapterId, prev)
+    }
+
+    return Array.from(byChapter.entries())
+      .map(([mainChapterId, stats]) => {
+        const allCorrect = stats.total > 0 && stats.correct === stats.total
+        const noneCorrect = stats.correct === 0
+        /** @type {'탄탄' | '보통' | '보완'} */
+        let resultLabel = '보통'
+        if (allCorrect) resultLabel = '탄탄'
+        else if (noneCorrect) resultLabel = '보완'
+
+        return {
+          mainChapterId,
+          assetType: stats.assetType,
+          resultLabel,
+          actionLabel: allCorrect ? '장바구니' : '자동 포함',
+          isAutoInclude: !allCorrect,
+          correctCount: stats.correct,
+          totalCount: stats.total,
+          order: stats.order,
+        }
+      })
+      .sort((a, b) => a.order - b.order)
+  })
 
   const fetchStatus = async () => {
     isLoading.value = true
@@ -251,7 +306,8 @@ export const useLevelTestStore = defineStore('levelTest', () => {
     allAnswersReady,
     recommendations,
     cartCandidates,
-    chapterResults,
+    questionResults,
+    chapterResultRows,
     fetchStatus,
     ensureStatus,
     start,
