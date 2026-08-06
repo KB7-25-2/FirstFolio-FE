@@ -11,14 +11,14 @@
  * @property {number} userId
  * @property {string} nickname
  * @property {string} roleCode
- * @property {string} onboardingStep
+ * @property {import('@/router/onboardingRedirect.js').OnboardingStep} onboardingStep
  */
 
 /**
  * POST /auth/login 응답 data
  * @typedef {object} LoginResponse
  * @property {{ userId: number, nickname: string, roleCode: string }} user
- * @property {string} onboardingStep
+ * @property {import('@/router/onboardingRedirect.js').OnboardingStep} onboardingStep
  */
 
 export {}

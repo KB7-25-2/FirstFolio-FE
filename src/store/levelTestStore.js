@@ -9,6 +9,7 @@ import {
   resetLevelTestState,
   LevelTestApiError,
 } from '@/services/levelTestService.js'
+import { useAuthStore } from '@/store/authStore.js'
 
 export const useLevelTestStore = defineStore('levelTest', () => {
   /** @type {import('vue').Ref<boolean | null>} null = 아직 조회 전 */
@@ -241,6 +242,7 @@ export const useLevelTestStore = defineStore('levelTest', () => {
       const { data } = await submitLevelTest(attempt.value.attemptId)
       submitResult.value = data
       completed.value = true
+      useAuthStore().setOnboardingStep('CURRICULUM')
       if (attempt.value) {
         attempt.value = { ...attempt.value, status: 'COMPLETED' }
       }

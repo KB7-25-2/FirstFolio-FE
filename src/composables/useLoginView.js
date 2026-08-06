@@ -1,27 +1,14 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/authStore.js'
-import { useLevelTestStore } from '@/store/levelTestStore.js'
-import { resolvePostAuthPath } from '@/router/guards.js'
+import { ONBOARDING_PATHS, resolveAuthEntryPath } from '@/router/onboardingRedirect.js'
 
 /**
- * @param {string | undefined} onboardingStep
+ * @param {string | undefined} onboardingStep POST /auth/login 응답
  * @param {string} fallbackHome
- * @returns {Promise<string>}
  */
-const resolveLoginRedirect = async (onboardingStep, fallbackHome) => {
-  if (onboardingStep === 'LEVEL_TEST') {
-    return '/onboarding/intro'
-  }
-
-  if (onboardingStep === 'CURRICULUM') {
-    return '/onboarding/curriculum'
-  }
-
-  const levelTestStore = useLevelTestStore()
-  const completed = await levelTestStore.ensureStatus()
-  return resolvePostAuthPath(completed, fallbackHome)
-}
+const resolveLoginRedirect = (onboardingStep, fallbackHome) =>
+  resolveAuthEntryPath({ onboardingStep, fallbackHome })
 
 export const useLoginView = () => {
   const route = useRoute()
@@ -84,7 +71,7 @@ export const useLoginView = () => {
         { remember: rememberMe.value },
       )
 
-      const path = await resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
+      const path = resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
       await router.push(path)
     } catch (err) {
       if (err?.code === 'SIGNUP_REQUIRED') {
@@ -112,8 +99,7 @@ export const useLoginView = () => {
 
     try {
       const data = await authStore.loginWithGoogle({ onDismissed: unlockIfPopupDismissed })
-      isLoading.value = true
-      const path = await resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
+      const path = resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
       await router.push(path)
     } catch (err) {
       if (err?.code === 'SIGNUP_REQUIRED') {
@@ -137,8 +123,7 @@ export const useLoginView = () => {
 
     try {
       await authStore.signupWithGoogle({ onDismissed: unlockIfPopupDismissed })
-      isLoading.value = true
-      await router.push('/onboarding/intro')
+      await router.push(ONBOARDING_PATHS.intro)
     } catch (err) {
       error.value = err?.message || 'Google 회원가입에 실패했습니다.'
     } finally {
@@ -173,7 +158,7 @@ export const useLoginView = () => {
         email: email.value,
         password: password.value,
       })
-      await router.push('/onboarding/intro')
+      await router.push(ONBOARDING_PATHS.intro)
     } catch (err) {
       error.value = err?.message || '회원가입에 실패했습니다.'
     } finally {
