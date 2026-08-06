@@ -1,77 +1,15 @@
 import { test, expect } from '@playwright/test'
+import {
+  mockUserProfileApi,
+  seedOnboardingSession,
+  skipUnlessChromium,
+} from './helpers/authSession.js'
 
 /**
  * 온보딩 라우팅 E2E
  * — POST /auth/login onboarding_step(LEVEL_TEST | CURRICULUM | HOME) 기준 가드 분기 검증
  * — Pinia 패치 없이 sessionStorage + access_token으로 세션 시드
  */
-
-const E2E_TOKEN = 'e2e-onboarding-routing-token'
-
-/**
- * @param {import('@playwright/test').Page} page
- */
-const mockUserProfileApi = async (page) => {
-  await page.route('**/users/me', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.continue()
-      return
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        data: {
-          user_id: 1,
-          email: 'e2e@example.com',
-          nickname: 'E2E테스트',
-          role_code: 'USER',
-          newsletter_opt_in: false,
-          point_balance: 0,
-          created_at: '2024-01-01T00:00:00Z',
-        },
-      }),
-    })
-  })
-}
-
-/**
- * @param {import('@playwright/test').Page} page
- * @param {'LEVEL_TEST' | 'CURRICULUM' | 'HOME'} onboardingStep
- * @param {{ levelTestCompleted?: boolean, curriculumConfirmed?: boolean }} [options]
- */
-const seedOnboardingSession = async (page, onboardingStep, options = {}) => {
-  const { levelTestCompleted = false, curriculumConfirmed = false } = options
-
-  await mockUserProfileApi(page)
-  await page.addInitScript(
-    ({ token, step, levelTestCompleted, curriculumConfirmed }) => {
-      localStorage.clear()
-      sessionStorage.clear()
-      localStorage.setItem('access_token', token)
-      sessionStorage.setItem('onboarding_step', step)
-
-      if (levelTestCompleted) {
-        localStorage.setItem('level_test_state', JSON.stringify({ completed: true, attempt: null }))
-      }
-
-      if (curriculumConfirmed) {
-        localStorage.setItem('curriculum_state', JSON.stringify({ confirmed: true }))
-      }
-    },
-    {
-      token: E2E_TOKEN,
-      step: onboardingStep,
-      levelTestCompleted,
-      curriculumConfirmed,
-    },
-  )
-}
-
-const skipUnlessChromium = (testInfo) => {
-  test.skip(testInfo.project.name !== 'chromium', '세션 시드 — chromium만')
-}
 
 test.describe('온보딩 라우팅 · 인증 가드', () => {
   test('미인증 사용자가 /home 접근 시 로그인으로 보낸다', async ({ page }) => {

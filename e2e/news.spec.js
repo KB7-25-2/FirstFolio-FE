@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test'
+import { seedHomeSession, skipUnlessChromium } from './helpers/authSession.js'
 
 test.describe('홈 금융 뉴스 스크랩 (UI)', () => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    skipUnlessChromium(testInfo)
+    await seedHomeSession(page)
+  })
+
   test('홈에 뉴스 스크랩 섹션이 보인다', async ({ page }) => {
     await page.goto('/home')
     await expect(page.getByText('오늘의 금융 뉴스 스크랩')).toBeVisible()

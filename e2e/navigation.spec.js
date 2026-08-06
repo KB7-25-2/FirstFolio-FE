@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedHomeSession, skipUnlessChromium } from './helpers/authSession.js'
 
 test.describe('로그인 · 홈 네비게이션 (UI)', () => {
   test('로그인 화면에 firstfolio 브랜딩이 보인다', async ({ page }) => {
@@ -6,7 +7,9 @@ test.describe('로그인 · 홈 네비게이션 (UI)', () => {
     await expect(page.getByText(/firstfolio|로그인|입장/i).first()).toBeVisible()
   })
 
-  test('홈에서 하단 Navbar 탭이 보인다', async ({ page }) => {
+  test('홈에서 하단 Navbar 탭이 보인다', async ({ page }, testInfo) => {
+    skipUnlessChromium(testInfo)
+    await seedHomeSession(page)
     await page.goto('/home')
 
     const nav = page.getByRole('navigation')
@@ -16,7 +19,9 @@ test.describe('로그인 · 홈 네비게이션 (UI)', () => {
     await expect(nav.getByRole('button', { name: '상점', exact: true })).toBeVisible()
   })
 
-  test('Navbar로 학습 탭 이동이 된다', async ({ page }) => {
+  test('Navbar로 학습 탭 이동이 된다', async ({ page }, testInfo) => {
+    skipUnlessChromium(testInfo)
+    await seedHomeSession(page)
     await page.goto('/home')
     await page.getByRole('navigation').getByRole('button', { name: '학습', exact: true }).click()
     await expect(page).toHaveURL(/\/learning/)
