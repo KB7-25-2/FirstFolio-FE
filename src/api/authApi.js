@@ -17,6 +17,10 @@ export const login = (idToken) =>
     headers: { Authorization: `Bearer ${idToken}` },
   })
 
-export const logout = () => apiClient.post('/auth/logout')
-
-export const refreshToken = () => apiClient.post('/auth/refresh')
+/**
+ * @param {string} idToken Firebase ID Token
+ */
+export const logout = (idToken) =>
+  apiClient.post('/auth/logout', null, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })

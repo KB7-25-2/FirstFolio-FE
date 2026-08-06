@@ -4,7 +4,7 @@
  */
 
 import { deleteUser } from 'firebase/auth'
-import { signUp as signUpApi, login as loginApi } from '@/api/authApi.js'
+import { signUp as signUpApi, login as loginApi, logout as logoutApi } from '@/api/authApi.js'
 import { ApiError } from '@/api/errorHandler.js'
 import {
   signInWithGoogle,
@@ -14,9 +14,8 @@ import {
   signOutFirebase,
   FirebaseAuthError,
 } from '@/services/firebaseAuthService.js'
+import { getToken } from '@/utils/token.js'
 import { resolveNicknameFromGoogle, validateNickname } from '@/utils/nickname.js'
-
-const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** @type {Record<string, string>} */
 const AUTH_ERROR_MESSAGES = {
@@ -204,23 +203,20 @@ export class AuthApiError extends Error {
 }
 
 /**
- * 로그아웃 (목업)
+ * FirstFolio 로그아웃 후 Firebase 세션 종료
+ * API 실패(401 포함)·네트워크 오류여도 로컬 Firebase 로그아웃은 완료한다.
  * POST /auth/logout
  */
 export const logout = async () => {
-  await delay(50)
-}
+  const idToken = getToken() || (await getIdToken().catch(() => null))
 
-/**
- * 토큰 갱신 (목업)
- * POST /auth/refresh
- * @returns {Promise<{ data: { accessToken: string } }>}
- */
-export const refreshToken = async () => {
-  await delay(50)
-  return {
-    data: {
-      accessToken: `mock-access-token-${Date.now()}`,
-    },
+  try {
+    if (idToken) {
+      await logoutApi(idToken)
+    }
+  } catch {
+    // 401 UNAUTHORIZED 등 — 세션이 이미 무효해도 로컬 정리는 계속 진행
+  } finally {
+    await signOutFirebase().catch(() => {})
   }
 }

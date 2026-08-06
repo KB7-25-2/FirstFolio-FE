@@ -65,9 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try {
-      if (hasToken()) {
-        await logoutApi()
-      }
+      await logoutApi()
     } finally {
       removeToken()
       useUserStore().clearProfile()
