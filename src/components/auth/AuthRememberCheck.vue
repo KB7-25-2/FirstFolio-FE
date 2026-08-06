@@ -8,6 +8,10 @@ defineProps({
     type: String,
     default: '자동 입장 유지',
   },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 defineEmits(['update:modelValue'])
@@ -16,7 +20,8 @@ defineEmits(['update:modelValue'])
 <template>
   <button
     type="button"
-    class="relative flex items-center gap-[5px]"
+    :disabled="disabled"
+    class="relative flex items-center gap-[5px] disabled:cursor-not-allowed disabled:opacity-50"
     @click="$emit('update:modelValue', !modelValue)"
   >
     <span class="relative size-[11px] rounded-[2px] border border-[rgba(139,100,60,0.6)]">

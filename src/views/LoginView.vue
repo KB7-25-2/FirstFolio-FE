@@ -29,19 +29,31 @@ const {
   handleSubmit,
   handleGoogleContinue,
   handleForgotPassword,
+  setSignupMethod,
 } = useLoginView()
 </script>
 
 <template>
-  <div class="flex min-h-screen items-start justify-center bg-[var(--auth-page)]">
+  <div
+    class="flex min-h-screen items-start justify-center bg-[var(--auth-page)]"
+    :aria-busy="isLoading"
+  >
     <div class="mobile-frame relative flex flex-col items-center overflow-hidden px-3 pt-10 pb-6">
       <AuthPageHeader />
 
       <div class="mt-3">
-        <AuthDocTabs :model-value="activeTab" @update:model-value="switchTab" />
+        <AuthDocTabs
+          :model-value="activeTab"
+          :disabled="isLoading"
+          @update:model-value="switchTab"
+        />
       </div>
 
-      <form class="mt-5 flex flex-col items-center" @submit.prevent="handleSubmit">
+      <form
+        class="mt-5 flex flex-col items-center"
+        :aria-disabled="isLoading"
+        @submit.prevent="handleSubmit"
+      >
         <AuthClipboardBoard :header-title="clipboardHeader">
           <!-- 로그인 -->
           <template v-if="isLogin">
@@ -72,6 +84,7 @@ const {
                 type="email"
                 placeholder="email@example.com"
                 autocomplete="email"
+                :disabled="isLoading"
               />
 
               <AuthDocField
@@ -82,13 +95,15 @@ const {
                 placeholder="※ ※ ※ ※ ※ ※ ※ ※"
                 autocomplete="current-password"
                 mask-password
+                :disabled="isLoading"
               />
 
               <div class="flex items-center justify-between">
-                <AuthRememberCheck v-model="rememberMe" />
+                <AuthRememberCheck v-model="rememberMe" :disabled="isLoading" />
                 <button
                   type="button"
-                  class="font-serif text-[9px] text-[var(--auth-doc-link)] underline"
+                  class="font-serif text-[9px] text-[var(--auth-doc-link)] underline disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="isLoading"
                   @click="handleForgotPassword"
                 >
                   비밀번호를 잊으셨습니까?
@@ -100,6 +115,7 @@ const {
               <AuthMethodCard
                 title="병. Google로 로그인하기"
                 description="Google 계정으로 간편하게 입장합니다."
+                :disabled="isLoading"
                 @select="handleGoogleContinue"
               />
 
@@ -137,14 +153,16 @@ const {
                 title="갑. 외부 계정 연동 (Google)"
                 description="Google 계정으로 간편하게 등록합니다."
                 :selected="signupMethod === 'google'"
-                @select="signupMethod = 'google'"
+                :disabled="isLoading"
+                @select="setSignupMethod('google')"
               />
 
               <AuthMethodCard
                 title="을. 이메일로 계속하기"
                 description="전자우편 주소와 비밀번호로 직접 등록합니다."
                 :selected="signupMethod === 'email'"
-                @select="signupMethod = 'email'"
+                :disabled="isLoading"
+                @select="setSignupMethod('email')"
               />
 
               <AuthEnterCta type="submit" label="다음 장으로  →" :disabled="isLoading" />
@@ -183,6 +201,7 @@ const {
                 label="일. 성명 (닉네임)"
                 placeholder="김투자"
                 autocomplete="nickname"
+                :disabled="isLoading"
               />
 
               <AuthDocField
@@ -192,6 +211,7 @@ const {
                 type="email"
                 placeholder="email@example.com"
                 autocomplete="email"
+                :disabled="isLoading"
               />
 
               <AuthDocField
@@ -202,6 +222,7 @@ const {
                 placeholder="※ ※ ※ ※ ※ ※ ※ ※"
                 autocomplete="new-password"
                 mask-password
+                :disabled="isLoading"
               />
 
               <AuthDocField
@@ -212,11 +233,12 @@ const {
                 placeholder="※ ※ ※ ※ ※ ※ ※ ※"
                 autocomplete="new-password"
                 mask-password
+                :disabled="isLoading"
               />
 
               <AuthSignature :name="signatureName" seal-label="서명" />
 
-              <AuthEnterCta type="submit" label="등록 신청하기  →" />
+              <AuthEnterCta type="submit" label="등록 신청하기  →" :disabled="isLoading" />
             </div>
           </template>
         </AuthClipboardBoard>

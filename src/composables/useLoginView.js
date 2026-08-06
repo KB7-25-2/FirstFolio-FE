@@ -57,6 +57,7 @@ export const useLoginView = () => {
   )
 
   const switchTab = (tab) => {
+    if (isLoading.value) return
     activeTab.value = tab
     error.value = ''
     if (tab === 'signup') {
@@ -64,7 +65,13 @@ export const useLoginView = () => {
     }
   }
 
+  const setSignupMethod = (method) => {
+    if (isLoading.value) return
+    signupMethod.value = method
+  }
+
   const handleLogin = async () => {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = ''
 
@@ -86,18 +93,25 @@ export const useLoginView = () => {
     }
   }
 
+  const unlockIfPopupDismissed = () => {
+    isLoading.value = false
+  }
+
   const handleGoogleLogin = async () => {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = ''
 
     try {
-      const data = await authStore.loginWithGoogle()
+      const data = await authStore.loginWithGoogle({ onDismissed: unlockIfPopupDismissed })
+      isLoading.value = true
       const path = await resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
       await router.push(path)
     } catch (err) {
       if (err?.code === 'SIGNUP_REQUIRED') {
         signupMethod.value = 'google'
-        switchTab('signup')
+        activeTab.value = 'signup'
+        signupStep.value = 'method'
         error.value = err.message
         return
       }
@@ -109,11 +123,13 @@ export const useLoginView = () => {
   }
 
   const handleGoogleSignup = async () => {
+    if (isLoading.value) return
     isLoading.value = true
     error.value = ''
 
     try {
-      await authStore.signupWithGoogle()
+      await authStore.signupWithGoogle({ onDismissed: unlockIfPopupDismissed })
+      isLoading.value = true
       await router.push('/onboarding/intro')
     } catch (err) {
       error.value = err?.message || 'Google 회원가입에 실패했습니다.'
@@ -123,6 +139,7 @@ export const useLoginView = () => {
   }
 
   const handleSignupMethodNext = async () => {
+    if (isLoading.value) return
     error.value = ''
     if (signupMethod.value === 'google') {
       await handleGoogleSignup()
@@ -132,6 +149,7 @@ export const useLoginView = () => {
   }
 
   const handleSignupSubmit = () => {
+    if (isLoading.value) return
     if (password.value !== passwordConfirm.value) {
       error.value = '비밀번호가 일치하지 않습니다.'
       return
@@ -140,6 +158,7 @@ export const useLoginView = () => {
   }
 
   const handleSubmit = async () => {
+    if (isLoading.value) return
     if (isLogin.value) {
       await handleLogin()
       return
@@ -159,6 +178,7 @@ export const useLoginView = () => {
   }
 
   const handleForgotPassword = () => {
+    if (isLoading.value) return
     error.value = '비밀번호 찾기는 준비 중입니다.'
   }
 
@@ -178,6 +198,7 @@ export const useLoginView = () => {
     clipboardHeader,
     signatureName,
     switchTab,
+    setSignupMethod,
     handleSubmit,
     handleGoogleContinue,
     handleForgotPassword,

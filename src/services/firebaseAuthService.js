@@ -104,8 +104,28 @@ export const signInWithEmail = (email, password) => {
 }
 
 /** 구글 로그인 */
-export const signInWithGoogle = () =>
-  runFirebaseAuth(() => signInWithPopup(firebaseAuth, googleProvider))
+export const signInWithGoogle = (options = {}) =>
+  runFirebaseAuth(async () => {
+    const { onDismissed } = options
+    let settled = false
+
+    // Firebase는 팝업을 닫아도 reject가 수 초 늦을 수 있어, 포커스 복귀 시 빨리 UI를 푼다.
+    const onFocus = () => {
+      window.setTimeout(() => {
+        if (settled || firebaseAuth.currentUser) return
+        onDismissed?.()
+      }, 300)
+    }
+
+    window.addEventListener('focus', onFocus)
+
+    try {
+      return await signInWithPopup(firebaseAuth, googleProvider)
+    } finally {
+      settled = true
+      window.removeEventListener('focus', onFocus)
+    }
+  })
 
 /** 토큰 발급 */
 export const getIdToken = async (forceRefresh = false) => {

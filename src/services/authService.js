@@ -72,20 +72,22 @@ const mapAuthError = (error, fallbackCode, fallbackMessage) => {
 
 /**
  * Google 팝업 인증 후 ID Token 발급 (로그인·회원가입 공통)
+ * @param {{ onDismissed?: () => void }} [options]
  * @returns {Promise<{ credential: import('firebase/auth').UserCredential, idToken: string }>}
  */
-export const authenticateWithGoogle = async () => {
-  const credential = await signInWithGoogle()
+export const authenticateWithGoogle = async (options = {}) => {
+  const credential = await signInWithGoogle(options)
   const idToken = await getIdToken()
   return { credential, idToken }
 }
 
 /**
  * Google 계정으로 Firebase 인증 후 FirstFolio 회원가입
+ * @param {{ onDismissed?: () => void }} [options]
  * @returns {Promise<{ data: SignupResponse, idToken: string }>}
  */
-export const signupWithGoogle = async () => {
-  const { credential, idToken } = await authenticateWithGoogle()
+export const signupWithGoogle = async (options = {}) => {
+  const { credential, idToken } = await authenticateWithGoogle(options)
   const { user } = credential
   const nickname = resolveNicknameFromGoogle(user)
 
@@ -113,10 +115,11 @@ export const signupWithGoogle = async () => {
 
 /**
  * Google 계정으로 Firebase 인증 후 FirstFolio 로그인
+ * @param {{ onDismissed?: () => void }} [options]
  * @returns {Promise<{ data: LoginResponse, idToken: string }>}
  */
-export const loginWithGoogle = async () => {
-  const { idToken } = await authenticateWithGoogle()
+export const loginWithGoogle = async (options = {}) => {
+  const { idToken } = await authenticateWithGoogle(options)
 
   try {
     const { data } = await loginApi(idToken)

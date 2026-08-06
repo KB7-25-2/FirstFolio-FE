@@ -44,14 +44,14 @@ export const useAuthStore = defineStore('auth', () => {
     await establishSession(token)
   }
 
-  const signupWithGoogle = async () => {
-    const { data, idToken } = await signupWithGoogleApi()
+  const signupWithGoogle = async (options = {}) => {
+    const { data, idToken } = await signupWithGoogleApi(options)
     await establishSession(idToken)
     return data
   }
 
-  const loginWithGoogle = async () => {
-    const { data, idToken } = await loginWithGoogleApi()
+  const loginWithGoogle = async (options = {}) => {
+    const { data, idToken } = await loginWithGoogleApi(options)
     await establishSession(idToken)
     return data
   }
