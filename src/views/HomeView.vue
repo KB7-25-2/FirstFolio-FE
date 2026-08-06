@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useAuthStore } from '@/store/authStore.js'
 import { useUserStore } from '@/store/userStore.js'
@@ -7,10 +7,16 @@ import { formatKoreanDate } from '@/utils/date.js'
 import PortfolioSummary from '@/components/PortfolioSummary.vue'
 import StudyNote from '@/components/StudyNote.vue'
 import NewsScrap from '@/components/NewsScrap.vue'
+import UserProfileModal from '@/components/UserProfileModal.vue'
+import BaseConfirmModal from '@/components/BaseConfirmModal.vue'
 
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const { greeting } = storeToRefs(userStore)
+
+const isProfileOpen = ref(false)
+const isLogoutConfirmOpen = ref(false)
+const isLoggingOut = ref(false)
 
 const todayLabel = computed(() => formatKoreanDate())
 
@@ -20,8 +26,32 @@ onMounted(() => {
   }
 })
 
-const onLogout = () => {
-  authStore.logout()
+const openProfile = () => {
+  isProfileOpen.value = true
+}
+
+const closeProfile = () => {
+  isProfileOpen.value = false
+}
+
+const openLogoutConfirm = () => {
+  isLogoutConfirmOpen.value = true
+}
+
+const closeLogoutConfirm = () => {
+  if (isLoggingOut.value) return
+  isLogoutConfirmOpen.value = false
+}
+
+const confirmLogout = async () => {
+  if (isLoggingOut.value) return
+  isLoggingOut.value = true
+  try {
+    await authStore.logout()
+  } finally {
+    isLoggingOut.value = false
+    isLogoutConfirmOpen.value = false
+  }
 }
 </script>
 
@@ -38,8 +68,16 @@ const onLogout = () => {
         <button
           type="button"
           class="btn-hover flex size-8 shrink-0 items-center justify-center rounded-md text-[rgba(245,237,217,0.55)] hover:bg-white/5 hover:text-[#f5edd9]"
+          aria-label="내 프로필"
+          @click="openProfile"
+        >
+          <font-awesome-icon icon="fa-solid fa-user" class="text-[14px]" />
+        </button>
+        <button
+          type="button"
+          class="btn-hover flex size-8 shrink-0 items-center justify-center rounded-md text-[rgba(245,237,217,0.55)] hover:bg-white/5 hover:text-[#f5edd9]"
           aria-label="로그아웃"
-          @click="onLogout"
+          @click="openLogoutConfirm"
         >
           <font-awesome-icon icon="fa-solid fa-arrow-right-from-bracket" class="text-[14px]" />
         </button>
@@ -72,5 +110,19 @@ const onLogout = () => {
 
       <NewsScrap />
     </div>
+
+    <UserProfileModal :open="isProfileOpen" @close="closeProfile" />
+
+    <BaseConfirmModal
+      v-if="isLogoutConfirmOpen"
+      title="로그아웃"
+      message="정말 로그아웃 하시겠습니까?"
+      confirm-label="로그아웃"
+      cancel-label="취소"
+      confirm-variant="danger"
+      :is-submitting="isLoggingOut"
+      @close="closeLogoutConfirm"
+      @confirm="confirmLogout"
+    />
   </div>
 </template>
