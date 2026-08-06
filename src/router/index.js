@@ -26,6 +26,12 @@ const router = createRouter({
           component: () => import('@/views/HomeView.vue'),
         },
         {
+          path: 'daily-quest',
+          name: 'daily-quest',
+          component: () => import('@/views/DailyQuestView.vue'),
+          meta: { hideNavbar: true },
+        },
+        {
           path: 'learning',
           component: () => import('@/views/learning/LearningShellView.vue'),
           meta: { navTab: 'learning' },

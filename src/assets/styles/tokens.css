@@ -55,6 +55,10 @@
   --color-study-score-label: rgba(0, 0, 0, 0.55);
   --color-study-tape: rgba(255, 242, 204, 0.55);
   --color-study-sticker: #fffaed;
+  --color-study-quest-surface: #ffecdd;
+  --color-study-quest-border: #e0a07a;
+  --color-study-quest-tape: rgba(255, 196, 168, 0.72);
+  --color-study-quest-continue: #c45c2a;
 
   /* PortfolioSummary */
   --color-portfolio-surface: #f5edd9;
@@ -173,6 +177,10 @@
   --study-score-label: var(--color-study-score-label);
   --study-tape: var(--color-study-tape);
   --study-sticker: var(--color-study-sticker);
+  --study-quest-surface: var(--color-study-quest-surface);
+  --study-quest-border: var(--color-study-quest-border);
+  --study-quest-tape: var(--color-study-quest-tape);
+  --study-quest-continue: var(--color-study-quest-continue);
 
   /* PortfolioSummary */
   --portfolio-surface: var(--color-portfolio-surface);

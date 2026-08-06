@@ -91,4 +91,23 @@
   .memo-selectable {
     @apply cursor-pointer transition-transform duration-200 ease-out hover:scale-[1.02];
   }
+
+  /* StudyNote 「이어서 / 이어하기」 텍스트 CTA — 메모지 전체 hover와 구분 */
+  .study-continue-cta {
+    @apply transition-[color,background-color,transform] duration-150 ease-out;
+  }
+
+  .study-continue-cta:hover {
+    color: #15803d;
+    background-color: rgba(34, 197, 94, 0.14);
+  }
+
+  .study-continue-cta--quest:hover {
+    color: #9a3f18;
+    background-color: rgba(196, 92, 42, 0.14);
+  }
+
+  .study-continue-cta:active {
+    transform: scale(0.97);
+  }
 }
