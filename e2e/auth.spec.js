@@ -179,3 +179,59 @@ test.describe('Google 로그인 API 목 (성공·SIGNUP_REQUIRED)', () => {
     await expect(page).toHaveURL(/\/login/)
   })
 })
+
+test.describe('이메일 회원가입', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearAuthAndOpenLogin(page)
+  })
+
+  const openEmailSignupForm = async (page) => {
+    await page.getByRole('button', { name: '회원가입', exact: true }).click()
+    await page.getByRole('button', { name: /이메일로 계속하기/ }).click()
+    await page.getByRole('button', { name: /다음 장으로/ }).click()
+    await expect(page.getByRole('heading', { name: '회원 등록 신청서' })).toBeVisible()
+  }
+
+  test('비밀번호 불일치 시 에러 메시지를 보여준다', async ({ page }) => {
+    await openEmailSignupForm(page)
+
+    await page.locator('#signup-nickname').fill('새싹투자자')
+    await page.locator('#signup-email').fill('newbie@example.com')
+    await page.locator('#signup-password').fill('password123')
+    await page.locator('#signup-password-confirm').fill('password999')
+    await page.getByRole('button', { name: /등록 신청하기/ }).click()
+
+    await expect(page.getByText('비밀번호가 일치하지 않습니다.')).toBeVisible()
+    await expect(page).toHaveURL(/\/login/)
+  })
+
+  test('성공 시 온보딩 intro로 이동한다', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium', 'Pinia 스토어 패치 — chromium만')
+    await openEmailSignupForm(page)
+
+    await page.evaluate(() => {
+      const app = document.querySelector('#app')?.__vue_app__
+      const pinia = app?.config?.globalProperties?.$pinia
+      const store = pinia?._s?.get('auth')
+      if (!store) throw new Error('auth store를 찾을 수 없습니다.')
+
+      store.signupWithEmail = async () => {
+        localStorage.setItem('access_token', 'e2e-email-id-token')
+        return {
+          userId: 102,
+          nickname: '새싹투자자',
+          roleCode: 'USER',
+          onboardingStep: 'LEVEL_TEST',
+        }
+      }
+    })
+
+    await page.locator('#signup-nickname').fill('새싹투자자')
+    await page.locator('#signup-email').fill('newbie@example.com')
+    await page.locator('#signup-password').fill('password123')
+    await page.locator('#signup-password-confirm').fill('password123')
+    await page.getByRole('button', { name: /등록 신청하기/ }).click()
+
+    await expect(page).toHaveURL(/\/onboarding\/intro/, { timeout: 15_000 })
+  })
+})

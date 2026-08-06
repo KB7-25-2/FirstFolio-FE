@@ -1,6 +1,24 @@
 import { describe, it, expect } from 'vitest'
 import { FirebaseAuthError } from '@/services/firebaseAuthService.js'
-import { resolveNicknameFromGoogle } from '@/utils/nickname.js'
+import { resolveNicknameFromGoogle, validateNickname } from '@/utils/nickname.js'
+
+describe('validateNickname (unit)', () => {
+  it('2~10자 닉네임을 통과시킨다', () => {
+    expect(validateNickname('새싹투자자')).toBe('새싹투자자')
+  })
+
+  it('공백을 제거한다', () => {
+    expect(validateNickname('김 투자')).toBe('김투자')
+  })
+
+  it('2자 미만이면 INVALID_NICKNAME을 던진다', () => {
+    expect(() => validateNickname('김')).toThrow(FirebaseAuthError)
+  })
+
+  it('10자 초과면 INVALID_NICKNAME을 던진다', () => {
+    expect(() => validateNickname('아주긴닉네임테스트유저')).toThrow(FirebaseAuthError)
+  })
+})
 
 describe('resolveNicknameFromGoogle (unit)', () => {
   it('displayName을 10자 이하 닉네임으로 사용한다', () => {
