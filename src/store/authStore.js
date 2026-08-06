@@ -4,6 +4,7 @@ import {
   login as loginApi,
   logout as logoutApi,
   signupWithGoogle as signupWithGoogleApi,
+  signupWithEmail as signupWithEmailApi,
   loginWithGoogle as loginWithGoogleApi,
 } from '@/services/authService.js'
 import { setToken, removeToken, hasToken } from '@/utils/token.js'
@@ -50,6 +51,12 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
+  const signupWithEmail = async (payload) => {
+    const { data, idToken } = await signupWithEmailApi(payload)
+    await establishSession(idToken)
+    return data
+  }
+
   const loginWithGoogle = async (options = {}) => {
     const { data, idToken } = await loginWithGoogleApi(options)
     await establishSession(idToken)
@@ -74,6 +81,7 @@ export const useAuthStore = defineStore('auth', () => {
     rememberedEmail,
     login,
     signupWithGoogle,
+    signupWithEmail,
     loginWithGoogle,
     logout,
   }

@@ -8,11 +8,12 @@ import { signUp as signUpApi, login as loginApi } from '@/api/authApi.js'
 import { ApiError } from '@/api/errorHandler.js'
 import {
   signInWithGoogle,
+  signUpWithEmail,
   getIdToken,
   signOutFirebase,
   FirebaseAuthError,
 } from '@/services/firebaseAuthService.js'
-import { resolveNicknameFromGoogle } from '@/utils/nickname.js'
+import { resolveNicknameFromGoogle, validateNickname } from '@/utils/nickname.js'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -105,6 +106,37 @@ export const signupWithGoogle = async (options = {}) => {
       await signOutFirebase().catch(() => {})
     }
 
+    throw mapAuthError(
+      error,
+      'SIGNUP_FAILED',
+      '회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+    )
+  }
+}
+
+/**
+ * 이메일·비밀번호로 Firebase 계정 생성 후 FirstFolio 회원가입
+ * @param {{ nickname: string, email: string, password: string }} payload
+ * @returns {Promise<{ data: SignupResponse, idToken: string }>}
+ */
+export const signupWithEmail = async ({ nickname, email, password }) => {
+  const normalizedNickname = validateNickname(nickname)
+  const credential = await signUpWithEmail(email, password)
+  const { user } = credential
+  const idToken = await getIdToken()
+
+  try {
+    const { data } = await signUpApi(
+      { nickname: normalizedNickname, required_terms_agreed: true },
+      idToken,
+    )
+
+    return {
+      data: mapSignupResponse(data.data),
+      idToken,
+    }
+  } catch (error) {
+    await deleteUser(user).catch(() => {})
     throw mapAuthError(
       error,
       'SIGNUP_FAILED',

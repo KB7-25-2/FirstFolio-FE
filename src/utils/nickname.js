@@ -16,6 +16,26 @@ const normalizeNickname = (value) => {
 }
 
 /**
+ * 공개 닉네임 검증 (2~10자, 공백 제거)
+ * @param {string} value
+ * @returns {string}
+ */
+export const validateNickname = (value) => {
+  const raw = value?.trim().replace(/\s+/g, '') ?? ''
+
+  if (raw.length < MIN_LENGTH || raw.length > MAX_LENGTH) {
+    throw new FirebaseAuthError(
+      'INVALID_NICKNAME',
+      '닉네임은 공백 없이 2자 이상 10자 이하로 입력해 주세요.',
+      null,
+      400,
+    )
+  }
+
+  return raw
+}
+
+/**
  * Google 계정 displayName·email에서 API nickname(2~10자)을 추출한다.
  * @param {{ displayName?: string | null, email?: string | null }} user
  * @returns {string}

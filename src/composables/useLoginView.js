@@ -148,13 +148,29 @@ export const useLoginView = () => {
     signupStep.value = 'form'
   }
 
-  const handleSignupSubmit = () => {
+  const handleSignupSubmit = async () => {
     if (isLoading.value) return
+
     if (password.value !== passwordConfirm.value) {
       error.value = '비밀번호가 일치하지 않습니다.'
       return
     }
-    error.value = '회원가입은 준비 중입니다.'
+
+    isLoading.value = true
+    error.value = ''
+
+    try {
+      await authStore.signupWithEmail({
+        nickname: nickname.value,
+        email: email.value,
+        password: password.value,
+      })
+      await router.push('/onboarding/intro')
+    } catch (err) {
+      error.value = err?.message || '회원가입에 실패했습니다.'
+    } finally {
+      isLoading.value = false
+    }
   }
 
   const handleSubmit = async () => {
@@ -169,7 +185,7 @@ export const useLoginView = () => {
       return
     }
 
-    handleSignupSubmit()
+    await handleSignupSubmit()
   }
 
   const handleGoogleContinue = async () => {
