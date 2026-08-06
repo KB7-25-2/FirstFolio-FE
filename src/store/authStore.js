@@ -4,6 +4,7 @@ import {
   login as loginApi,
   logout as logoutApi,
   signupWithGoogle as signupWithGoogleApi,
+  loginWithGoogle as loginWithGoogleApi,
 } from '@/services/authService.js'
 import { setToken, removeToken, hasToken } from '@/utils/token.js'
 import { useUserStore } from '@/store/userStore.js'
@@ -16,6 +17,14 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => hasToken())
   const rememberedEmail = ref(localStorage.getItem(REMEMBER_KEY) || '')
 
+  /**
+   * @param {string} idToken
+   */
+  const establishSession = async (idToken) => {
+    setToken(idToken)
+    await useUserStore().fetchProfile()
+  }
+
   const login = async (credentials, options = {}) => {
     const { data } = await loginApi(credentials)
     const token = data.accessToken ?? data.token
@@ -23,8 +32,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token) {
       throw new Error('로그인 응답에 토큰이 없습니다.')
     }
-
-    setToken(token)
 
     if (options.remember) {
       localStorage.setItem(REMEMBER_KEY, credentials.email)
@@ -34,17 +41,18 @@ export const useAuthStore = defineStore('auth', () => {
       rememberedEmail.value = ''
     }
 
-    const userStore = useUserStore()
-    await userStore.fetchProfile()
+    await establishSession(token)
   }
 
   const signupWithGoogle = async () => {
     const { data, idToken } = await signupWithGoogleApi()
-    setToken(idToken)
+    await establishSession(idToken)
+    return data
+  }
 
-    const userStore = useUserStore()
-    await userStore.fetchProfile()
-
+  const loginWithGoogle = async () => {
+    const { data, idToken } = await loginWithGoogleApi()
+    await establishSession(idToken)
     return data
   }
 
@@ -66,6 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
     rememberedEmail,
     login,
     signupWithGoogle,
+    loginWithGoogle,
     logout,
   }
 })

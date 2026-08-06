@@ -1,9 +1,10 @@
 /**
  * @typedef {import('@/types/auth.js').SignupResponse} SignupResponse
+ * @typedef {import('@/types/auth.js').LoginResponse} LoginResponse
  */
 
 import { deleteUser } from 'firebase/auth'
-import { signUp as signUpApi } from '@/api/authApi.js'
+import { signUp as signUpApi, login as loginApi } from '@/api/authApi.js'
 import { ApiError } from '@/api/errorHandler.js'
 import {
   signInWithGoogle,
@@ -16,10 +17,13 @@ import { resolveNicknameFromGoogle } from '@/utils/nickname.js'
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /** @type {Record<string, string>} */
-const SIGNUP_ERROR_MESSAGES = {
+const AUTH_ERROR_MESSAGES = {
   INVALID_SIGNUP_INPUT: '가입 정보 또는 필수 약관 동의가 올바르지 않습니다.',
   INVALID_ID_TOKEN: '인증이 만료되었습니다. 다시 시도해 주세요.',
   ACCOUNT_CONFLICT: '이미 사용 중인 이메일 또는 닉네임입니다.',
+  ACCOUNT_NOT_ACTIVE: '이용할 수 없는 계정입니다. 관리자에게 문의해 주세요.',
+  SIGNUP_REQUIRED: 'FirstFolio 회원 정보가 없습니다. 회원가입을 진행해 주세요.',
+  UNAUTHORIZED: '인증이 필요합니다. 다시 로그인해 주세요.',
 }
 
 /**
@@ -34,25 +38,46 @@ const mapSignupResponse = (raw) => ({
 })
 
 /**
+ * @param {object} raw
+ * @returns {LoginResponse}
+ */
+const mapLoginResponse = (raw) => ({
+  user: {
+    userId: raw.user.user_id,
+    nickname: raw.user.nickname,
+    roleCode: raw.user.role_code,
+  },
+  onboardingStep: raw.onboarding_step,
+})
+
+/**
  * @param {unknown} error
+ * @param {string} fallbackCode
+ * @param {string} fallbackMessage
  * @returns {AuthApiError | FirebaseAuthError}
  */
-const mapSignupError = (error) => {
+const mapAuthError = (error, fallbackCode, fallbackMessage) => {
   if (error instanceof FirebaseAuthError || error instanceof AuthApiError) {
     return error
   }
 
   if (error instanceof ApiError) {
-    const code = error.code ?? 'SIGNUP_FAILED'
-    const message = SIGNUP_ERROR_MESSAGES[code] ?? error.message
+    const code = error.code ?? fallbackCode
+    const message = AUTH_ERROR_MESSAGES[code] ?? error.message
     return new AuthApiError(code, message, error.status)
   }
 
-  return new AuthApiError(
-    'SIGNUP_FAILED',
-    '회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.',
-    500,
-  )
+  return new AuthApiError(fallbackCode, fallbackMessage, 500)
+}
+
+/**
+ * Google 팝업 인증 후 ID Token 발급 (로그인·회원가입 공통)
+ * @returns {Promise<{ credential: import('firebase/auth').UserCredential, idToken: string }>}
+ */
+export const authenticateWithGoogle = async () => {
+  const credential = await signInWithGoogle()
+  const idToken = await getIdToken()
+  return { credential, idToken }
 }
 
 /**
@@ -60,10 +85,9 @@ const mapSignupError = (error) => {
  * @returns {Promise<{ data: SignupResponse, idToken: string }>}
  */
 export const signupWithGoogle = async () => {
-  const credential = await signInWithGoogle()
+  const { credential, idToken } = await authenticateWithGoogle()
   const { user } = credential
   const nickname = resolveNicknameFromGoogle(user)
-  const idToken = await getIdToken()
 
   try {
     const { data } = await signUpApi({ nickname, required_terms_agreed: true }, idToken)
@@ -79,7 +103,31 @@ export const signupWithGoogle = async () => {
       await signOutFirebase().catch(() => {})
     }
 
-    throw mapSignupError(error)
+    throw mapAuthError(
+      error,
+      'SIGNUP_FAILED',
+      '회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+    )
+  }
+}
+
+/**
+ * Google 계정으로 Firebase 인증 후 FirstFolio 로그인
+ * @returns {Promise<{ data: LoginResponse, idToken: string }>}
+ */
+export const loginWithGoogle = async () => {
+  const { idToken } = await authenticateWithGoogle()
+
+  try {
+    const { data } = await loginApi(idToken)
+
+    return {
+      data: mapLoginResponse(data.data),
+      idToken,
+    }
+  } catch (error) {
+    await signOutFirebase().catch(() => {})
+    throw mapAuthError(error, 'LOGIN_FAILED', '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.')
   }
 }
 
@@ -98,8 +146,8 @@ export class AuthApiError extends Error {
 }
 
 /**
- * 로그인 (목업) — 이메일·비밀번호만 있으면 성공
- * POST /auth/login
+ * 이메일 로그인 (목업) — 이메일·비밀번호만 있으면 성공
+ * TODO: Firebase 이메일 로그인 API 연동 시 교체
  * @param {{ email: string, password: string }} credentials
  * @returns {Promise<{ data: { accessToken: string } }>}
  */

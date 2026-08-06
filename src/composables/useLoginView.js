@@ -4,6 +4,25 @@ import { useAuthStore } from '@/store/authStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
 import { resolvePostAuthPath } from '@/router/guards.js'
 
+/**
+ * @param {string | undefined} onboardingStep
+ * @param {string} fallbackHome
+ * @returns {Promise<string>}
+ */
+const resolveLoginRedirect = async (onboardingStep, fallbackHome) => {
+  if (onboardingStep === 'LEVEL_TEST') {
+    return '/onboarding/intro'
+  }
+
+  if (onboardingStep === 'CURRICULUM') {
+    return '/onboarding/curriculum'
+  }
+
+  const levelTestStore = useLevelTestStore()
+  const completed = await levelTestStore.ensureStatus()
+  return resolvePostAuthPath(completed, fallbackHome)
+}
+
 export const useLoginView = () => {
   const route = useRoute()
   const router = useRouter()
@@ -33,6 +52,10 @@ export const useLoginView = () => {
   const clipboardHeader = computed(() => (isLogin.value ? '입 장 서 류' : '등 록 서 류'))
   const signatureName = computed(() => nickname.value || '김투자')
 
+  const fallbackHome = computed(() =>
+    typeof route.query.redirect === 'string' ? route.query.redirect : '/home',
+  )
+
   const switchTab = (tab) => {
     activeTab.value = tab
     error.value = ''
@@ -54,12 +77,32 @@ export const useLoginView = () => {
         { remember: rememberMe.value },
       )
 
-      const levelTestStore = useLevelTestStore()
-      const completed = await levelTestStore.ensureStatus()
-      const fallbackHome = typeof route.query.redirect === 'string' ? route.query.redirect : '/home'
-      await router.push(resolvePostAuthPath(completed, fallbackHome))
+      const path = await resolveLoginRedirect(undefined, fallbackHome.value)
+      await router.push(path)
     } catch (err) {
       error.value = err?.message || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    isLoading.value = true
+    error.value = ''
+
+    try {
+      const data = await authStore.loginWithGoogle()
+      const path = await resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
+      await router.push(path)
+    } catch (err) {
+      if (err?.code === 'SIGNUP_REQUIRED') {
+        signupMethod.value = 'google'
+        switchTab('signup')
+        error.value = err.message
+        return
+      }
+
+      error.value = err?.message || 'Google 로그인에 실패했습니다.'
     } finally {
       isLoading.value = false
     }
@@ -110,8 +153,9 @@ export const useLoginView = () => {
     handleSignupSubmit()
   }
 
-  const handleGoogleContinue = () => {
-    error.value = 'Google 로그인은 준비 중입니다.'
+  const handleGoogleContinue = async () => {
+    if (isLoading.value) return
+    await handleGoogleLogin()
   }
 
   const handleForgotPassword = () => {

@@ -9,7 +9,13 @@ export const signUp = (body, idToken) =>
     headers: { Authorization: `Bearer ${idToken}` },
   })
 
-export const login = (credentials) => apiClient.post('/auth/login', credentials)
+/**
+ * @param {string} idToken Firebase ID Token
+ */
+export const login = (idToken) =>
+  apiClient.post('/auth/login', null, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
 
 export const logout = () => apiClient.post('/auth/logout')
 
