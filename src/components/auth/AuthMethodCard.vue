@@ -12,6 +12,10 @@ defineProps({
     type: String,
     default: '',
   },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 defineEmits(['select'])
@@ -20,7 +24,8 @@ defineEmits(['select'])
 <template>
   <button
     type="button"
-    class="flex w-full items-start gap-2.5 rounded-[8px] border px-3 py-3 text-left"
+    :disabled="disabled"
+    class="flex w-full items-start gap-2.5 rounded-[8px] border px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
     :class="
       selected
         ? 'border-[rgba(139,100,60,0.55)] bg-white/70'

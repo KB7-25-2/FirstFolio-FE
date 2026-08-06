@@ -1,8 +1,23 @@
 /**
  * @typedef {import('@/types/user.js').UserProfile} UserProfile
+ * @typedef {import('@/types/user.js').UpdateUserProfileInput} UpdateUserProfileInput
+ * @typedef {import('@/types/user.js').UpdateUserProfileResult} UpdateUserProfileResult
  */
 
-const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
+import {
+  getUserProfile as getUserProfileApi,
+  updateUserProfile as updateUserProfileApi,
+} from '@/api/userApi.js'
+import { ApiError } from '@/api/errorHandler.js'
+import { validateNickname } from '@/utils/nickname.js'
+
+/** @type {Record<string, string>} */
+const USER_ERROR_MESSAGES = {
+  UNAUTHORIZED: '인증이 필요합니다. 다시 로그인해 주세요.',
+  NO_PATCH_FIELDS: '변경할 내용이 없습니다.',
+  NICKNAME_CONFLICT: '이미 사용 중인 닉네임입니다.',
+  INVALID_NICKNAME: '닉네임은 공백 없이 2자 이상 10자 이하로 입력해 주세요.',
+}
 
 export class UserApiError extends Error {
   /**
@@ -15,21 +30,7 @@ export class UserApiError extends Error {
     this.name = 'UserApiError'
     this.code = code
     this.status = status
-    this.requestId = `req-mock-${Date.now()}`
   }
-}
-
-/** API 원본 형태 목업 (snake_case) — Figma 홈 인사말 닉네임 맞춤 */
-const MOCK_USER_PROFILE_RESPONSE = {
-  data: {
-    user_id: 101,
-    email: 'student@example.com',
-    nickname: '김투자',
-    role_code: 'USER',
-    newsletter_opt_in: true,
-    point_balance: 3800,
-    created_at: '2026-07-29T01:00:00Z',
-  },
 }
 
 /**
@@ -47,33 +48,127 @@ const mapUserProfile = (raw) => ({
 })
 
 /**
+ * @param {object} raw
+ * @returns {UpdateUserProfileResult}
+ */
+const mapUpdateResult = (raw) => ({
+  userId: raw.user_id,
+  nickname: raw.nickname,
+  newsletterOptIn: raw.newsletter_opt_in,
+  updatedAt: raw.updated_at,
+})
+
+/**
+ * @param {unknown} error
+ * @param {string} fallbackCode
+ * @param {string} fallbackMessage
+ * @returns {UserApiError}
+ */
+const mapUserError = (error, fallbackCode, fallbackMessage) => {
+  if (error instanceof UserApiError) return error
+
+  if (error instanceof ApiError) {
+    const code = error.code ?? fallbackCode
+    const message = USER_ERROR_MESSAGES[code] ?? error.message
+    return new UserApiError(code, message, error.status)
+  }
+
+  if (error?.code && error?.message) {
+    return new UserApiError(
+      error.code,
+      USER_ERROR_MESSAGES[error.code] ?? error.message,
+      error.status ?? 400,
+    )
+  }
+
+  return new UserApiError(fallbackCode, fallbackMessage, 500)
+}
+
+/** 포인트 목업용 — GET 이후 로컬 캐시 (원장 API 연동 전까지) */
+/** @type {UserProfile | null} */
+let cachedProfile = null
+
+/**
  * 포인트 잔액 변경 (목업) — 퀴즈 보상 등
  * @param {number} delta
  * @returns {Promise<{ data: UserProfile }>}
  */
 export const applyPointBalanceDelta = async (delta) => {
-  await delay(50)
-  if (!MOCK_USER_PROFILE_RESPONSE?.data) {
-    throw new UserApiError('UNAUTHORIZED', '인증이 필요하다.', 401)
+  if (!cachedProfile) {
+    throw new UserApiError('UNAUTHORIZED', USER_ERROR_MESSAGES.UNAUTHORIZED, 401)
   }
-  MOCK_USER_PROFILE_RESPONSE.data.point_balance = Math.max(
-    0,
-    (MOCK_USER_PROFILE_RESPONSE.data.point_balance ?? 0) + delta,
-  )
-  return { data: mapUserProfile(structuredClone(MOCK_USER_PROFILE_RESPONSE.data)) }
+
+  cachedProfile = {
+    ...cachedProfile,
+    pointBalance: Math.max(0, (cachedProfile.pointBalance ?? 0) + delta),
+  }
+
+  return { data: { ...cachedProfile } }
 }
 
 /**
- * 로그인 사용자 공개 프로필 조회 (목업)
+ * 로그인 사용자 공개 프로필 조회
  * GET /users/me
- * TODO: API 연동 시 apiClient.get('/users/me') 로 교체
  * @returns {Promise<{ data: UserProfile }>}
  */
 export const getUserProfile = async () => {
-  await delay()
-  const raw = structuredClone(MOCK_USER_PROFILE_RESPONSE)
-  if (!raw?.data) {
-    throw new UserApiError('UNAUTHORIZED', '인증이 필요하다.', 401)
+  try {
+    const { data } = await getUserProfileApi()
+    cachedProfile = mapUserProfile(data.data)
+    return { data: { ...cachedProfile } }
+  } catch (error) {
+    throw mapUserError(error, 'PROFILE_FETCH_FAILED', '프로필을 불러오지 못했습니다.')
   }
-  return { data: mapUserProfile(raw.data) }
+}
+
+/**
+ * 닉네임·뉴스레터 수신 동의 부분 수정
+ * PATCH /users/me
+ * @param {UpdateUserProfileInput} input
+ * @returns {Promise<{ data: UserProfile }>}
+ */
+export const updateUserProfile = async (input = {}) => {
+  /** @type {{ nickname?: string, newsletter_opt_in?: boolean }} */
+  const body = {}
+
+  try {
+    if (input.nickname !== undefined) {
+      body.nickname = validateNickname(input.nickname)
+    }
+  } catch (error) {
+    throw mapUserError(error, 'INVALID_NICKNAME', USER_ERROR_MESSAGES.INVALID_NICKNAME)
+  }
+
+  if (input.newsletterOptIn !== undefined) {
+    body.newsletter_opt_in = Boolean(input.newsletterOptIn)
+  }
+
+  if (Object.keys(body).length === 0) {
+    throw new UserApiError('NO_PATCH_FIELDS', USER_ERROR_MESSAGES.NO_PATCH_FIELDS, 400)
+  }
+
+  try {
+    const { data } = await updateUserProfileApi(body)
+    const patch = mapUpdateResult(data.data)
+
+    if (!cachedProfile) {
+      const fetched = await getUserProfile()
+      return fetched
+    }
+
+    cachedProfile = {
+      ...cachedProfile,
+      nickname: patch.nickname ?? cachedProfile.nickname,
+      newsletterOptIn: patch.newsletterOptIn ?? cachedProfile.newsletterOptIn,
+    }
+
+    return { data: { ...cachedProfile } }
+  } catch (error) {
+    throw mapUserError(error, 'PROFILE_UPDATE_FAILED', '프로필을 저장하지 못했습니다.')
+  }
+}
+
+/** @internal 테스트용 */
+export const __resetUserProfileCache = () => {
+  cachedProfile = null
 }

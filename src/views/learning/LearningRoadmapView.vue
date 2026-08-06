@@ -19,7 +19,7 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
 
     <template v-else>
       <!-- 필수 선행: 포트폴리오 기초 -->
-      <section v-if="foundationCard" class="mb-6">
+      <section v-if="foundationCard" class="mb-6 px-2">
         <p class="mb-2 font-serif text-[11px] font-bold text-[rgba(245,237,217,0.7)]">
           필수 선행 과정
         </p>
@@ -57,14 +57,14 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
 
       <!-- 선택형 대단원 -->
       <section>
-        <div class="mb-2 flex items-baseline justify-between">
+        <div class="mb-2 flex items-baseline justify-between px-2">
           <p class="font-serif text-[11px] font-bold text-[rgba(245,237,217,0.7)]">금융 카테고리</p>
           <p class="font-serif text-[10px] text-[rgba(245,237,217,0.45)]">
             {{ coreCards.length }}개 영역
           </p>
         </div>
 
-        <LearningNotePaper surface-class="bg-[#f6e7a8]" class="mb-4">
+        <LearningNotePaper surface-class="bg-[#f6e7a8]" class="mb-4 px-2">
           <div class="px-4 py-3">
             <p class="font-serif text-[10px] text-[rgba(139,100,60,0.6)]">
               나에게 필요한 금융 공부
@@ -78,7 +78,7 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
           </div>
         </LearningNotePaper>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-3 px-2">
           <button
             v-for="item in coreCards"
             :key="item.curriculumItemId"

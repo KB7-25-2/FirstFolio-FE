@@ -1,9 +1,16 @@
 export class ApiError extends Error {
-  constructor(message, status, data = null) {
+  /**
+   * @param {string} message
+   * @param {number} status
+   * @param {unknown} [data]
+   * @param {string | null} [code]
+   */
+  constructor(message, status, data = null, code = null) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.data = data
+    this.code = code
   }
 }
 

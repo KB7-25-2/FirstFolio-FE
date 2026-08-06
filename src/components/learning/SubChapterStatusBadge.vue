@@ -5,6 +5,11 @@ defineProps({
     type: String,
     required: true,
   },
+  /** 배지 문구 덮어쓰기 (예: 필수, 시작, 선택) */
+  label: {
+    type: String,
+    default: '',
+  },
 })
 
 const LABEL = {
@@ -27,6 +32,6 @@ const CLASS = {
     class="shrink-0 rounded-[3px] px-1.5 py-[3px] font-serif text-[9px] font-black"
     :class="CLASS[status] ?? CLASS.LOCKED"
   >
-    {{ LABEL[status] ?? status }}
+    {{ label || LABEL[status] || status }}
   </span>
 </template>

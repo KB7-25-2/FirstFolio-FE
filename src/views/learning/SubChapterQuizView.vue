@@ -133,15 +133,18 @@ const {
       <div class="mt-4 flex gap-4">
         <button
           type="button"
-          class="flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
+          class="btn-hover flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
           @click="giveUp"
         >
           시험 포기
         </button>
         <button
           type="button"
-          class="flex h-12 flex-1 items-center justify-center rounded font-serif text-[15px] font-bold text-[#f5edd9] disabled:opacity-70"
-          :class="primaryEnabled ? 'bg-[#c17f24]' : 'bg-[#c3b097]'"
+          class="flex h-12 flex-1 items-center justify-center rounded font-serif text-[15px] font-bold text-[#f5edd9] disabled:cursor-not-allowed disabled:opacity-70"
+          :class="[
+            primaryEnabled ? 'bg-[#c17f24]' : 'bg-[#c3b097]',
+            { 'btn-hover': primaryEnabled && !error },
+          ]"
           :disabled="!primaryEnabled || !!error"
           @click="onPrimaryAction"
         >

@@ -5,16 +5,21 @@ defineProps({
     required: true,
     validator: (value) => ['login', 'signup'].includes(value),
   },
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 defineEmits(['update:modelValue'])
 </script>
 
 <template>
-  <div class="flex items-start gap-6 text-[13px]">
+  <div class="flex items-start gap-6 text-[13px]" :aria-disabled="disabled">
     <button
       type="button"
-      class="font-serif leading-normal whitespace-nowrap"
+      :disabled="disabled"
+      class="font-serif leading-normal whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
       :class="
         modelValue === 'login'
           ? 'font-bold text-[var(--auth-tab)] underline decoration-solid underline-offset-4'
@@ -26,7 +31,8 @@ defineEmits(['update:modelValue'])
     </button>
     <button
       type="button"
-      class="font-serif leading-normal whitespace-nowrap"
+      :disabled="disabled"
+      class="font-serif leading-normal whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
       :class="
         modelValue === 'signup'
           ? 'font-bold text-[var(--auth-tab)] underline decoration-solid underline-offset-4'

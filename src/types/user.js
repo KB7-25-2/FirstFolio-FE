@@ -10,4 +10,20 @@
  * @property {string} createdAt
  */
 
+/**
+ * PATCH /users/me 요청 (camelCase — 서비스 입력)
+ * @typedef {object} UpdateUserProfileInput
+ * @property {string} [nickname]
+ * @property {boolean} [newsletterOptIn]
+ */
+
+/**
+ * PATCH /users/me 응답 data
+ * @typedef {object} UpdateUserProfileResult
+ * @property {number} userId
+ * @property {string} nickname
+ * @property {boolean} newsletterOptIn
+ * @property {string} updatedAt
+ */
+
 export {}
