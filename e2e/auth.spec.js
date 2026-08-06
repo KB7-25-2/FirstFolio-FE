@@ -102,18 +102,9 @@ test.describe('인증 · 로그인/회원가입 (UI)', () => {
   })
 })
 
-test.describe('이메일 로그인 (목업)', () => {
+test.describe('이메일 로그인', () => {
   test.beforeEach(async ({ page }) => {
     await clearAuthAndOpenLogin(page)
-  })
-
-  test('이메일·비밀번호 입력 후 입장하면 온보딩 또는 홈으로 이동한다', async ({ page }) => {
-    await page.locator('#login-email').fill('student@example.com')
-    await page.locator('#login-password').fill('password123')
-    await page.getByRole('button', { name: /입장하기/ }).click()
-
-    await expect(page).not.toHaveURL(/\/login/, { timeout: 15_000 })
-    await expect(page).toHaveURL(/\/(home|onboarding)/)
   })
 
   test('이메일 없이 입장하면 로그인 화면에 머무른다', async ({ page }) => {
@@ -121,6 +112,58 @@ test.describe('이메일 로그인 (목업)', () => {
     await page.getByRole('button', { name: /입장하기/ }).click()
 
     await expect(page).toHaveURL(/\/login/)
+  })
+
+  test('성공 시 onboarding_step에 따라 이동한다', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium', 'Pinia 스토어 패치 — chromium만')
+
+    await page.evaluate(() => {
+      const app = document.querySelector('#app')?.__vue_app__
+      const pinia = app?.config?.globalProperties?.$pinia
+      const store = pinia?._s?.get('auth')
+      if (!store) throw new Error('auth store를 찾을 수 없습니다.')
+
+      store.loginWithEmail = async () => {
+        localStorage.setItem('access_token', 'e2e-email-login-token')
+        return {
+          user: { userId: 1, nickname: '김투자', roleCode: 'USER' },
+          onboardingStep: 'LEVEL_TEST',
+        }
+      }
+    })
+
+    await page.locator('#login-email').fill('student@example.com')
+    await page.locator('#login-password').fill('password123')
+    await page.getByRole('button', { name: /입장하기/ }).click()
+
+    await expect(page).toHaveURL(/\/onboarding\/intro/, { timeout: 15_000 })
+  })
+
+  test('SIGNUP_REQUIRED 시 이메일 회원가입 폼으로 전환된다', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium', 'Pinia 스토어 패치 — chromium만')
+
+    await page.evaluate(() => {
+      const app = document.querySelector('#app')?.__vue_app__
+      const pinia = app?.config?.globalProperties?.$pinia
+      const store = pinia?._s?.get('auth')
+      if (!store) throw new Error('auth store를 찾을 수 없습니다.')
+
+      store.loginWithEmail = async () => {
+        const err = new Error('FirstFolio 회원 정보가 없습니다. 회원가입을 진행해 주세요.')
+        err.code = 'SIGNUP_REQUIRED'
+        err.status = 409
+        throw err
+      }
+    })
+
+    await page.locator('#login-email').fill('newbie@example.com')
+    await page.locator('#login-password').fill('password123')
+    await page.getByRole('button', { name: /입장하기/ }).click()
+
+    await expect(page.getByRole('heading', { name: '회원 등록 신청서' })).toBeVisible({
+      timeout: 15_000,
+    })
+    await expect(page.getByText(/회원 정보가 없습니다/)).toBeVisible()
   })
 })
 
