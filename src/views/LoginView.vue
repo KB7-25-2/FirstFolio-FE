@@ -57,7 +57,7 @@ const {
         <AuthClipboardBoard :header-title="clipboardHeader">
           <!-- 로그인 -->
           <template v-if="isLogin">
-            <div class="flex flex-col gap-2">
+            <div class="flex flex-col gap-1.5">
               <div
                 class="flex items-start justify-between font-serif text-[9px] text-[var(--auth-doc-meta)]"
               >
@@ -67,7 +67,7 @@ const {
 
               <AuthDocDivider />
 
-              <h2 class="text-center font-serif text-[19px] font-black text-[var(--auth-doc-ink)]">
+              <h2 class="text-center font-serif text-[17px] font-black text-[var(--auth-doc-ink)]">
                 회원 확인 신청서
               </h2>
 
@@ -129,7 +129,7 @@ const {
 
           <!-- 회원가입 · 방식 선택 -->
           <template v-else-if="signupStep === 'method'">
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-3">
               <div
                 class="flex items-start justify-between font-serif text-[9px] text-[var(--auth-doc-meta)]"
               >
@@ -139,7 +139,7 @@ const {
 
               <AuthDocDivider />
 
-              <h2 class="text-center font-serif text-[19px] font-black text-[var(--auth-doc-ink)]">
+              <h2 class="text-center font-serif text-[17px] font-black text-[var(--auth-doc-ink)]">
                 등록 방식 선택
               </h2>
 
@@ -175,7 +175,7 @@ const {
 
           <!-- 회원가입 · 이메일 폼 -->
           <template v-else>
-            <div class="flex flex-col gap-3.5">
+            <div class="flex flex-col gap-3">
               <div
                 class="flex items-start justify-between font-serif text-[9px] text-[var(--auth-doc-meta)]"
               >
@@ -185,7 +185,7 @@ const {
 
               <AuthDocDivider />
 
-              <h2 class="text-center font-serif text-[19px] font-black text-[var(--auth-doc-ink)]">
+              <h2 class="text-center font-serif text-[17px] font-black text-[var(--auth-doc-ink)]">
                 회원 등록 신청서
               </h2>
 
