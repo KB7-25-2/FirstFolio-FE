@@ -10,9 +10,14 @@ export class ApiError extends Error {
 export const parseApiError = (error) => {
   if (error.response) {
     const { status, data } = error.response
-    const message = data?.message || data?.error || getDefaultMessage(status)
+    // 실제 에러 응답 형식은 { error: { code, message, request_id } } — data.message가 아니라
+    // data.error.message다. code도 같이 넘겨서 호출부가 코드별로 분기할 수 있게 한다.
+    const message = data?.error?.message || data?.message || getDefaultMessage(status)
+    const code = data?.error?.code ?? null
 
-    return new ApiError(message, status, data)
+    const apiError = new ApiError(message, status, data)
+    apiError.code = code
+    return apiError
   }
 
   if (error.request) {

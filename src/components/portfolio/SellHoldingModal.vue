@@ -21,7 +21,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'confirm'])
 
-// 예·적금·채권은 "해지"(항상 전액), 주식·채권은 "매도", 펀드는 "환매"(부분 가능)
+// 예·적금·채권(가입형)은 입력 없이 항상 전액 해지. 주식·펀드(매수형)는 정수 개수 입력, 보유 이하만 가능.
 const meta = computed(() => getAssetTypeMeta(props.holding.assetType))
 const isSubscription = computed(() => meta.value.tradeType === 'SUBSCRIPTION')
 const actionLabel = computed(() => meta.value.sellActionLabel)
@@ -30,19 +30,26 @@ const confirmLabel = computed(() => `${actionLabel.value}하기`)
 const processingLabel = computed(() => `${actionLabel.value} 처리 중…`)
 
 const holdingValue = computed(() => props.holding.valuationAmount ?? props.holding.principalAmount)
-const amount = ref(isSubscription.value ? holdingValue.value : 0)
 
-const estimatedQuantity = computed(() =>
-  isSubscription.value || !props.holding.unitPrice
-    ? null
-    : Math.floor((amount.value / props.holding.unitPrice) * 1e6) / 1e6,
+// 매수형만 쓰는 개수 입력 — 실제 거래 API에 quantity 그대로 보낸다(금액 환산 안 함).
+const quantity = ref(1)
+const estimatedAmount = computed(() =>
+  props.holding.unitPrice ? quantity.value * props.holding.unitPrice : 0,
 )
 
-const canConfirm = computed(() => amount.value > 0 && amount.value <= holdingValue.value)
+const canConfirm = computed(() => {
+  if (isSubscription.value) return holdingValue.value > 0
+  return (
+    Number.isInteger(quantity.value) &&
+    quantity.value >= 1 &&
+    quantity.value <= props.holding.quantity
+  )
+})
 
 const handleConfirm = () => {
   if (!canConfirm.value || props.isSubmitting) return
-  emit('confirm', amount.value)
+  // 가입형은 quantity 없이 확인만(서버가 전액 처리). 매수형은 quantity 그대로 전달.
+  emit('confirm', isSubscription.value ? undefined : quantity.value)
 }
 
 const handleClose = () => {
@@ -55,22 +62,34 @@ const handleClose = () => {
   <PortfolioModal :title="modalTitle" @close="handleClose">
     <p class="text-sm font-bold text-[var(--pf-text)]">{{ holding.displayName }}</p>
     <p class="text-xs text-[var(--pf-text-muted)]">{{ holding.cycleSummary }}</p>
-    <p class="mt-1 text-xs text-[var(--pf-text-muted)]">
-      보유 평가액 {{ holdingValue.toLocaleString('ko-KR') }}원
-    </p>
 
+    <!-- 예·적금·채권: 입력 없이 금액 읽기 전용 -->
     <div
       v-if="isSubscription"
       class="mt-4 rounded-lg bg-white/5 px-3 py-2.5 text-sm text-[var(--pf-text)]"
     >
-      전액 {{ actionLabel }}돼요 · {{ holdingValue.toLocaleString('ko-KR') }}원
+      {{ holdingValue.toLocaleString('ko-KR') }}원 전액 {{ actionLabel }}
     </div>
+
+    <!-- 주식·펀드: 정수 개수 입력 -->
     <div v-else class="mt-4">
-      <p class="mb-1.5 text-xs text-[var(--pf-text-muted)]">{{ actionLabel }} 금액</p>
-      <AmountInput v-model="amount" :min="0" :max="holdingValue" :disabled="isSubmitting" />
-      <p v-if="estimatedQuantity !== null" class="mt-1.5 text-xs text-[var(--pf-text-muted)]">
-        예상 {{ actionLabel }} 수량 {{ estimatedQuantity.toLocaleString('ko-KR')
-        }}{{ meta.quantityUnit }}
+      <div class="mb-1.5 flex items-center justify-between text-xs text-[var(--pf-text-muted)]">
+        <span>{{ actionLabel }} 개수</span>
+        <span
+          >보유 {{ holding.quantity.toLocaleString('ko-KR') }}{{ meta.quantityUnit }} · 최대
+          {{ holding.quantity.toLocaleString('ko-KR') }}{{ meta.quantityUnit }}</span
+        >
+      </div>
+      <AmountInput
+        v-model="quantity"
+        :min="1"
+        :max="holding.quantity"
+        :unit="meta.quantityUnit"
+        max-button-label="전량"
+        :disabled="isSubmitting"
+      />
+      <p class="mt-1.5 text-xs text-[var(--pf-text-muted)]">
+        예상 {{ actionLabel }} 금액 {{ estimatedAmount.toLocaleString('ko-KR') }}원
       </p>
     </div>
 

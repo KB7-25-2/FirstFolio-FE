@@ -27,7 +27,9 @@ const formatHours = (hours) => {
 }
 
 // simulation_terms/real_terms를 "서비스 6일 만기 · 실제 6개월 만기" 같은 한 줄 문구로 조합한다.
-// STOCK/FUND는 시간압축 예외라 둘 다 null로 온다 → cycleSummary도 null.
+// 시간압축 예외는 STOCK만이다(API_DOCS 최신본, 2026-08-06 확인) — FUND는 이제 시간압축 적용 대상.
+// 다만 이 로직은 asset_type을 직접 안 보고 simulation_terms/real_terms 존재 여부로만 판단하므로
+// 어느 자산군이 예외든 코드 수정 없이 그대로 맞는다.
 export const formatCycleSummary = (simulationTerms, realTerms) => {
   if (!simulationTerms || !realTerms) return null
 
@@ -127,6 +129,12 @@ const mapHoldingFromApi = (raw, productsById) => {
     averageCost: isSubscription || quantity <= 0 ? null : principalAmount / quantity,
     unitPrice: quantity > 0 ? valuationAmount / quantity : valuationAmount,
     status: 'ACTIVE', // /portfolios/current는 활성 보유만 내려주는 것으로 보임(문서상 status 필드 자체가 없음)
+    // 평가액을 무엇으로 구했는지 — PRICE_UNAVAILABLE이면 "시세 정보 없음 · 매입 원금 기준" 배지를 반드시 띄워야 한다.
+    // (FE_CHANGE_GUIDE 3-1: 안 띄우면 원금을 현재 시세로 착각하게 만드는, 투자 학습 앱에서 가장 나쁜 오류)
+    valuationBasis: raw.valuation_basis ?? null,
+    isPriceUnavailable: raw.valuation_basis === 'PRICE_UNAVAILABLE',
+    // 상품별 가격 기준 시각. PRICE_UNAVAILABLE/PRINCIPAL이면 null(문서 기준).
+    valuedAt: raw.valued_at ?? null,
   }
 }
 
@@ -175,20 +183,29 @@ export const mapPortfolioDetailResponse = (raw, productsById = {}) => {
       : cashBalance + holdings.reduce((sum, h) => sum + (h.valuationAmount ?? h.principalAmount), 0)
 
   const profitLossAmount = raw.summary?.profit_loss != null ? Number(raw.summary.profit_loss) : 0
+  // 서버가 계산한 값을 그대로 쓴다 — 프론트에서 다시 계산하면 반올림 방식이 달라 화면마다 숫자가 어긋난다.
+  const profitRate = raw.summary?.profit_rate ?? null
 
   // 백엔드가 준 allocation(자산군별 비중)이 있으면 우선 쓰고, 거기에 현금 비중만 우리가 추가한다.
   // 백엔드 allocation엔 현금 항목이 없어서다(financial_products가 아니므로).
+  // ratio의 분모는 총자산이라 합이 100%가 안 된다 — 나머지가 현금 비중(문서 기준).
   let allocations
   if (raw.allocation?.length) {
     allocations = raw.allocation.map((item) => {
       const meta = getAssetTypeMeta(item.asset_type)
-      return { label: meta.label, color: meta.color, ratio: Math.round(item.ratio) }
+      return {
+        label: meta.label,
+        color: meta.color,
+        ratio: Math.round(item.ratio),
+        valuationAmount: item.valuation_amount != null ? Number(item.valuation_amount) : null,
+      }
     })
     if (cashBalance > 0 && totalAssetValue > 0) {
       allocations.push({
         label: CASH_META.label,
         color: CASH_META.color,
         ratio: Math.round((cashBalance / totalAssetValue) * 100),
+        valuationAmount: cashBalance,
       })
     }
   } else {
@@ -199,13 +216,37 @@ export const mapPortfolioDetailResponse = (raw, productsById = {}) => {
     totalAssetValue,
     cashBalance,
     profitLossAmount,
+    profitRate, // 서버 계산값 그대로 — 화면에서 재계산하지 않는다.
     goalAchievementRate: null, // ERD/명세에 없는 값
     allocations,
     holdings,
     aiFeedback: null, // ERD/명세에 없는 값
-    valuedAt: raw.valued_at ?? null,
+    valuedAt: raw.valued_at ?? null, // 이 응답을 계산한 시각(각 holding의 valuedAt과 의미가 다름)
   }
 }
+
+// ============================================================
+// FUNC-034 GET /portfolios/current/transactions — 거래·자산 이벤트 이력
+// ============================================================
+
+export const mapTransaction = (raw) => ({
+  transactionId: raw.portfolio_transaction_id,
+  transactionType: raw.transaction_type,
+  displayName: raw.display_name ?? null, // 지급·초기화 이력엔 null
+  amount: Number(raw.amount ?? 0),
+  quantity: raw.quantity != null ? Number(raw.quantity) : null, // 매수·매도 이력에만 값 있음
+  unitPrice: raw.unit_price != null ? Number(raw.unit_price) : null,
+  status: raw.status,
+  isScheduled: raw.status === 'SCHEDULED', // 아직 반영 안 된 예정 이벤트(이자·배당·만기)
+  scheduledAt: raw.scheduled_at ?? null,
+  processedAt: raw.processed_at ?? null,
+  detail: raw.detail ?? null,
+})
+
+export const mapTransactionsResponse = (raw) => ({
+  items: (raw.items ?? []).map(mapTransaction),
+  nextCursor: raw.next_cursor ?? null,
+})
 
 // ============================================================
 // 로컬 전용 — 목데이터 초기화, 판매/구매 후 재계산
@@ -217,6 +258,8 @@ const normalizeLocalHolding = (holding) => ({
   ...holding,
   valuationAmount: holding.valuationAmount ?? holding.principalAmount ?? 0,
   status: holding.status ?? 'ACTIVE',
+  valuationBasis: holding.valuationBasis ?? 'PRINCIPAL',
+  isPriceUnavailable: holding.isPriceUnavailable ?? false,
 })
 
 // 내부 모델(summary)을 받아서 totalAssetValue/allocations 같은 파생값을 다시 계산한다.
@@ -235,6 +278,7 @@ export const normalizeLocalSummary = (summary) => {
     totalAssetValue,
     cashBalance,
     profitLossAmount: summary.profitLossAmount ?? 0,
+    profitRate: summary.profitRate ?? null,
     goalAchievementRate: summary.goalAchievementRate ?? null,
     allocations: computeAllocations(holdings, cashBalance, totalAssetValue),
     holdings,

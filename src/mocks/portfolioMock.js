@@ -57,9 +57,9 @@ export const mockPortfolioSummary = {
       displayName: '안정형 국채혼합펀드',
       assetType: 'BOND',
       cycleSummary: '채권 · 6시간마다 이자 · 실제 월 1회',
-      quantity: 1,
+      quantity: 4,
       averageCost: null,
-      unitPrice: 4000000,
+      unitPrice: 1000000,
       principalAmount: 4000000,
       status: 'ACTIVE',
     },
@@ -104,7 +104,9 @@ export const mockPurchasableProducts = [
     displayName: '코스피 200 인덱스 ETF',
     assetType: 'FUND',
     riskLevel: '위험 중하',
-    cycleSummary: '1~2시간마다 가격 · 실제 장중 실시간',
+    // TODO: 펀드는 STOCK과 달리 이제 시간압축 예외가 아니라 실제 simulation_terms/real_terms를
+    // 받아야 하는데, 백엔드가 준 구체적인 예시 값이 아직 없어 임시로 채워둔 값이다.
+    cycleSummary: '24시간마다 기준가 갱신 · 실제 영업일 매일',
     unitPrice: 250000,
     isActive: true,
   },
