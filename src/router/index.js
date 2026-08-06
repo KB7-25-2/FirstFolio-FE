@@ -32,6 +32,10 @@ const router = createRouter({
           meta: { hideNavbar: true },
         },
         {
+          path: 'leaderboard',
+          redirect: { name: 'daily-quest' },
+        },
+        {
           path: 'learning',
           component: () => import('@/views/learning/LearningShellView.vue'),
           meta: { navTab: 'learning' },
