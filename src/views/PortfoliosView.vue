@@ -63,7 +63,7 @@ const handleResetConfirm = async () => {
         class="shrink-0 rounded-full border border-[var(--pf-danger-border)] bg-[var(--pf-danger-bg)] px-3 py-1.5 text-xs font-bold whitespace-nowrap text-[var(--pf-danger-text)]"
         @click="openBankruptcyModal"
       >
-        파산 신청
+        포트폴리오 초기화
       </button>
     </header>
 

@@ -2,20 +2,33 @@ import apiClient from '@/api/index.js'
 
 export const getPortfolioSummary = () => apiClient.get('/portfolios/current')
 
-// FUNC-035(개정): 매수/매도 통합 거래 API. transactionType: 'BUY' | 'SELL'.
-// quantity가 아니라 amount(금액) 기반으로 바뀜(API 변경 제안 반영, 2026-08-05).
-// - 가입형(예·적금, 채권): amount가 그대로 원금이 됨. 이미 보유 중이면 422 TRADE_NOT_ALLOWED.
-// - 매수형(주식, 펀드): 서버가 수량=내림(amount÷현재가)으로 환산, 응답의 requested_amount와
-//   실제 체결 amount가 다를 수 있음(단수 절사분은 현금에 남음).
-// amount는 문서 예시상 "5000000.00" 형태의 문자열로 전송해야 함(부동소수점 오차 방지).
+// FUNC-034: 포트폴리오 거래·자산 이벤트 이력 조회.
+export const getPortfolioTransactions = (params = {}) =>
+  apiClient.get('/portfolios/current/transactions', {
+    params: {
+      type: params.type,
+      cursor: params.cursor,
+      size: params.size,
+    },
+  })
+
+// FUNC-035(2026-08-06 확정): 매수/매도 통합 거래 API.
+// - BUY: 전 자산군 공통으로 amount(금액)만 보낸다.
+// - SELL 주식·펀드: quantity(수량)만 보낸다.
+// - SELL 예·적금·채권: 아무 파라미터도 안 보낸다(product_id만) — 서버가 전액 처리한다.
+// amount/quantity는 문서 예시상 문자열이어야 함(부동소수점 오차 방지).
 // idempotency_key는 호출마다 달라야 하는 중복 거래 방지 키라 매 호출 시 새로 생성한다.
-export const tradePortfolio = (transactionType, productId, amount) =>
-  apiClient.post('/portfolios/current/trades', {
+export const tradePortfolio = ({ transactionType, productId, amount, quantity }) => {
+  const body = {
     idempotency_key: `trade-${productId}-${Date.now()}`,
     transaction_type: transactionType,
     product_id: productId,
-    amount: Number(amount).toFixed(2),
-  })
+  }
+  if (amount != null) body.amount = Number(amount).toFixed(2)
+  if (quantity != null) body.quantity = Number(quantity).toFixed(6)
+
+  return apiClient.post('/portfolios/current/trades', body)
+}
 
 // FUNC-031: 선택 가능 모의 상품 조회. params: { assetType, cursor, size }
 export const getPurchasableProducts = (params = {}) =>
