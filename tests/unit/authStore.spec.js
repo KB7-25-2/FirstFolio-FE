@@ -8,8 +8,9 @@ describe('authStore (unit)', () => {
     localStorage.clear()
   })
 
-  it('signupWithGoogle 액션을 노출한다', () => {
+  it('signupWithGoogle·loginWithGoogle 액션을 노출한다', () => {
     const store = useAuthStore()
     expect(typeof store.signupWithGoogle).toBe('function')
+    expect(typeof store.loginWithGoogle).toBe('function')
   })
 })
