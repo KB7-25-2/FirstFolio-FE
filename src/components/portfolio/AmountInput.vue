@@ -12,6 +12,14 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  unit: {
+    type: String,
+    default: '원',
+  },
+  maxButtonLabel: {
+    type: String,
+    default: '전액',
+  },
   disabled: {
     type: Boolean,
     default: false,
@@ -45,7 +53,7 @@ const setMax = () => {
         :disabled="disabled"
         @input="handleInput"
       />
-      <span class="shrink-0 text-xs text-[var(--pf-text-muted)]">원</span>
+      <span class="shrink-0 text-xs text-[var(--pf-text-muted)]">{{ unit }}</span>
     </div>
     <button
       type="button"
@@ -53,7 +61,7 @@ const setMax = () => {
       :disabled="disabled"
       @click="setMax"
     >
-      전액
+      {{ maxButtonLabel }}
     </button>
   </div>
 </template>
