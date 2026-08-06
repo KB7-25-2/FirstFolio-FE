@@ -57,11 +57,11 @@ const confirmLogout = async () => {
 
 <template>
   <div class="flex h-full flex-col overflow-hidden bg-[#0d1117]">
-    <header class="relative shrink-0 px-5 pt-6 pb-3 pr-[100px]">
+    <header class="relative shrink-0 px-5 pt-6 pb-3 pr-[50px]">
       <p class="font-serif text-[10px] text-[rgba(245,237,217,0.55)]">
         {{ todayLabel }}
       </p>
-      <div class="mt-1 flex items-center gap-2">
+      <div class="mt-1 flex items-center gap-1">
         <h1 class="min-w-0 font-serif text-[21px] font-black text-[#f5edd9]">
           {{ greeting }}
         </h1>
