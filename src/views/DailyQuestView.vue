@@ -1,25 +1,51 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import roomBg from '@/assets/learning/scenario/room-bg.jpg'
 import ScenarioClipboardBoard from '@/components/learning/ScenarioClipboardBoard.vue'
 import { useLeaderboardStore } from '@/store/leaderboardStore.js'
 
+const PAGE_SIZE = 20
+const COLLAPSED_COUNT = 20
+
 const router = useRouter()
 const leaderboardStore = useLeaderboardStore()
 const { items, myRank, isLoading, error, isSnapshotMissing, snapshotDate } =
   storeToRefs(leaderboardStore)
 
+const isRankingExpanded = ref(false)
+const currentPage = ref(1)
+
 onMounted(() => {
-  leaderboardStore.fetchLeaderboard({ size: 20 })
+  leaderboardStore.fetchLeaderboard()
+})
+
+watch(isRankingExpanded, (expanded) => {
+  if (!expanded) currentPage.value = 1
 })
 
 const goHome = () => {
   router.push({ name: 'home' })
 }
 
-const topRanks = computed(() => items.value.slice(0, 3))
+const clipboardTitle = computed(() =>
+  isRankingExpanded.value ? '명예 상담사 랭킹' : '대 시 보 드',
+)
+
+const totalPages = computed(() => Math.max(1, Math.ceil(items.value.length / PAGE_SIZE)))
+
+const collapsedRanks = computed(() => items.value.slice(0, COLLAPSED_COUNT))
+
+const pagedRanks = computed(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return items.value.slice(start, start + PAGE_SIZE)
+})
+
+const pageLabel = computed(() => `${currentPage.value} / ${totalPages.value}`)
+
+const canGoPrev = computed(() => currentPage.value > 1)
+const canGoNext = computed(() => currentPage.value < totalPages.value)
 
 const myScoreLabel = computed(() => {
   if (!myRank.value) return '—'
@@ -51,6 +77,20 @@ const docDateLabel = computed(() => {
  */
 const rankScoreClass = (rank) =>
   rank === 1 ? 'font-bold text-[#c17f24]' : 'font-bold text-[#3d1f08]'
+
+const toggleRanking = () => {
+  isRankingExpanded.value = !isRankingExpanded.value
+}
+
+const goPrevPage = () => {
+  if (!canGoPrev.value) return
+  currentPage.value -= 1
+}
+
+const goNextPage = () => {
+  if (!canGoNext.value) return
+  currentPage.value += 1
+}
 
 const onChallenge = () => {
   // 풀이 플로우는 후속 이슈 — 대시보드 CTA만 우선 배치
@@ -85,133 +125,244 @@ const onChallenge = () => {
       <div class="h-full w-[33%] bg-[#c17f24]" />
     </div>
 
-    <div class="relative h-[130px] w-full shrink-0 overflow-hidden">
-      <img :src="roomBg" alt="" class="absolute inset-0 size-full object-cover" />
-      <div
-        class="absolute inset-0 bg-gradient-to-b from-[rgba(15,20,40,0.3)] to-[rgba(15,20,40,0.7)]"
-      />
-      <div class="absolute inset-x-0 top-0 flex justify-center">
-        <span
-          class="rounded-full border-[0.8px] border-[rgba(255,214,0,0.3)] bg-[rgba(255,214,0,0.15)] px-2.5 py-1 text-[10px] font-bold text-[#ffd600]"
-        >
-          투자 상담실 · 실전 게임
-        </span>
+    <div
+      class="relative w-full shrink-0 overflow-hidden transition-[max-height,opacity] duration-300 ease-out"
+      :class="isRankingExpanded ? 'max-h-0 opacity-0' : 'max-h-[30%] opacity-100'"
+    >
+      <div class="relative h-[90px] w-full">
+        <img :src="roomBg" alt="" class="absolute inset-0 size-full object-cover" />
+        <div
+          class="absolute inset-0 bg-gradient-to-b from-[rgba(15,20,40,0.3)] to-[rgba(15,20,40,0.7)]"
+        />
+        <div class="absolute inset-x-0 top-0 flex justify-center">
+          <span
+            class="rounded-full border-[0.8px] border-[rgba(255,214,0,0.3)] bg-[rgba(255,214,0,0.15)] px-2.5 py-1 text-[10px] font-bold text-[#ffd600]"
+          >
+            투자 상담실 · 실전 게임
+          </span>
+        </div>
       </div>
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto px-3 pt-1 pb-3">
-      <ScenarioClipboardBoard paper-title="대 시 보 드">
-        <div class="flex flex-col gap-3 pt-1">
+    <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pt-1 pb-3">
+      <ScenarioClipboardBoard :paper-title="clipboardTitle" fill>
+        <Transition name="dq-panel" mode="out-in">
+          <!-- 펼침: 클립보드 전체 = 랭킹 -->
           <div
-            class="flex items-center justify-between border-b border-[rgba(139,100,60,0.2)] pb-2 font-serif text-[10px] text-[rgba(61,31,8,0.55)]"
+            v-if="isRankingExpanded"
+            key="ranking"
+            class="flex min-h-0 flex-1 flex-col gap-2 pt-1"
           >
-            <span>제 2024-대시-001 호</span>
-            <span>{{ docDateLabel }}</span>
-          </div>
-
-          <div class="flex items-center gap-2 py-1">
-            <div class="h-px flex-1 bg-[rgba(61,31,8,0.25)]" />
-            <span class="size-1 shrink-0 rounded-full bg-[rgba(61,31,8,0.35)]" />
-            <h2 class="shrink-0 font-serif text-[18px] font-black tracking-wide text-[#3d1f08]">
-              일일 퀘스트
-            </h2>
-            <span class="size-1 shrink-0 rounded-full bg-[rgba(61,31,8,0.35)]" />
-            <div class="h-px flex-1 bg-[rgba(61,31,8,0.25)]" />
-          </div>
-
-          <p
-            class="rounded-[8px] border border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5 font-serif text-[11px] leading-[1.55] text-[rgba(61,31,8,0.75)]"
-          >
-            실전 고객 상담 게임으로 포트폴리오 추천 역량을 검증하고, 점수를 쌓아 명예 상담사 랭킹에
-            도전하십시오.
-          </p>
-
-          <div
-            v-if="isLoading"
-            class="py-6 text-center font-serif text-[12px] text-[rgba(139,100,60,0.55)]"
-          >
-            순위를 불러오는 중…
-          </div>
-
-          <div
-            v-else-if="isSnapshotMissing"
-            class="rounded-[8px] border border-dashed border-[rgba(139,100,60,0.35)] px-3 py-4 text-center"
-          >
-            <p class="font-serif text-[12px] font-bold text-[#3d1f08]">집계 준비 중</p>
-            <p class="mt-1 font-serif text-[11px] text-[rgba(139,100,60,0.65)]">{{ error }}</p>
-          </div>
-
-          <div
-            v-else-if="error"
-            class="rounded-[8px] border border-[rgba(213,42,45,0.35)] bg-[rgba(213,42,45,0.08)] px-3 py-3 text-center"
-          >
-            <p class="font-serif text-[11px] text-[#d52a2d]">{{ error }}</p>
             <button
               type="button"
-              class="mt-2 font-serif text-[11px] font-bold text-[#c17f24]"
-              @click="leaderboardStore.fetchLeaderboard({ size: 20 })"
+              class="flex w-full shrink-0 items-center gap-2"
+              :aria-expanded="true"
+              @click="toggleRanking"
             >
-              다시 시도
-            </button>
-          </div>
-
-          <template v-else>
-            <div
-              class="grid grid-cols-2 gap-2 rounded-[10px] border border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.4)] px-3 py-3"
-            >
-              <div>
-                <p class="font-serif text-[10px] text-[rgba(139,100,60,0.65)]">내 점수</p>
-                <p class="mt-1 font-serif text-[18px] font-black text-[#3d1f08]">
-                  {{ myScoreLabel }}
-                </p>
-              </div>
-              <div class="text-right">
-                <p class="font-serif text-[10px] text-[rgba(139,100,60,0.65)]">전체 랭킹</p>
-                <p class="mt-1 font-serif text-[18px] font-black text-[#3d1f08]">
-                  {{ myRankLabel }}
-                </p>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 pt-1">
               <div class="h-px flex-1 bg-[rgba(61,31,8,0.2)]" />
               <p class="shrink-0 font-serif text-[11px] font-bold text-[rgba(61,31,8,0.7)]">
                 명예 상담사 랭킹
+                <span class="ml-1 text-[10px] font-bold text-[#c17f24]">접기 ⌃</span>
               </p>
               <div class="h-px flex-1 bg-[rgba(61,31,8,0.2)]" />
+            </button>
+
+            <div
+              class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.28)]"
+            >
+              <div class="min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
+                <ol v-if="pagedRanks.length" class="flex flex-col gap-2.5">
+                  <li
+                    v-for="item in pagedRanks"
+                    :key="`${item.rank}-${item.nickname}`"
+                    class="flex items-center gap-2 font-serif text-[13px]"
+                  >
+                    <span class="w-8 shrink-0" :class="rankScoreClass(item.rank)">
+                      {{ item.rank }}위
+                    </span>
+                    <span class="min-w-0 flex-1 truncate text-center text-[#3d1f08]">
+                      {{ item.nickname }}
+                    </span>
+                    <span class="shrink-0" :class="rankScoreClass(item.rank)">
+                      {{ item.weeklyScore.toLocaleString('ko-KR') }} 점
+                    </span>
+                  </li>
+                </ol>
+                <p
+                  v-else
+                  class="py-3 text-center font-serif text-[11px] text-[rgba(139,100,60,0.55)]"
+                >
+                  아직 순위 데이터가 없어요.
+                </p>
+              </div>
+
+              <div
+                v-if="items.length > PAGE_SIZE"
+                class="flex shrink-0 items-center justify-between gap-2 border-t border-[rgba(139,100,60,0.18)] px-2.5 py-2"
+              >
+                <button
+                  type="button"
+                  class="rounded px-2 py-1 font-serif text-[11px] font-bold text-[#3d1f08] disabled:opacity-35"
+                  :disabled="!canGoPrev"
+                  @click.stop="goPrevPage"
+                >
+                  ← 이전
+                </button>
+                <p class="font-serif text-[11px] text-[rgba(61,31,8,0.65)]">{{ pageLabel }}</p>
+                <button
+                  type="button"
+                  class="rounded px-2 py-1 font-serif text-[11px] font-bold text-[#3d1f08] disabled:opacity-35"
+                  :disabled="!canGoNext"
+                  @click.stop="goNextPage"
+                >
+                  다음 →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 접힘: 대시보드 + TOP3 -->
+          <div v-else key="dashboard" class="flex min-h-0 flex-1 flex-col pt-1">
+            <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
+              <div
+                class="flex items-center justify-between border-b border-[rgba(139,100,60,0.2)] pb-2 font-serif text-[10px] text-[rgba(61,31,8,0.55)]"
+              >
+                <span>제 2024-대시-001 호</span>
+                <span>{{ docDateLabel }}</span>
+              </div>
+
+              <div class="flex items-center gap-2 py-1">
+                <div class="h-px flex-1 bg-[rgba(61,31,8,0.25)]" />
+                <span class="size-1 shrink-0 rounded-full bg-[rgba(61,31,8,0.35)]" />
+                <h2 class="shrink-0 font-serif text-[18px] font-black tracking-wide text-[#3d1f08]">
+                  일일 퀘스트
+                </h2>
+                <span class="size-1 shrink-0 rounded-full bg-[rgba(61,31,8,0.35)]" />
+                <div class="h-px flex-1 bg-[rgba(61,31,8,0.25)]" />
+              </div>
+
+              <p
+                class="rounded-[8px] border border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5 font-serif text-[11px] leading-[1.55] text-[rgba(61,31,8,0.75)]"
+              >
+                실전 고객 상담 게임으로 포트폴리오 추천 역량을 검증하고, 점수를 쌓아 명예 상담사
+                랭킹에 도전하십시오.
+              </p>
+
+              <div
+                v-if="isLoading"
+                class="py-6 text-center font-serif text-[12px] text-[rgba(139,100,60,0.55)]"
+              >
+                순위를 불러오는 중…
+              </div>
+
+              <div
+                v-else-if="isSnapshotMissing"
+                class="rounded-[8px] border border-dashed border-[rgba(139,100,60,0.35)] px-3 py-4 text-center"
+              >
+                <p class="font-serif text-[12px] font-bold text-[#3d1f08]">집계 준비 중</p>
+                <p class="mt-1 font-serif text-[11px] text-[rgba(139,100,60,0.65)]">{{ error }}</p>
+              </div>
+
+              <div
+                v-else-if="error"
+                class="rounded-[8px] border border-[rgba(213,42,45,0.35)] bg-[rgba(213,42,45,0.08)] px-3 py-3 text-center"
+              >
+                <p class="font-serif text-[11px] text-[#d52a2d]">{{ error }}</p>
+                <button
+                  type="button"
+                  class="mt-2 font-serif text-[11px] font-bold text-[#c17f24]"
+                  @click="leaderboardStore.fetchLeaderboard()"
+                >
+                  다시 시도
+                </button>
+              </div>
+
+              <template v-else>
+                <div
+                  class="grid grid-cols-2 gap-2 rounded-[10px] border border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.4)] px-3 py-3"
+                >
+                  <div>
+                    <p class="font-serif text-[10px] text-[rgba(139,100,60,0.65)]">내 점수</p>
+                    <p class="mt-1 font-serif text-[18px] font-black text-[#3d1f08]">
+                      {{ myScoreLabel }}
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-serif text-[10px] text-[rgba(139,100,60,0.65)]">전체 랭킹</p>
+                    <p class="mt-1 font-serif text-[18px] font-black text-[#3d1f08]">
+                      {{ myRankLabel }}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 pt-1"
+                  :aria-expanded="false"
+                  @click="toggleRanking"
+                >
+                  <div class="h-px flex-1 bg-[rgba(61,31,8,0.2)]" />
+                  <p class="shrink-0 font-serif text-[11px] font-bold text-[rgba(61,31,8,0.7)]">
+                    명예 상담사 랭킹
+                    <span class="ml-1 text-[10px] font-bold text-[#c17f24]">펼치기 ⌄</span>
+                  </p>
+                  <div class="h-px flex-1 bg-[rgba(61,31,8,0.2)]" />
+                </button>
+                <div
+                  class="overflow-y-auto p-2.5 rounded-[10px] border border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.28)]"
+                >
+                  <ol v-if="collapsedRanks.length" class="flex flex-col gap-2">
+                    <li
+                      v-for="item in collapsedRanks"
+                      :key="`${item.rank}-${item.nickname}`"
+                      class="flex items-center gap-2 font-serif text-[13px]"
+                    >
+                      <span class="w-8 shrink-0" :class="rankScoreClass(item.rank)">
+                        {{ item.rank }}위
+                      </span>
+                      <span class="min-w-0 flex-1 truncate text-center text-[#3d1f08]">
+                        {{ item.nickname }}
+                      </span>
+                      <span class="shrink-0" :class="rankScoreClass(item.rank)">
+                        {{ item.weeklyScore.toLocaleString('ko-KR') }} 점
+                      </span>
+                    </li>
+                  </ol>
+                  <p
+                    v-else
+                    class="py-3 text-center font-serif text-[11px] text-[rgba(139,100,60,0.55)]"
+                  >
+                    아직 순위 데이터가 없어요.
+                  </p>
+                </div>
+              </template>
             </div>
 
-            <ol v-if="topRanks.length" class="flex flex-col gap-2">
-              <li
-                v-for="item in topRanks"
-                :key="`${item.rank}-${item.nickname}`"
-                class="flex items-center gap-2 font-serif text-[13px]"
-              >
-                <span class="w-8 shrink-0" :class="rankScoreClass(item.rank)">
-                  {{ item.rank }}위
-                </span>
-                <span class="min-w-0 flex-1 truncate text-center text-[#3d1f08]">
-                  {{ item.nickname }}
-                </span>
-                <span class="shrink-0" :class="rankScoreClass(item.rank)">
-                  {{ item.weeklyScore.toLocaleString('ko-KR') }} 점
-                </span>
-              </li>
-            </ol>
-            <p v-else class="py-3 text-center font-serif text-[11px] text-[rgba(139,100,60,0.55)]">
-              아직 순위 데이터가 없어요.
-            </p>
-          </template>
-
-          <button
-            type="button"
-            class="mt-1 flex h-12 w-full items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[15px] font-bold text-[#fff8ec]"
-            @click="onChallenge"
-          >
-            도전 하러가기 →
-          </button>
-        </div>
+            <button
+              type="button"
+              class="mt-2 flex h-12 w-full shrink-0 items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[15px] font-bold text-[#fff8ec]"
+              @click="onChallenge"
+            >
+              도전 하러가기 →
+            </button>
+          </div>
+        </Transition>
       </ScenarioClipboardBoard>
     </div>
   </div>
 </template>
+
+<style scoped>
+.dq-panel-enter-active,
+.dq-panel-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.dq-panel-enter-from,
+.dq-panel-leave-to {
+  opacity: 0;
+  transform: translateY(6px);
+}
+</style>

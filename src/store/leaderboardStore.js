@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { getLeaderboard } from '@/services/leaderboardService.js'
+import { getLeaderboardTop40 } from '@/services/leaderboardService.js'
 
 export const useLeaderboardStore = defineStore('leaderboard', () => {
   const snapshot = ref(null)
@@ -14,10 +14,7 @@ export const useLeaderboardStore = defineStore('leaderboard', () => {
   const weekStartDate = computed(() => snapshot.value?.weekStartDate ?? '')
   const isSnapshotMissing = computed(() => errorCode.value === 'LEADERBOARD_SNAPSHOT_NOT_FOUND')
 
-  /**
-   * @param {{ cursor?: string, size?: number }} [params]
-   */
-  const fetchLeaderboard = async (params = {}) => {
+  const fetchLeaderboard = async () => {
     if (isLoading.value) return
 
     isLoading.value = true
@@ -25,7 +22,7 @@ export const useLeaderboardStore = defineStore('leaderboard', () => {
     errorCode.value = null
 
     try {
-      const { data } = await getLeaderboard(params)
+      const { data } = await getLeaderboardTop40()
       snapshot.value = data
     } catch (err) {
       snapshot.value = null
