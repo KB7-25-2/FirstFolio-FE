@@ -34,6 +34,7 @@ const formatHours = (hours) => {
 // DEPOSIT_SAVINGS/BOND만 true를 반환한다. API_DOCS.md 텍스트가 "STOCK인 경우만"이라고 된 건
 // 문서가 아직 최신화 안 된 상태(펀드를 ETF로 대체하기로 한 뒤 만기가 없어져 압축 대상에서
 // 빠졌는데 문서 프로즈는 그 결정 이전 버전으로 보임) — 코드가 진실이라 코드 기준으로 되돌림.
+
 export const formatCycleSummary = (simulationTerms, realTerms) => {
   if (!simulationTerms || !realTerms) return null
 
