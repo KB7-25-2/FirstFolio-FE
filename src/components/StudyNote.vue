@@ -33,9 +33,18 @@ const checklistLabel = (item) => {
 
 const ruledOffsets = computed(() => Array.from({ length: 12 }, (_, index) => 48 + index * 22))
 
-const questProgressLabel = computed(() => {
-  if (!dailyQuest.value) return '—'
-  return `${dailyQuest.value.answeredCount} / ${dailyQuest.value.totalCount}`
+/** @returns {{ index: number, label: string, done: boolean, current: boolean }[]} */
+const questSteps = computed(() => {
+  const total = dailyQuest.value?.totalCount ?? 5
+  const answered = dailyQuest.value?.answeredCount ?? 0
+  const status = dailyQuest.value?.status
+
+  return Array.from({ length: total }, (_, i) => {
+    const index = i + 1
+    const done = status === 'COMPLETED' || index <= answered
+    const current = status === 'IN_PROGRESS' && index === answered + 1
+    return { index, label: `#${index}`, done, current }
+  })
 })
 
 const questStatusLabel = computed(() => {
@@ -225,7 +234,7 @@ const goDailyQuest = (event) => {
         aria-label="오늘의 일일 퀘스트"
       >
         <div class="relative flex flex-col gap-1.5 px-3.5 py-3 pt-4">
-          <p class="font-serif text-[9px] text-black/55">오늘의 일일 퀘스트</p>
+          <p class="font-serif text-[14px] font-bold text-black/55">오늘의 일일 퀘스트</p>
 
           <p
             v-if="dailyQuestError"
@@ -236,22 +245,60 @@ const goDailyQuest = (event) => {
           </p>
 
           <template v-else>
-            <div class="flex items-end justify-between gap-2">
-              <div class="min-w-0">
-                <p class="font-serif text-[10px] text-[rgba(139,100,60,0.8)]">
-                  {{ questStatusLabel }}
-                </p>
-                <p class="mt-0.5 font-pen text-[22px] leading-none text-[var(--study-ink)]">
-                  {{ questProgressLabel }}
-                </p>
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between">
+                  <p class="font-serif text-[10px] text-[rgba(139,100,60,0.8)]">
+                    {{ questStatusLabel }}
+                  </p>
+                  <button
+                    type="button"
+                    class="study-continue-cta study-continue-cta--quest shrink-0 rounded px-1.5 py-0.5 font-serif text-[14px] font-bold whitespace-nowrap text-[var(--study-quest-continue)]"
+                    @click="goDailyQuest"
+                  >
+                    {{ questCtaLabel }}
+                  </button>
+                </div>
+                <ul
+                  class="mt-1.5 flex items-start justify-between gap-1"
+                  aria-label="일일 퀘스트 진행"
+                >
+                  <li
+                    v-for="step in questSteps"
+                    :key="step.index"
+                    class="flex items-center justify-center gap-2"
+                  >
+                    <span
+                      class="font-serif text-[9px] leading-none"
+                      :class="
+                        step.done || step.current
+                          ? 'font-bold text-[var(--study-quest-continue)]'
+                          : 'text-[rgba(139,100,60,0.5)]'
+                      "
+                    >
+                      {{ step.label }}
+                    </span>
+                    <span
+                      v-if="step.done"
+                      class="flex size-[14px] items-center justify-center rounded-[2px] bg-[var(--study-quest-continue)]"
+                      aria-hidden="true"
+                    >
+                      <span class="font-pen text-[11px] leading-none text-white">✓</span>
+                    </span>
+                    <img
+                      v-else-if="step.current"
+                      :src="checkboxInProgress"
+                      alt=""
+                      class="size-[14px]"
+                    />
+                    <span
+                      v-else
+                      class="size-[14px] rounded-[2px] border-[1.5px] border-[rgba(196,92,42,0.55)]"
+                      aria-hidden="true"
+                    />
+                  </li>
+                </ul>
               </div>
-              <button
-                type="button"
-                class="study-continue-cta study-continue-cta--quest shrink-0 rounded px-1.5 py-0.5 font-serif text-[14px] font-bold whitespace-nowrap text-[var(--study-quest-continue)]"
-                @click="goDailyQuest"
-              >
-                {{ questCtaLabel }}
-              </button>
             </div>
             <p class="font-serif text-[8px] text-[var(--study-score-label)]">
               매일 5문제 · 정답 수만큼 포인트
