@@ -1,11 +1,11 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { computed, ref } from 'vue'
 import {
-  login as loginApi,
   logout as logoutApi,
   signupWithGoogle as signupWithGoogleApi,
   signupWithEmail as signupWithEmailApi,
   loginWithGoogle as loginWithGoogleApi,
+  loginWithEmail as loginWithEmailApi,
 } from '@/services/authService.js'
 import { setToken, removeToken, hasToken } from '@/utils/token.js'
 import { useUserStore } from '@/store/userStore.js'
@@ -26,13 +26,12 @@ export const useAuthStore = defineStore('auth', () => {
     await useUserStore().fetchProfile()
   }
 
-  const login = async (credentials, options = {}) => {
-    const { data } = await loginApi(credentials)
-    const token = data.accessToken ?? data.token
-
-    if (!token) {
-      throw new Error('로그인 응답에 토큰이 없습니다.')
-    }
+  /**
+   * @param {{ email: string, password: string }} credentials
+   * @param {{ remember?: boolean }} [options]
+   */
+  const loginWithEmail = async (credentials, options = {}) => {
+    const { data, idToken } = await loginWithEmailApi(credentials)
 
     if (options.remember) {
       localStorage.setItem(REMEMBER_KEY, credentials.email)
@@ -42,7 +41,8 @@ export const useAuthStore = defineStore('auth', () => {
       rememberedEmail.value = ''
     }
 
-    await establishSession(token)
+    await establishSession(idToken)
+    return data
   }
 
   const signupWithGoogle = async (options = {}) => {
@@ -79,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
   return {
     isAuthenticated,
     rememberedEmail,
-    login,
+    loginWithEmail,
     signupWithGoogle,
     signupWithEmail,
     loginWithGoogle,

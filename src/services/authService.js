@@ -8,6 +8,7 @@ import { signUp as signUpApi, login as loginApi } from '@/api/authApi.js'
 import { ApiError } from '@/api/errorHandler.js'
 import {
   signInWithGoogle,
+  signInWithEmail,
   signUpWithEmail,
   getIdToken,
   signOutFirebase,
@@ -166,6 +167,28 @@ export const loginWithGoogle = async (options = {}) => {
   }
 }
 
+/**
+ * 이메일·비밀번호로 Firebase 인증 후 FirstFolio 로그인
+ * @param {{ email: string, password: string }} credentials
+ * @returns {Promise<{ data: LoginResponse, idToken: string }>}
+ */
+export const loginWithEmail = async ({ email, password }) => {
+  await signInWithEmail(email, password)
+  const idToken = await getIdToken()
+
+  try {
+    const { data } = await loginApi(idToken)
+
+    return {
+      data: mapLoginResponse(data.data),
+      idToken,
+    }
+  } catch (error) {
+    await signOutFirebase().catch(() => {})
+    throw mapAuthError(error, 'LOGIN_FAILED', '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+  }
+}
+
 export class AuthApiError extends Error {
   /**
    * @param {string} code
@@ -177,32 +200,6 @@ export class AuthApiError extends Error {
     this.name = 'AuthApiError'
     this.code = code
     this.status = status
-  }
-}
-
-/**
- * 이메일 로그인 (목업) — 이메일·비밀번호만 있으면 성공
- * TODO: Firebase 이메일 로그인 API 연동 시 교체
- * @param {{ email: string, password: string }} credentials
- * @returns {Promise<{ data: { accessToken: string } }>}
- */
-export const login = async (credentials) => {
-  await delay()
-  const email = credentials?.email?.trim()
-  const password = credentials?.password
-
-  if (!email || !password) {
-    throw new AuthApiError('VALIDATION_ERROR', '이메일과 비밀번호를 입력해 주세요.', 400)
-  }
-
-  if (!email.includes('@')) {
-    throw new AuthApiError('VALIDATION_ERROR', '올바른 이메일 형식이 아닙니다.', 400)
-  }
-
-  return {
-    data: {
-      accessToken: `mock-access-token-${Date.now()}`,
-    },
   }
 }
 

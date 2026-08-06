@@ -76,7 +76,7 @@ export const useLoginView = () => {
     error.value = ''
 
     try {
-      await authStore.login(
+      const data = await authStore.loginWithEmail(
         {
           email: email.value,
           password: password.value,
@@ -84,9 +84,17 @@ export const useLoginView = () => {
         { remember: rememberMe.value },
       )
 
-      const path = await resolveLoginRedirect(undefined, fallbackHome.value)
+      const path = await resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
       await router.push(path)
     } catch (err) {
+      if (err?.code === 'SIGNUP_REQUIRED') {
+        signupMethod.value = 'email'
+        activeTab.value = 'signup'
+        signupStep.value = 'form'
+        error.value = err.message
+        return
+      }
+
       error.value = err?.message || '로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.'
     } finally {
       isLoading.value = false
