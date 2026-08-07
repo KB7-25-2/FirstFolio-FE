@@ -12,7 +12,7 @@ defineEmits(['request-sell'])
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-2xl border border-white/10 bg-white/8">
+  <div class="rounded-2xl border border-white/10 bg-white/8">
     <ul class="divide-y divide-white/5">
       <HoldingItem
         v-for="holding in holdings"
