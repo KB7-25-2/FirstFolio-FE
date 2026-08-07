@@ -9,6 +9,7 @@ import {
   saveDailyQuestAnswer,
   submitDailyQuest,
 } from '@/services/dailyQuestService.js'
+import { useUserStore } from '@/store/userStore.js'
 
 export const useDailyQuestStore = defineStore('dailyQuest', () => {
   /** @type {import('vue').Ref<import('@/types/dailyQuest.js').DailyQuest | null>} */
@@ -216,6 +217,14 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
       }
 
       phase.value = 'RESULT'
+
+      // 보상 반영된 포인트 잔액 갱신 (GET /users/me)
+      try {
+        await useUserStore().fetchProfile()
+      } catch {
+        // 결과 표시는 유지, 잔액 갱신 실패는 무시
+      }
+
       return data
     } catch (err) {
       error.value = err?.message || '제출에 실패했습니다.'
