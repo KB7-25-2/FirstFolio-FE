@@ -1,9 +1,9 @@
 /**
- * 일일 퀘스트 mock 서비스
+ * 일일 퀘스트 서비스
  * - GET /daily-quests/today
  * - PUT /daily-quests/today/answers
- * DB: daily_quests / daily_quest_items / quiz_questions 스냅샷
- * TODO: API 연동 시 dailyQuestApi로 교체
+ * - POST /daily-quests/today/submit
+ * — 실 API 우선, DEV에서 실패 시 로컬 mock 폴백
  */
 
 /**
@@ -16,6 +16,13 @@
  * @typedef {import('@/types/dailyQuest.js').DailyQuestQuestionTypeSummary} DailyQuestQuestionTypeSummary
  * @typedef {import('@/types/study.js').QuizQuestionType} QuizQuestionType
  */
+
+import {
+  getToday as getTodayApi,
+  saveAnswer as saveAnswerApi,
+  submitToday as submitTodayApi,
+} from '@/api/dailyQuestApi.js'
+import { ApiError } from '@/api/errorHandler.js'
 
 const STORAGE_KEY = 'daily_quest_state'
 const TOTAL_COUNT = 5
@@ -40,6 +47,16 @@ const DAILY_QUEST_ERROR_MESSAGES = {
   DAILY_QUEST_ANSWERS_INCOMPLETE: '아직 풀지 않은 문제가 있습니다. 5문제를 모두 저장해 주세요.',
 }
 
+/** API 비즈니스 오류 — DEV에서도 mock으로 가리지 않음 */
+const BUSINESS_ERROR_CODES = new Set([
+  'UNAUTHORIZED',
+  'DAILY_QUEST_POOL_INSUFFICIENT',
+  'VALIDATION_ERROR',
+  'ITEM_NOT_FOUND',
+  'DAILY_QUEST_ALREADY_COMPLETED',
+  'DAILY_QUEST_ANSWERS_INCOMPLETE',
+])
+
 const POINTS_PER_CORRECT = 100
 
 export class DailyQuestApiError extends Error {
@@ -53,8 +70,45 @@ export class DailyQuestApiError extends Error {
     this.name = 'DailyQuestApiError'
     this.code = code
     this.status = status
-    this.requestId = `req-mock-${Date.now()}`
+    this.requestId = `req-${Date.now()}`
   }
+}
+
+/**
+ * @param {unknown} error
+ * @param {string} fallbackCode
+ * @param {string} fallbackMessage
+ * @returns {DailyQuestApiError}
+ */
+const mapDailyQuestError = (error, fallbackCode, fallbackMessage) => {
+  if (error instanceof DailyQuestApiError) return error
+
+  if (error instanceof ApiError) {
+    const code = error.code ?? fallbackCode
+    const message = DAILY_QUEST_ERROR_MESSAGES[code] ?? error.message ?? fallbackMessage
+    return new DailyQuestApiError(code, message, error.status)
+  }
+
+  if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+    const err = /** @type {{ code: string, message: string, status?: number }} */ (error)
+    return new DailyQuestApiError(
+      err.code,
+      DAILY_QUEST_ERROR_MESSAGES[err.code] ?? err.message,
+      err.status ?? 400,
+    )
+  }
+
+  return new DailyQuestApiError(fallbackCode, fallbackMessage, 500)
+}
+
+/**
+ * @param {DailyQuestApiError} error
+ * @returns {boolean}
+ */
+const shouldFallbackToMock = (error) => {
+  if (!import.meta.env.DEV) return false
+  if (BUSINESS_ERROR_CODES.has(error.code)) return false
+  return true
 }
 
 /**
@@ -317,19 +371,25 @@ const mapSourceRefs = (raw) => {
  * @returns {DailyQuestQuestionSnapshot}
  */
 export const mapQuestionSnapshot = (raw) => ({
-  questionId: raw.question_id,
-  questionKey: raw.question_key,
-  versionNo: raw.version_no,
-  usageType: raw.usage_type,
-  mainChapterId: raw.main_chapter_id ?? null,
-  subChapterId: raw.sub_chapter_id ?? null,
-  questionType: raw.question_type,
+  questionId: raw.question_id ?? raw.questionId,
+  questionKey: raw.question_key ?? raw.questionKey,
+  versionNo: raw.version_no ?? raw.versionNo,
+  usageType: raw.usage_type ?? raw.usageType,
+  mainChapterId: raw.main_chapter_id ?? raw.mainChapterId ?? null,
+  subChapterId: raw.sub_chapter_id ?? raw.subChapterId ?? null,
+  questionType: raw.question_type ?? raw.questionType,
   difficulty: raw.difficulty ?? null,
   prompt: raw.prompt,
-  scenarioJson: raw.scenario_json ?? null,
-  optionsJson: (raw.options_json ?? []).map((o) => ({ key: o.key, label: o.label })),
-  sourceRefs: mapSourceRefs(raw.source_refs_json),
-  ...(raw.correct_answer_json ? { correctAnswerJson: raw.correct_answer_json } : {}),
+  scenarioJson: raw.scenario_json ?? raw.scenarioJson ?? null,
+  optionsJson: (raw.options_json ?? raw.optionsJson ?? []).map((o) => ({
+    key: o.key,
+    label: o.label,
+    ...(o.description ? { description: o.description } : {}),
+  })),
+  sourceRefs: mapSourceRefs(raw.source_refs_json ?? raw.sourceRefs),
+  ...(raw.correct_answer_json || raw.correctAnswerJson
+    ? { correctAnswerJson: raw.correct_answer_json ?? raw.correctAnswerJson }
+    : {}),
   ...(raw.explanation != null ? { explanation: raw.explanation } : {}),
 })
 
@@ -350,14 +410,14 @@ export const mapUserAnswer = (raw) => {
  * @returns {DailyQuestItem}
  */
 export const mapDailyQuestItem = (raw) => ({
-  dailyQuestItemId: raw.daily_quest_item_id,
-  questionId: raw.question_id,
-  sourceType: raw.source_type,
-  displayOrder: raw.display_order,
-  questionSnapshot: mapQuestionSnapshot(raw.question_snapshot_json),
-  userAnswer: mapUserAnswer(raw.user_answer_json),
-  isCorrect: raw.is_correct ?? null,
-  answeredAt: raw.answered_at ?? null,
+  dailyQuestItemId: raw.daily_quest_item_id ?? raw.dailyQuestItemId,
+  questionId: raw.question_id ?? raw.questionId,
+  sourceType: raw.source_type ?? raw.sourceType,
+  displayOrder: raw.display_order ?? raw.displayOrder,
+  questionSnapshot: mapQuestionSnapshot(raw.question_snapshot_json ?? raw.questionSnapshot ?? {}),
+  userAnswer: mapUserAnswer(raw.user_answer_json ?? raw.userAnswer),
+  isCorrect: raw.is_correct ?? raw.isCorrect ?? null,
+  answeredAt: raw.answered_at ?? raw.answeredAt ?? null,
 })
 
 /**
@@ -417,19 +477,32 @@ export const mapDailyQuest = (raw) => {
         )
 
   return {
-    dailyQuestId: raw.daily_quest_id,
-    questDate: raw.quest_date,
+    dailyQuestId: raw.daily_quest_id ?? raw.dailyQuestId,
+    questDate: raw.quest_date ?? raw.questDate,
     status: raw.status,
-    totalCount: raw.total_count,
-    correctCount: raw.correct_count ?? 0,
+    totalCount: raw.total_count ?? raw.totalCount,
+    correctCount: raw.correct_count ?? raw.correctCount ?? 0,
     score: raw.score ?? 0,
     answeredCount,
-    completedAt: raw.completed_at ?? null,
+    completedAt: raw.completed_at ?? raw.completedAt ?? null,
     items,
     questionTypes: fromRaw.questionTypes,
     questionTypeSummary: fromRaw.questionTypeSummary,
   }
 }
+
+/**
+ * @param {object} raw
+ * @returns {DailyQuestSaveAnswerResult}
+ */
+export const mapSaveAnswerResult = (raw) => ({
+  dailyQuestId: raw.daily_quest_id ?? raw.dailyQuestId,
+  status: raw.status,
+  answeredCount: raw.answered_count ?? raw.answeredCount,
+  totalCount: raw.total_count ?? raw.totalCount,
+  dailyQuestItemId: raw.daily_quest_item_id ?? raw.dailyQuestItemId,
+  userAnswer: mapUserAnswer(raw.user_answer_json ?? raw.userAnswer ?? raw.user_answer),
+})
 
 /**
  * @param {object[]} items
@@ -544,21 +617,42 @@ const toPublicQuestRaw = (quest) => {
 }
 
 /**
- * GET /daily-quests/today
+ * GET /daily-quests/today (mock)
  * @returns {Promise<{ data: DailyQuest }>}
  */
-export const getTodayDailyQuest = async () => {
+const getTodayDailyQuestMock = async () => {
   await delay()
   const quest = ensureTodayQuest()
   return { data: mapDailyQuest(structuredClone(toPublicQuestRaw(quest))) }
 }
 
 /**
- * PUT /daily-quests/today/answers
+ * GET /daily-quests/today
+ * @returns {Promise<{ data: DailyQuest }>}
+ */
+export const getTodayDailyQuest = async () => {
+  try {
+    const { data } = await getTodayApi()
+    const raw = data?.data ?? data
+    return { data: mapDailyQuest(raw) }
+  } catch (error) {
+    const mapped = mapDailyQuestError(
+      error,
+      'DAILY_QUEST_FETCH_FAILED',
+      '오늘의 퀘스트를 불러오지 못했습니다.',
+    )
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[dailyQuestService] GET today 실패 — mock으로 대체합니다.', mapped)
+    return getTodayDailyQuestMock()
+  }
+}
+
+/**
+ * PUT /daily-quests/today/answers (mock)
  * @param {DailyQuestSaveAnswerInput} input
  * @returns {Promise<{ data: DailyQuestSaveAnswerResult }>}
  */
-export const saveDailyQuestAnswer = async (input) => {
+const saveDailyQuestAnswerMock = async (input) => {
   await delay()
 
   const dailyQuestItemId = input?.dailyQuestItemId
@@ -623,6 +717,49 @@ export const saveDailyQuestAnswer = async (input) => {
 }
 
 /**
+ * PUT /daily-quests/today/answers
+ * @param {DailyQuestSaveAnswerInput} input
+ * @returns {Promise<{ data: DailyQuestSaveAnswerResult }>}
+ */
+export const saveDailyQuestAnswer = async (input) => {
+  const dailyQuestItemId = input?.dailyQuestItemId
+  const answer = input?.answer
+  const selectedKey = answer?.selectedKey
+  const selectedKeys = answer?.selectedKeys
+
+  if (dailyQuestItemId == null || (!selectedKey && !selectedKeys?.length)) {
+    throw new DailyQuestApiError(
+      'VALIDATION_ERROR',
+      DAILY_QUEST_ERROR_MESSAGES.VALIDATION_ERROR,
+      400,
+    )
+  }
+
+  /** @type {{ selected_key?: string, selected_keys?: string[] }} */
+  const user_answer_json = selectedKeys?.length
+    ? { selected_keys: [...selectedKeys] }
+    : { selected_key: selectedKey }
+
+  try {
+    const { data } = await saveAnswerApi({
+      daily_quest_item_id: dailyQuestItemId,
+      user_answer_json,
+    })
+    const raw = data?.data ?? data
+    return { data: mapSaveAnswerResult(raw) }
+  } catch (error) {
+    const mapped = mapDailyQuestError(
+      error,
+      'DAILY_QUEST_SAVE_FAILED',
+      '답안을 저장하지 못했습니다.',
+    )
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[dailyQuestService] PUT answers 실패 — mock으로 대체합니다.', mapped)
+    return saveDailyQuestAnswerMock(input)
+  }
+}
+
+/**
  * 해설 + 뉴스 근거 문구
  * @param {object} snapshot
  * @returns {string}
@@ -646,29 +783,29 @@ const buildExplanation = (snapshot) => {
  * @returns {import('@/types/dailyQuest.js').DailyQuestSubmitResult}
  */
 export const mapSubmitResult = (raw) => ({
-  dailyQuestId: raw.daily_quest_id,
+  dailyQuestId: raw.daily_quest_id ?? raw.dailyQuestId,
   status: raw.status,
-  correctCount: raw.correct_count,
-  totalCount: raw.total_count,
+  correctCount: raw.correct_count ?? raw.correctCount,
+  totalCount: raw.total_count ?? raw.totalCount,
   score: raw.score,
   results: (raw.results ?? []).map((row) => ({
-    questionId: row.question_id,
-    dailyQuestItemId: row.daily_quest_item_id,
-    isCorrect: row.is_correct,
+    questionId: row.question_id ?? row.questionId,
+    dailyQuestItemId: row.daily_quest_item_id ?? row.dailyQuestItemId,
+    isCorrect: row.is_correct ?? row.isCorrect,
     explanation: row.explanation,
-    sourceRefs: mapSourceRefs(row.source_refs_json ?? row.source_refs),
+    sourceRefs: mapSourceRefs(row.source_refs_json ?? row.source_refs ?? row.sourceRefs),
   })),
   reward: {
     points: raw.reward?.points ?? 0,
-    pointTransactionId: raw.reward?.point_transaction_id ?? 0,
+    pointTransactionId: raw.reward?.point_transaction_id ?? raw.reward?.pointTransactionId ?? 0,
   },
 })
 
 /**
- * POST /daily-quests/today/submit — 최종 제출·채점 (멱등)
+ * POST /daily-quests/today/submit — mock
  * @returns {Promise<{ data: import('@/types/dailyQuest.js').DailyQuestSubmitResult }>}
  */
-export const submitDailyQuest = async () => {
+const submitDailyQuestMock = async () => {
   await delay()
   const quest = ensureTodayQuest()
 
@@ -741,6 +878,23 @@ export const submitDailyQuest = async () => {
   writeState({ quest })
 
   return { data: mapSubmitResult(structuredClone(submit_result)) }
+}
+
+/**
+ * POST /daily-quests/today/submit — 최종 제출·채점 (멱등)
+ * @returns {Promise<{ data: import('@/types/dailyQuest.js').DailyQuestSubmitResult }>}
+ */
+export const submitDailyQuest = async () => {
+  try {
+    const { data } = await submitTodayApi()
+    const raw = data?.data ?? data
+    return { data: mapSubmitResult(raw) }
+  } catch (error) {
+    const mapped = mapDailyQuestError(error, 'DAILY_QUEST_SUBMIT_FAILED', '제출에 실패했습니다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[dailyQuestService] POST submit 실패 — mock으로 대체합니다.', mapped)
+    return submitDailyQuestMock()
+  }
 }
 
 /**
