@@ -12,6 +12,44 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/onboarding/intro',
+      name: 'onboarding-intro',
+      component: () => import('@/views/onboarding/OnboardingIntroView.vue'),
+      meta: { requiresAuth: true, onboarding: true, hideNavbar: true },
+    },
+    {
+      path: '/onboarding/quiz',
+      name: 'onboarding-quiz',
+      component: () => import('@/views/onboarding/OnboardingQuizView.vue'),
+      meta: { requiresAuth: true, onboarding: true, hideNavbar: true },
+    },
+    {
+      path: '/onboarding/result',
+      name: 'onboarding-result',
+      component: () => import('@/views/onboarding/OnboardingResultView.vue'),
+      meta: { requiresAuth: true, onboarding: true, hideNavbar: true },
+    },
+    {
+      path: '/onboarding/curriculum',
+      name: 'onboarding-curriculum',
+      component: () => import('@/views/onboarding/OnboardingCurriculumView.vue'),
+      meta: { requiresAuth: true, onboarding: true, hideNavbar: true },
+    },
+    {
+      path: '/onboarding/curriculum-confirm',
+      name: 'onboarding-curriculum-confirm',
+      component: () => import('@/views/onboarding/OnboardingCurriculumConfirmView.vue'),
+      meta: { requiresAuth: true, onboarding: true, hideNavbar: true },
+    },
+    {
+      path: '/onboarding/diagnosis',
+      redirect: { name: 'onboarding-intro' },
+    },
+    {
+      path: '/onboarding',
+      redirect: { name: 'onboarding-intro' },
+    },
+    {
       path: '/',
       redirect: '/home',
     },

@@ -85,7 +85,7 @@ const earnedScore = computed(() => props.correctCount * props.scorePerQuestion)
 
               <button
                 type="button"
-                class="mt-6 flex h-12 w-full items-center justify-center rounded bg-[#c17f24] font-serif text-[15px] font-bold text-[#f5edd9]"
+                class="btn-hover mt-6 flex h-12 w-full items-center justify-center rounded bg-[#c17f24] font-serif text-[15px] font-bold text-[#f5edd9]"
                 @click="$emit('confirm')"
               >
                 학습 목록으로

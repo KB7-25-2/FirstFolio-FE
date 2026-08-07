@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { seedHomeSession } from './helpers/authSession.js'
 
 /**
  * 학습 플로우 E2E (이슈 G 수동 스모크 대응)
@@ -14,6 +15,7 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
   test.beforeAll(async ({ browser }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium', '공유 mock 오염 방지 — chromium만')
     page = await browser.newPage()
+    await seedHomeSession(page)
     await page.goto('/home')
     await expect(page.getByRole('button', { name: '이어서 →' })).toBeVisible({ timeout: 15_000 })
   })

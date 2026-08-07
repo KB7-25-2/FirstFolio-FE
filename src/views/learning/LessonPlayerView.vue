@@ -76,14 +76,15 @@ const {
       <div class="mt-4 flex gap-3">
         <button
           type="button"
-          class="flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
+          class="btn-hover flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
           @click="stopLearning"
         >
           학습 중단
         </button>
         <button
           type="button"
-          class="flex h-12 flex-1 items-center justify-center rounded border-[1.5px] border-[rgba(245,237,217,0.45)] font-serif text-[15px] font-bold text-[#f5edd9] disabled:opacity-40"
+          class="flex h-12 flex-1 items-center justify-center rounded border-[1.5px] border-[rgba(245,237,217,0.45)] font-serif text-[15px] font-bold text-[#f5edd9] disabled:cursor-not-allowed disabled:opacity-40"
+          :class="{ 'btn-hover': !(!!error || isLoading || !currentPage || isFirstPage) }"
           :disabled="!!error || isLoading || !currentPage || isFirstPage"
           @click="goPrevCut"
         >
@@ -91,7 +92,8 @@ const {
         </button>
         <button
           type="button"
-          class="flex h-12 flex-1 items-center justify-center rounded bg-[#c17f24] font-serif text-[15px] font-bold text-[#f5edd9] disabled:opacity-50"
+          class="flex h-12 flex-1 items-center justify-center rounded bg-[#c17f24] font-serif text-[15px] font-bold text-[#f5edd9] disabled:cursor-not-allowed disabled:opacity-50"
+          :class="{ 'btn-hover': !(!!error || isLoading || !currentPage) }"
           :disabled="!!error || isLoading || !currentPage"
           @click="onPrimaryAction"
         >

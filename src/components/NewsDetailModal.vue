@@ -94,7 +94,7 @@ onUnmounted(() => {
           <!-- CTA -->
           <button
             type="button"
-            class="mt-6 flex h-12 w-full items-center justify-center gap-1.5 rounded-[10px] bg-[var(--news-modal-cta)] font-serif text-[14px] font-bold text-[var(--news-modal-cta-text)]"
+            class="btn-hover mt-6 flex h-12 w-full items-center justify-center gap-1.5 rounded-[10px] bg-[var(--news-modal-cta)] font-serif text-[14px] font-bold text-[var(--news-modal-cta-text)]"
             @click="openSource"
           >
             원문 보러가기
@@ -105,7 +105,7 @@ onUnmounted(() => {
           <button
             type="button"
             data-testid="news-modal-close"
-            class="mt-3 mb-2 w-full py-2 text-center font-serif text-[13px] text-[var(--news-muted)]"
+            class="btn-hover mt-3 mb-2 w-full py-2 text-center font-serif text-[13px] text-[var(--news-muted)]"
             @click="close"
           >
             닫기

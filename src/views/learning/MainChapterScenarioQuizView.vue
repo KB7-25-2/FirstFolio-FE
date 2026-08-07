@@ -234,12 +234,12 @@ const {
             <template #footer>
               <button
                 type="button"
-                class="mt-1 flex h-11 w-full items-center justify-center gap-1 rounded-[10px] font-serif text-[14px] font-bold tracking-wide disabled:opacity-70"
-                :class="
+                class="mt-1 flex h-11 w-full items-center justify-center gap-1 rounded-[10px] font-serif text-[14px] font-bold tracking-wide disabled:cursor-not-allowed disabled:opacity-70"
+                :class="[
                   primaryEnabled
-                    ? 'bg-[#c17f24] text-[#fff8ec]'
-                    : 'bg-[rgba(232,214,180,0.75)] text-[rgba(61,31,8,0.45)]'
-                "
+                    ? 'btn-hover bg-[#c17f24] text-[#fff8ec]'
+                    : 'bg-[rgba(232,214,180,0.75)] text-[rgba(61,31,8,0.45)]',
+                ]"
                 :disabled="!primaryEnabled"
                 @click="onPrimaryAction"
               >

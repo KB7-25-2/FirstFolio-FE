@@ -1,20 +1,46 @@
-import { hasToken, setToken } from '@/utils/token.js'
+import { hasToken } from '@/utils/token.js'
+import { isCurriculumConfirmed } from '@/utils/curriculumConfirm.js'
+import { useAuthStore } from '@/store/authStore.js'
+import { useLevelTestStore } from '@/store/levelTestStore.js'
+import { resolveAuthEntryPath, resolveOnboardingGuardTarget } from '@/router/onboardingRedirect.js'
 
-const DEV_BYPASS_TOKEN = 'dev-bypass-token'
+export { resolvePostAuthPath } from '@/router/onboardingRedirect.js'
 
 export const setupAuthGuard = (router) => {
-  router.beforeEach((to) => {
+  router.beforeEach(async (to) => {
     const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
     const guestOnly = to.matched.some((record) => record.meta.guestOnly)
 
     if (requiresAuth && !hasToken()) {
-      // 백엔드 미연결 시 홈/학습 UI 미리보기용 임시 토큰
-      setToken(DEV_BYPASS_TOKEN)
+      return {
+        path: '/login',
+        query: { redirect: to.fullPath },
+      }
     }
 
-    if (guestOnly && hasToken()) {
-      const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : '/home'
-      return redirect
+    if (hasToken() && (requiresAuth || guestOnly)) {
+      const authStore = useAuthStore()
+      const levelTestStore = useLevelTestStore()
+      const levelTestCompleted = await levelTestStore.ensureStatus()
+      const curriculumConfirmed = isCurriculumConfirmed()
+      const onboardingStep = authStore.onboardingStep
+
+      if (guestOnly) {
+        const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : '/home'
+        return resolveAuthEntryPath({
+          onboardingStep,
+          levelTestCompleted,
+          curriculumConfirmed,
+          fallbackHome: redirect,
+        })
+      }
+
+      const target = resolveOnboardingGuardTarget(to, {
+        onboardingStep,
+        levelTestCompleted,
+        curriculumConfirmed,
+      })
+      if (target !== true) return target
     }
 
     return true

@@ -2,11 +2,13 @@
 import SubChapterStatusBadge from '@/components/learning/SubChapterStatusBadge.vue'
 
 defineProps({
-  order: { type: Number, required: true },
+  order: { type: [Number, String], required: true },
   title: { type: String, required: true },
   subtitle: { type: String, default: '' },
   /** @type {import('vue').PropType<import('@/types/study.js').ScheduleStatus>} */
   scheduleStatus: { type: String, required: true },
+  /** 배지 문구 덮어쓰기 */
+  statusLabel: { type: String, default: '' },
 })
 
 defineEmits(['select'])
@@ -68,6 +70,6 @@ const rowClass = {
         {{ subtitle }}
       </span>
     </span>
-    <SubChapterStatusBadge :status="scheduleStatus" />
+    <SubChapterStatusBadge :status="scheduleStatus" :label="statusLabel" />
   </button>
 </template>

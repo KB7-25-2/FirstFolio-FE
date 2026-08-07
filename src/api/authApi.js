@@ -1,7 +1,26 @@
 import apiClient from '@/api/index.js'
 
-export const login = (credentials) => apiClient.post('/auth/login', credentials)
+/**
+ * @param {import('@/types/auth.js').SignupRequest} body
+ * @param {string} idToken
+ */
+export const signUp = (body, idToken) =>
+  apiClient.post('/auth/signup', body, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
 
-export const logout = () => apiClient.post('/auth/logout')
+/**
+ * @param {string} idToken Firebase ID Token
+ */
+export const login = (idToken) =>
+  apiClient.post('/auth/login', null, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })
 
-export const refreshToken = () => apiClient.post('/auth/refresh')
+/**
+ * @param {string} idToken Firebase ID Token
+ */
+export const logout = (idToken) =>
+  apiClient.post('/auth/logout', null, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  })

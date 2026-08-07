@@ -111,3 +111,16 @@
     transform: scale(0.97);
   }
 }
+
+/* 버튼 공통 hover — 활성화된 버튼에만 클래스 부여 */
+.btn-hover {
+  @apply cursor-pointer transition-[transform,opacity,color,background-color] duration-200 ease-out;
+}
+
+.btn-hover:hover {
+  @apply scale-[1.02];
+}
+
+.btn-hover:active {
+  @apply scale-[0.99];
+}

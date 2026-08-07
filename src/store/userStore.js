@@ -1,14 +1,20 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { getUserProfile, applyPointBalanceDelta } from '@/services/userService.js'
+import {
+  getUserProfile,
+  updateUserProfile as updateUserProfileApi,
+  applyPointBalanceDelta,
+} from '@/services/userService.js'
 
 export const useUserStore = defineStore('user', () => {
   const profile = ref(null)
   const isLoading = ref(false)
+  const isSaving = ref(false)
   const error = ref(null)
 
   const nickname = computed(() => profile.value?.nickname ?? '')
   const email = computed(() => profile.value?.email ?? '')
+  const newsletterOptIn = computed(() => profile.value?.newsletterOptIn ?? false)
   const pointBalance = computed(() => profile.value?.pointBalance ?? 0)
   const pointBalanceDisplay = computed(() => pointBalance.value.toLocaleString('ko-KR'))
   const greeting = computed(() =>
@@ -29,6 +35,25 @@ export const useUserStore = defineStore('user', () => {
       profile.value = null
     } finally {
       isLoading.value = false
+    }
+  }
+
+  /**
+   * @param {{ nickname?: string, newsletterOptIn?: boolean }} payload
+   */
+  const updateProfile = async (payload) => {
+    isSaving.value = true
+    error.value = null
+
+    try {
+      const { data } = await updateUserProfileApi(payload)
+      profile.value = data
+      return data
+    } catch (err) {
+      error.value = err?.message || '프로필을 저장하지 못했습니다.'
+      throw err
+    } finally {
+      isSaving.value = false
     }
   }
 
@@ -54,13 +79,16 @@ export const useUserStore = defineStore('user', () => {
   return {
     profile,
     isLoading,
+    isSaving,
     error,
     nickname,
     email,
+    newsletterOptIn,
     pointBalance,
     pointBalanceDisplay,
     greeting,
     fetchProfile,
+    updateProfile,
     addPoints,
     clearProfile,
   }
