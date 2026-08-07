@@ -5,6 +5,7 @@ import PortfolioSummaryCard from '@/components/portfolio/PortfolioSummaryCard.vu
 import HoldingsList from '@/components/portfolio/HoldingsList.vue'
 import AiCoachCard from '@/components/portfolio/AiCoachCard.vue'
 import SellHoldingModal from '@/components/portfolio/SellHoldingModal.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 
 const store = usePortfolioStore()
 
@@ -57,7 +58,7 @@ const handleSellConfirm = async (quantity) => {
       <AiCoachCard v-if="store.summary.aiFeedback" :message="store.summary.aiFeedback" />
     </template>
 
-    <p v-else-if="store.isLoading" class="text-sm text-[var(--pf-text-muted)]">불러오는 중…</p>
+    <BaseLoading v-else-if="store.isLoading" />
 
     <SellHoldingModal
       v-if="sellTargetHolding"

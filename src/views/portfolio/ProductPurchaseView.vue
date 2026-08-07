@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import ProductListItem from '@/components/portfolio/ProductListItem.vue'
 import BuyProductModal from '@/components/portfolio/BuyProductModal.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 import { ASSET_TYPE_META } from '@/constants/assetType.js'
 
 const store = usePortfolioStore()
@@ -124,7 +125,7 @@ const handleBuyConfirm = async (amount) => {
         </ul>
       </div>
 
-      <p v-else-if="store.isLoading" class="text-sm text-[var(--pf-text-muted)]">불러오는 중…</p>
+      <BaseLoading v-else-if="store.isLoading" />
       <p v-else class="text-sm text-[var(--pf-text-muted)]">해당 자산군의 상품이 없어요.</p>
     </div>
     <BuyProductModal

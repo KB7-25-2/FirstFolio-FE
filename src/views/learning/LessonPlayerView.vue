@@ -4,6 +4,7 @@ import ChapterProgress from '@/components/learning/ChapterProgress.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import TextbookPage from '@/components/learning/TextbookPage.vue'
 import LearnMoreModal from '@/components/learning/LearnMoreModal.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 import { useLessonPlayer } from '@/composables/useLessonPlayer.js'
 
 const {
@@ -45,7 +46,7 @@ const {
       </div>
     </template>
 
-    <p v-if="isLoading" class="font-serif text-sm text-[rgba(245,237,217,0.55)]">불러오는 중…</p>
+    <BaseLoading v-if="isLoading" />
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
 
     <div
