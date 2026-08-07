@@ -1,5 +1,24 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { ApiError } from '@/api/errorHandler.js'
+
+vi.mock('@/api/dailyQuestApi.js', () => ({
+  getToday: vi.fn(() => Promise.reject(new ApiError('unavailable', 500))),
+  saveAnswer: vi.fn(() => Promise.reject(new ApiError('unavailable', 500))),
+  submitToday: vi.fn(() => Promise.reject(new ApiError('unavailable', 500))),
+}))
+
+vi.mock('@/store/userStore.js', () => ({
+  useUserStore: () => ({
+    fetchProfile: vi.fn(() => Promise.resolve()),
+  }),
+}))
+
+import {
+  getToday as getTodayApi,
+  saveAnswer as saveAnswerApi,
+  submitToday as submitTodayApi,
+} from '@/api/dailyQuestApi.js'
 import {
   __POINTS_PER_CORRECT,
   __QUESTION_SEED_COUNT,
@@ -19,6 +38,10 @@ describe('dailyQuestService (unit)', () => {
   beforeEach(() => {
     localStorage.clear()
     resetDailyQuestState()
+    vi.clearAllMocks()
+    getTodayApi.mockRejectedValue(new ApiError('unavailable', 500))
+    saveAnswerApi.mockRejectedValue(new ApiError('unavailable', 500))
+    submitTodayApi.mockRejectedValue(new ApiError('unavailable', 500))
   })
 
   it('GET today 응답을 daily_quests·items 스키마 기준으로 매핑한다', () => {
@@ -253,6 +276,60 @@ describe('dailyQuestService (unit)', () => {
     expect(second.data.reward.pointTransactionId).toBe(first.data.reward.pointTransactionId)
     expect(second.data.correctCount).toBe(first.data.correctCount)
   })
+
+  it('실 API 성공 시 GET today 응답을 매핑한다', async () => {
+    getTodayApi.mockResolvedValue({
+      data: {
+        data: {
+          daily_quest_id: 4100,
+          quest_date: '2026-08-07',
+          status: 'ASSIGNED',
+          total_count: 5,
+          correct_count: 0,
+          score: 0,
+          answered_count: 0,
+          completed_at: null,
+          items: [
+            {
+              daily_quest_item_id: 5100,
+              question_id: 2001,
+              source_type: 'GENERAL',
+              display_order: 1,
+              question_snapshot_json: {
+                question_id: 2001,
+                question_key: 'api-q1',
+                version_no: 1,
+                usage_type: 'DAILY_GENERAL',
+                question_type: 'SINGLE_CHOICE',
+                prompt: 'API 문항',
+                scenario_json: null,
+                options_json: [{ key: '1', label: 'A' }],
+              },
+              user_answer_json: null,
+              is_correct: null,
+              answered_at: null,
+            },
+          ],
+        },
+      },
+    })
+
+    const { data } = await getTodayDailyQuest()
+    expect(getTodayApi).toHaveBeenCalled()
+    expect(data.dailyQuestId).toBe(4100)
+    expect(data.items[0].questionSnapshot.prompt).toBe('API 문항')
+  })
+
+  it('실 API 409 DAILY_QUEST_ANSWERS_INCOMPLETE 는 mock으로 가리지 않는다', async () => {
+    submitTodayApi.mockRejectedValue(
+      new ApiError('incomplete', 409, null, 'DAILY_QUEST_ANSWERS_INCOMPLETE'),
+    )
+
+    await expect(submitDailyQuest()).rejects.toMatchObject({
+      code: 'DAILY_QUEST_ANSWERS_INCOMPLETE',
+      status: 409,
+    })
+  })
 })
 
 describe('dailyQuestStore (unit)', () => {
@@ -260,6 +337,10 @@ describe('dailyQuestStore (unit)', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     resetDailyQuestState()
+    vi.clearAllMocks()
+    getTodayApi.mockRejectedValue(new ApiError('unavailable', 500))
+    saveAnswerApi.mockRejectedValue(new ApiError('unavailable', 500))
+    submitTodayApi.mockRejectedValue(new ApiError('unavailable', 500))
   })
 
   it('fetchToday 시 ASSIGNED면 INTRO와 questionTypeSummary를 노출한다', async () => {
