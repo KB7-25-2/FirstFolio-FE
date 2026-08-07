@@ -14,15 +14,28 @@ const { chapterTitle, learningItems, continueRoute, isLoading, error } = storeTo
 /** @type {import('vue').Ref<import('@/types/portfolio.js').DashboardDailyQuest | null>} */
 const dailyQuest = ref(null)
 const dailyQuestError = ref('')
+const isDailyQuestLoading = ref(false)
 
-onMounted(async () => {
-  studyStore.fetchStudyNote()
+const fetchDailyQuestProgress = async () => {
+  if (isDailyQuestLoading.value) return
+
+  isDailyQuestLoading.value = true
+  dailyQuestError.value = ''
+
   try {
     const { data } = await getDashboard()
     dailyQuest.value = data.dailyQuest
   } catch (err) {
+    dailyQuest.value = null
     dailyQuestError.value = err?.message || '일일 퀘스트 정보를 불러오지 못했습니다.'
+  } finally {
+    isDailyQuestLoading.value = false
   }
+}
+
+onMounted(() => {
+  studyStore.fetchStudyNote()
+  fetchDailyQuestProgress()
 })
 
 const checklistLabel = (item) => {
@@ -48,6 +61,7 @@ const questSteps = computed(() => {
 })
 
 const questStatusLabel = computed(() => {
+  if (isDailyQuestLoading.value && !dailyQuest.value) return '불러오는 중'
   const status = dailyQuest.value?.status
   if (status === 'COMPLETED') return '오늘 퀘스트 완료'
   if (status === 'IN_PROGRESS') return '진행 중'
@@ -59,7 +73,6 @@ const questCtaLabel = computed(() => {
   const status = dailyQuest.value?.status
   if (status === 'COMPLETED') return '결과 보기 →'
   if (status === 'IN_PROGRESS') return '이어하기 →'
-  if (status === 'ASSIGNED') return '시작하기 →'
   return '시작하기 →'
 })
 
