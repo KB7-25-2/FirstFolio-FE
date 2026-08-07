@@ -1,0 +1,639 @@
+/**
+ * 일일 퀘스트 mock 서비스
+ * - GET /daily-quests/today
+ * - PUT /daily-quests/today/answers
+ * DB: daily_quests / daily_quest_items / quiz_questions 스냅샷
+ * TODO: API 연동 시 dailyQuestApi로 교체
+ */
+
+/**
+ * @typedef {import('@/types/dailyQuest.js').DailyQuest} DailyQuest
+ * @typedef {import('@/types/dailyQuest.js').DailyQuestItem} DailyQuestItem
+ * @typedef {import('@/types/dailyQuest.js').DailyQuestQuestionSnapshot} DailyQuestQuestionSnapshot
+ * @typedef {import('@/types/dailyQuest.js').DailyQuestSaveAnswerInput} DailyQuestSaveAnswerInput
+ * @typedef {import('@/types/dailyQuest.js').DailyQuestSaveAnswerResult} DailyQuestSaveAnswerResult
+ * @typedef {import('@/types/dailyQuest.js').DailyQuestStatus} DailyQuestStatus
+ * @typedef {import('@/types/dailyQuest.js').DailyQuestQuestionTypeSummary} DailyQuestQuestionTypeSummary
+ * @typedef {import('@/types/study.js').QuizQuestionType} QuizQuestionType
+ */
+
+const STORAGE_KEY = 'daily_quest_state'
+const TOTAL_COUNT = 5
+const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** @type {Record<QuizQuestionType, string>} */
+export const DAILY_QUEST_QUESTION_TYPE_LABELS = {
+  SINGLE_CHOICE: '객관식 퀴즈',
+  MULTIPLE_CHOICE: '객관식 퀴즈',
+  TRUE_FALSE: '객관식 퀴즈',
+  SCENARIO: '시나리오 퀴즈',
+}
+
+/** @type {Record<string, string>} */
+const DAILY_QUEST_ERROR_MESSAGES = {
+  UNAUTHORIZED: '인증이 필요합니다. 다시 로그인해 주세요.',
+  DAILY_QUEST_POOL_INSUFFICIENT:
+    '오늘의 퀘스트 문항을 배정할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+  VALIDATION_ERROR: '답안 형식이 올바르지 않습니다.',
+  ITEM_NOT_FOUND: '문항을 찾을 수 없습니다.',
+  DAILY_QUEST_ALREADY_COMPLETED: '오늘의 퀘스트를 이미 완료했습니다.',
+}
+
+export class DailyQuestApiError extends Error {
+  /**
+   * @param {string} code
+   * @param {string} message
+   * @param {number} [status=400]
+   */
+  constructor(code, message, status = 400) {
+    super(message)
+    this.name = 'DailyQuestApiError'
+    this.code = code
+    this.status = status
+    this.requestId = `req-mock-${Date.now()}`
+  }
+}
+
+/**
+ * quiz_questions 시드 → daily_quest_items.question_snapshot_json
+ * SINGLE_CHOICE 3 · SCENARIO 2 (혼합 배정)
+ * 내부 `_correct_key` / `_explanation` 은 스냅샷 공개 응답에서 제거
+ */
+const QUESTION_SEED = [
+  {
+    question_id: 1001,
+    question_key: 'daily-deposit-protection',
+    version_no: 1,
+    usage_type: 'DAILY_GENERAL',
+    main_chapter_id: 2,
+    sub_chapter_id: null,
+    question_type: 'SINGLE_CHOICE',
+    difficulty: 'MEDIUM',
+    prompt: '예금자 보호 제도가 보장하는 범위로 알맞은 것은?',
+    scenario_json: null,
+    options_json: [
+      { key: '1', label: '주식 투자 손실 전액' },
+      { key: '2', label: '일정 한도 내 예금 원금·이자' },
+      { key: '3', label: '펀드 평가액 전액' },
+      { key: '4', label: '부동산 시세 하락분' },
+    ],
+    source_refs_json: null,
+    source_type: 'GENERAL',
+    _correct_key: '2',
+    _explanation: '예금자 보호는 일정 한도 내 예금 원금과 이자를 보장합니다.',
+  },
+  {
+    question_id: 1002,
+    question_key: 'daily-bond-rate',
+    version_no: 1,
+    usage_type: 'DAILY_GENERAL',
+    main_chapter_id: 3,
+    sub_chapter_id: null,
+    question_type: 'SINGLE_CHOICE',
+    difficulty: 'MEDIUM',
+    prompt: '시장 금리가 오르면 기존 채권 가격은 보통 어떻게 되나?',
+    scenario_json: null,
+    options_json: [
+      { key: '1', label: '함께 오른다' },
+      { key: '2', label: '내려가는 경향이 있다' },
+      { key: '3', label: '항상 그대로다' },
+      { key: '4', label: '배당이 늘어난다' },
+    ],
+    source_refs_json: null,
+    source_type: 'GENERAL',
+    _correct_key: '2',
+    _explanation: '금리가 오르면 기존 채권의 상대 매력이 떨어져 가격이 내려가는 경향이 있습니다.',
+  },
+  {
+    question_id: 1003,
+    question_key: 'daily-first-salary-portfolio',
+    version_no: 1,
+    usage_type: 'MAIN_CHAPTER',
+    main_chapter_id: 2,
+    sub_chapter_id: null,
+    question_type: 'SCENARIO',
+    difficulty: 'MEDIUM',
+    prompt: '이 고객에게 가장 적합한 포트폴리오 구성은?',
+    scenario_json: {
+      title: '첫 월급을 받은 사회초년생',
+      paperTitle: '포트폴리오 추천서',
+      persona: {
+        name: '펭귄',
+        age: '28세',
+        job: '직장인',
+        monthlyIncome: '300만',
+        monthlySaving: '50만',
+      },
+      market: {
+        title: '오늘의 금융 시황',
+        bullets: ['시중은행 정기예금 금리 연 3.2% 수준', '단기 유동성 수요가 늘어난 달'],
+      },
+      constraints: ['원금 손실은 원하지 않음', '안정과 성장을 함께 추구'],
+      narrative:
+        '첫 직장 3년 차, 월급의 일부를 꾸준히 모아두었지만 어디에 투자해야 할지 막막합니다. 안정적인 수익을 원하면서도 성장 기회를 놓치고 싶지 않아, 오늘 포트폴리오 구성 조언을 받으러 왔습니다.',
+    },
+    options_json: [
+      { key: '1', label: '예금 80%, 주식 20%' },
+      { key: '2', label: '주식 100%' },
+      { key: '3', label: '예금 40%, 주식 40%, 채권 20%' },
+      { key: '4', label: '채권 100%' },
+    ],
+    source_refs_json: null,
+    source_type: 'WRONG_RETRY',
+    _correct_key: '3',
+    _explanation:
+      '중위험·안정+성장 목표에는 예금·주식·채권을 고루 담은 포트폴리오가 가장 잘 맞습니다.',
+  },
+  {
+    question_id: 1004,
+    question_key: 'daily-diversification',
+    version_no: 1,
+    usage_type: 'DAILY_GENERAL',
+    main_chapter_id: 4,
+    sub_chapter_id: null,
+    question_type: 'SINGLE_CHOICE',
+    difficulty: 'EASY',
+    prompt: '분산 투자의 주요 목적으로 가장 알맞은 것은?',
+    scenario_json: null,
+    options_json: [
+      { key: '1', label: '특정 자산의 손실 영향을 줄인다' },
+      { key: '2', label: '거래 수수료를 없앤다' },
+      { key: '3', label: '원금을 법적으로 보장한다' },
+      { key: '4', label: '세금 납부를 면제한다' },
+    ],
+    source_refs_json: null,
+    source_type: 'WRONG_RETRY',
+    _correct_key: '1',
+    _explanation: '분산 투자는 특정 자산 손실이 전체에 미치는 영향을 줄이기 위함입니다.',
+  },
+  {
+    question_id: 1005,
+    question_key: 'daily-news-deposit-rate',
+    version_no: 1,
+    usage_type: 'DAILY_NEWS',
+    main_chapter_id: 2,
+    sub_chapter_id: null,
+    question_type: 'SCENARIO',
+    difficulty: 'MEDIUM',
+    prompt: '상담사가 고객에게 가장 먼저 확인해 주라고 조언할 항목은?',
+    scenario_json: {
+      title: '예·적금 금리 경쟁',
+      paperTitle: '포트폴리오 추천서',
+      persona: {
+        name: '펭귄',
+        age: '30세',
+        job: '직장인',
+      },
+      market: {
+        title: '오늘의 금융 시황',
+        bullets: ['은행권 예·적금 금리 경쟁 심화', '우대금리 조건이 까다로워지는 추세'],
+      },
+      constraints: [],
+      narrative:
+        '최근 은행권 예·적금 금리 경쟁이 뜨겁다는 뉴스를 봤습니다. 여유 자금 일부를 예·적금에 넣으려는데, 어디에 주목해야 할지 모르겠습니다.',
+    },
+    options_json: [
+      { key: '1', label: '우대금리 조건과 실질 적용 금리' },
+      { key: '2', label: '은행 로고 색상' },
+      { key: '3', label: '지점 인테리어' },
+      { key: '4', label: '모바일 앱 아이콘' },
+    ],
+    source_refs_json: [
+      {
+        title: '예·적금 금리 비교 수요 증가…은행권 경쟁 격화',
+        reference_at: '2026-07-29T00:00:00Z',
+      },
+    ],
+    source_type: 'NEWS',
+    _correct_key: '1',
+    _explanation: '금리 경쟁 시기에는 우대 조건과 실질 금리를 먼저 비교해야 합니다.',
+  },
+]
+
+/**
+ * @returns {string}
+ */
+const todayDateString = () => {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+/**
+ * @returns {{ quest: object | null }}
+ */
+const readState = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { quest: null }
+    const parsed = JSON.parse(raw)
+    return { quest: parsed.quest ?? null }
+  } catch {
+    return { quest: null }
+  }
+}
+
+/**
+ * @param {{ quest: object | null }} state
+ */
+const writeState = (state) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+}
+
+/**
+ * @param {object} seed
+ * @returns {object} question_snapshot_json (내부 채점 필드 포함 가능)
+ */
+const buildSnapshotRaw = (seed) => ({
+  question_id: seed.question_id,
+  question_key: seed.question_key,
+  version_no: seed.version_no,
+  usage_type: seed.usage_type,
+  main_chapter_id: seed.main_chapter_id,
+  sub_chapter_id: seed.sub_chapter_id,
+  question_type: seed.question_type,
+  difficulty: seed.difficulty ?? null,
+  prompt: seed.prompt,
+  scenario_json: seed.scenario_json ?? null,
+  options_json: structuredClone(seed.options_json ?? []),
+  source_refs_json: seed.source_refs_json ?? null,
+  _correct_key: seed._correct_key,
+  _explanation: seed._explanation,
+})
+
+/**
+ * 공개 스냅샷 — 정답·해설 제거
+ * @param {object} snapshot
+ * @returns {object}
+ */
+const toPublicSnapshotRaw = (snapshot) => ({
+  question_id: snapshot.question_id,
+  question_key: snapshot.question_key,
+  version_no: snapshot.version_no,
+  usage_type: snapshot.usage_type,
+  main_chapter_id: snapshot.main_chapter_id,
+  sub_chapter_id: snapshot.sub_chapter_id,
+  question_type: snapshot.question_type,
+  difficulty: snapshot.difficulty ?? null,
+  prompt: snapshot.prompt,
+  scenario_json: snapshot.scenario_json ?? null,
+  options_json: structuredClone(snapshot.options_json ?? []),
+  source_refs_json: snapshot.source_refs_json ?? null,
+})
+
+/**
+ * @param {object} raw
+ * @returns {import('@/types/dailyQuest.js').DailyQuestSourceRef[] | null}
+ */
+const mapSourceRefs = (raw) => {
+  if (!Array.isArray(raw)) return null
+  return raw.map((ref) => ({
+    title: ref.title,
+    url: ref.url,
+    publisher: ref.publisher,
+    referenceAt: ref.reference_at ?? ref.referenceAt ?? null,
+  }))
+}
+
+/**
+ * @param {object} raw
+ * @returns {DailyQuestQuestionSnapshot}
+ */
+export const mapQuestionSnapshot = (raw) => ({
+  questionId: raw.question_id,
+  questionKey: raw.question_key,
+  versionNo: raw.version_no,
+  usageType: raw.usage_type,
+  mainChapterId: raw.main_chapter_id ?? null,
+  subChapterId: raw.sub_chapter_id ?? null,
+  questionType: raw.question_type,
+  difficulty: raw.difficulty ?? null,
+  prompt: raw.prompt,
+  scenarioJson: raw.scenario_json ?? null,
+  optionsJson: (raw.options_json ?? []).map((o) => ({ key: o.key, label: o.label })),
+  sourceRefs: mapSourceRefs(raw.source_refs_json),
+  ...(raw.correct_answer_json ? { correctAnswerJson: raw.correct_answer_json } : {}),
+  ...(raw.explanation != null ? { explanation: raw.explanation } : {}),
+})
+
+/**
+ * @param {object | null} raw
+ * @returns {import('@/types/dailyQuest.js').DailyQuestUserAnswer | null}
+ */
+export const mapUserAnswer = (raw) => {
+  if (!raw) return null
+  const answer = {}
+  if (raw.selected_key != null) answer.selectedKey = raw.selected_key
+  if (Array.isArray(raw.selected_keys)) answer.selectedKeys = [...raw.selected_keys]
+  return Object.keys(answer).length ? answer : null
+}
+
+/**
+ * @param {object} raw
+ * @returns {DailyQuestItem}
+ */
+export const mapDailyQuestItem = (raw) => ({
+  dailyQuestItemId: raw.daily_quest_item_id,
+  questionId: raw.question_id,
+  sourceType: raw.source_type,
+  displayOrder: raw.display_order,
+  questionSnapshot: mapQuestionSnapshot(raw.question_snapshot_json),
+  userAnswer: mapUserAnswer(raw.user_answer_json),
+  isCorrect: raw.is_correct ?? null,
+  answeredAt: raw.answered_at ?? null,
+})
+
+/**
+ * @param {object[]} itemsRaw
+ * @returns {{ questionTypes: QuizQuestionType[], questionTypeSummary: DailyQuestQuestionTypeSummary[] }}
+ */
+export const buildQuestionTypeSummary = (itemsRaw) => {
+  /** @type {QuizQuestionType[]} */
+  const questionTypes = []
+  /** @type {Record<string, number>} */
+  const counts = {}
+
+  for (const item of itemsRaw ?? []) {
+    const type = item.question_snapshot_json?.question_type ?? item.questionSnapshot?.questionType
+    if (!type) continue
+    if (!counts[type]) {
+      questionTypes.push(type)
+      counts[type] = 0
+    }
+    counts[type] += 1
+  }
+
+  const questionTypeSummary = questionTypes.map((questionType) => ({
+    questionType,
+    label: DAILY_QUEST_QUESTION_TYPE_LABELS[questionType] ?? questionType,
+    count: counts[questionType] ?? 0,
+  }))
+
+  return { questionTypes, questionTypeSummary }
+}
+
+/**
+ * @param {object} raw
+ * @returns {DailyQuest}
+ */
+export const mapDailyQuest = (raw) => {
+  const items = (raw.items ?? []).map(mapDailyQuestItem)
+  const answeredCount = raw.answered_count ?? items.filter((item) => item.userAnswer != null).length
+
+  const fromRaw =
+    Array.isArray(raw.question_types) && Array.isArray(raw.question_type_summary)
+      ? {
+          questionTypes: raw.question_types,
+          questionTypeSummary: raw.question_type_summary.map((row) => ({
+            questionType: row.question_type ?? row.questionType,
+            label:
+              row.label ??
+              DAILY_QUEST_QUESTION_TYPE_LABELS[row.question_type ?? row.questionType] ??
+              String(row.question_type ?? row.questionType),
+            count: row.count,
+          })),
+        }
+      : buildQuestionTypeSummary(
+          (raw.items ?? []).map((item) => ({
+            question_snapshot_json: item.question_snapshot_json,
+          })),
+        )
+
+  return {
+    dailyQuestId: raw.daily_quest_id,
+    questDate: raw.quest_date,
+    status: raw.status,
+    totalCount: raw.total_count,
+    correctCount: raw.correct_count ?? 0,
+    score: raw.score ?? 0,
+    answeredCount,
+    completedAt: raw.completed_at ?? null,
+    items,
+    questionTypes: fromRaw.questionTypes,
+    questionTypeSummary: fromRaw.questionTypeSummary,
+  }
+}
+
+/**
+ * @param {object[]} items
+ * @returns {number}
+ */
+const countAnswered = (items) => items.filter((item) => item.user_answer_json != null).length
+
+/**
+ * @param {object} quest
+ * @returns {DailyQuestStatus}
+ */
+const deriveStatus = (quest) => {
+  if (quest.status === 'COMPLETED') return 'COMPLETED'
+  const answered = countAnswered(quest.items ?? [])
+  if (answered === 0) return 'ASSIGNED'
+  return 'IN_PROGRESS'
+}
+
+/**
+ * @returns {object}
+ */
+const createTodayQuest = () => {
+  if (QUESTION_SEED.length < TOTAL_COUNT) {
+    throw new DailyQuestApiError(
+      'DAILY_QUEST_POOL_INSUFFICIENT',
+      DAILY_QUEST_ERROR_MESSAGES.DAILY_QUEST_POOL_INSUFFICIENT,
+      422,
+    )
+  }
+
+  const items = QUESTION_SEED.slice(0, TOTAL_COUNT).map((seed, index) => ({
+    daily_quest_item_id: 5001 + index,
+    question_id: seed.question_id,
+    source_type: seed.source_type,
+    display_order: index + 1,
+    question_snapshot_json: buildSnapshotRaw(seed),
+    user_answer_json: null,
+    is_correct: null,
+    answered_at: null,
+    created_at: new Date().toISOString(),
+  }))
+
+  return {
+    daily_quest_id: 4001,
+    quest_date: todayDateString(),
+    status: 'ASSIGNED',
+    total_count: TOTAL_COUNT,
+    correct_count: 0,
+    score: 0,
+    answered_count: 0,
+    completed_at: null,
+    items,
+  }
+}
+
+/**
+ * @returns {object}
+ */
+const ensureTodayQuest = () => {
+  const state = readState()
+  const today = todayDateString()
+
+  if (state.quest && state.quest.quest_date === today) {
+    state.quest.answered_count = countAnswered(state.quest.items ?? [])
+    if (state.quest.status !== 'COMPLETED') {
+      state.quest.status = deriveStatus(state.quest)
+    }
+    writeState(state)
+    return state.quest
+  }
+
+  const quest = createTodayQuest()
+  writeState({ quest })
+  return quest
+}
+
+/**
+ * @param {object} quest
+ * @returns {object}
+ */
+const toPublicQuestRaw = (quest) => {
+  const publicItems = (quest.items ?? []).map((item) => ({
+    daily_quest_item_id: item.daily_quest_item_id,
+    question_id: item.question_id,
+    source_type: item.source_type,
+    display_order: item.display_order,
+    question_snapshot_json: toPublicSnapshotRaw(item.question_snapshot_json),
+    user_answer_json: item.user_answer_json,
+    is_correct: item.is_correct,
+    answered_at: item.answered_at,
+  }))
+
+  const { questionTypes, questionTypeSummary } = buildQuestionTypeSummary(publicItems)
+
+  return {
+    daily_quest_id: quest.daily_quest_id,
+    quest_date: quest.quest_date,
+    status: quest.status,
+    total_count: quest.total_count,
+    correct_count: quest.correct_count,
+    score: quest.score,
+    answered_count: quest.answered_count,
+    completed_at: quest.completed_at,
+    question_types: questionTypes,
+    question_type_summary: questionTypeSummary.map((row) => ({
+      question_type: row.questionType,
+      label: row.label,
+      count: row.count,
+    })),
+    items: publicItems,
+  }
+}
+
+/**
+ * GET /daily-quests/today
+ * @returns {Promise<{ data: DailyQuest }>}
+ */
+export const getTodayDailyQuest = async () => {
+  await delay()
+  const quest = ensureTodayQuest()
+  return { data: mapDailyQuest(structuredClone(toPublicQuestRaw(quest))) }
+}
+
+/**
+ * PUT /daily-quests/today/answers
+ * @param {DailyQuestSaveAnswerInput} input
+ * @returns {Promise<{ data: DailyQuestSaveAnswerResult }>}
+ */
+export const saveDailyQuestAnswer = async (input) => {
+  await delay()
+
+  const dailyQuestItemId = input?.dailyQuestItemId
+  const answer = input?.answer
+  const selectedKey = answer?.selectedKey
+  const selectedKeys = answer?.selectedKeys
+
+  if (dailyQuestItemId == null || (!selectedKey && !selectedKeys?.length)) {
+    throw new DailyQuestApiError(
+      'VALIDATION_ERROR',
+      DAILY_QUEST_ERROR_MESSAGES.VALIDATION_ERROR,
+      400,
+    )
+  }
+
+  const quest = ensureTodayQuest()
+
+  if (quest.status === 'COMPLETED') {
+    throw new DailyQuestApiError(
+      'DAILY_QUEST_ALREADY_COMPLETED',
+      DAILY_QUEST_ERROR_MESSAGES.DAILY_QUEST_ALREADY_COMPLETED,
+      409,
+    )
+  }
+
+  const item = (quest.items ?? []).find((row) => row.daily_quest_item_id === dailyQuestItemId)
+  if (!item) {
+    throw new DailyQuestApiError('ITEM_NOT_FOUND', DAILY_QUEST_ERROR_MESSAGES.ITEM_NOT_FOUND, 404)
+  }
+
+  const optionKeys = new Set((item.question_snapshot_json?.options_json ?? []).map((o) => o.key))
+  const keysToValidate = selectedKeys?.length ? selectedKeys : [selectedKey]
+  if (!keysToValidate.every((key) => optionKeys.has(key))) {
+    throw new DailyQuestApiError(
+      'VALIDATION_ERROR',
+      DAILY_QUEST_ERROR_MESSAGES.VALIDATION_ERROR,
+      400,
+    )
+  }
+
+  item.user_answer_json = selectedKeys?.length
+    ? { selected_keys: [...selectedKeys] }
+    : { selected_key: selectedKey }
+  item.answered_at = new Date().toISOString()
+  item.is_correct = null
+
+  quest.answered_count = countAnswered(quest.items)
+  quest.status = deriveStatus(quest)
+
+  writeState({ quest })
+
+  return {
+    data: {
+      dailyQuestId: quest.daily_quest_id,
+      status: quest.status,
+      answeredCount: quest.answered_count,
+      totalCount: quest.total_count,
+      dailyQuestItemId,
+      userAnswer: mapUserAnswer(item.user_answer_json),
+    },
+  }
+}
+
+/**
+ * @param {DailyQuest | null | undefined} quest
+ * @returns {number} 0-based items index
+ */
+export const resolveResumeItemIndex = (quest) => {
+  const items = quest?.items ?? []
+  if (items.length === 0) return 0
+
+  const firstUnanswered = items.findIndex((item) => item.userAnswer == null)
+  if (firstUnanswered === -1) return items.length - 1
+  return firstUnanswered
+}
+
+/**
+ * @param {DailyQuestStatus | null | undefined} status
+ * @returns {import('@/types/dailyQuest.js').DailyQuestPhase}
+ */
+export const resolveInitialPhase = (status) => {
+  if (status === 'COMPLETED') return 'RESULT'
+  if (status === 'IN_PROGRESS') return 'PLAY'
+  return 'INTRO'
+}
+
+export const resetDailyQuestState = () => {
+  localStorage.removeItem(STORAGE_KEY)
+}
+
+/** @internal 테스트용 */
+export const __QUESTION_SEED_COUNT = QUESTION_SEED.length
+export const __STORAGE_KEY = STORAGE_KEY
