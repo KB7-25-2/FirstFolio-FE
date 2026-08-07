@@ -65,50 +65,52 @@ watch(
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
-    <div class="flex items-baseline justify-between">
+  <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-2">
+    <div class="flex shrink-0 items-baseline justify-between">
       <p class="font-pen text-sm text-[var(--pf-highlight)]">상품별 시간 압축 비교</p>
       <p class="text-[10px] text-[var(--pf-text-muted)]">옆으로 넘겨서 비교해보세요 →</p>
     </div>
 
-    <div
-      v-if="sortedProducts.length"
-      ref="carouselEl"
-      class="carousel-scroll flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1"
-      style="scrollbar-width: none"
-      @scroll="handleScroll"
-    >
-      <section
-        v-for="product in sortedProducts"
-        :key="product.productId"
-        class="w-full shrink-0 snap-center rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
+    <div class="min-h-0 flex-1 overflow-hidden">
+      <div
+        v-if="sortedProducts.length"
+        ref="carouselEl"
+        class="carousel-scroll mx-1 flex h-full snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1"
+        style="scrollbar-width: none"
+        @scroll="handleScroll"
       >
-        <div class="flex items-center gap-1.5">
-          <p class="font-bold text-[var(--pf-text)]">{{ product.displayName }}</p>
-          <span
-            v-if="heldProductIds.has(product.productId)"
-            class="rounded-full bg-[var(--pf-highlight)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--pf-highlight)]"
-          >
-            보유중
-          </span>
-        </div>
-        <p class="mt-0.5 text-xs text-[var(--pf-text-muted)]">{{ product.riskLevel }}</p>
+        <section
+          v-for="product in sortedProducts"
+          :key="product.productId"
+          class="h-full w-full shrink-0 snap-center overflow-y-auto rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
+        >
+          <div class="flex items-center gap-1.5">
+            <p class="font-bold text-[var(--pf-text)]">{{ product.displayName }}</p>
+            <span
+              v-if="heldProductIds.has(product.productId)"
+              class="rounded-full bg-[var(--pf-highlight)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--pf-highlight)]"
+            >
+              보유중
+            </span>
+          </div>
+          <p class="mt-0.5 text-xs text-[var(--pf-text-muted)]">{{ product.riskLevel }}</p>
 
-        <h2 class="mt-3 text-lg font-bold text-[var(--pf-text)]">
-          {{ product.cycleSummary ?? '실시간 시세' }}
-        </h2>
-        <p class="mt-2 text-sm leading-relaxed text-[var(--pf-text-muted)]">
-          서비스 안에서는 압축된 기간으로 빠르게 진행되지만, 실제 상품 기준으로는 위 기간을
-          따릅니다. 계산은 동일 조건에서 재현 가능하게 관리돼요.
-        </p>
-      </section>
+          <h2 class="mt-3 text-lg font-bold text-[var(--pf-text)]">
+            {{ product.cycleSummary ?? '실시간 시세' }}
+          </h2>
+          <p class="mt-2 text-sm leading-relaxed text-[var(--pf-text-muted)]">
+            서비스 안에서는 압축된 기간으로 빠르게 진행되지만, 실제 상품 기준으로는 위 기간을
+            따릅니다. 계산은 동일 조건에서 재현 가능하게 관리돼요.
+          </p>
+        </section>
+      </div>
+
+      <p v-else-if="store.isLoading" class="text-sm text-[var(--pf-text-muted)]">불러오는 중…</p>
+      <p v-else class="text-sm text-[var(--pf-text-muted)]">시간 압축이 적용되는 상품이 없어요.</p>
     </div>
 
-    <p v-else-if="store.isLoading" class="text-sm text-[var(--pf-text-muted)]">불러오는 중…</p>
-    <p v-else class="text-sm text-[var(--pf-text-muted)]">시간 압축이 적용되는 상품이 없어요.</p>
-
     <!-- 페이지 인디케이터 (점) -->
-    <div v-if="sortedProducts.length > 1" class="flex justify-center gap-1.5">
+    <div v-if="sortedProducts.length > 1" class="flex shrink-0 justify-center gap-1.5">
       <button
         v-for="(product, index) in sortedProducts"
         :key="product.productId"
