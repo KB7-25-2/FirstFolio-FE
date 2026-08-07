@@ -81,13 +81,13 @@ const handleBuyConfirm = async (amount) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
-    <div class="flex gap-2 overflow-x-auto pb-1">
+  <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-2">
+    <div class="flex shrink-0 gap-2 overflow-x-auto pb-1">
       <button
         v-for="filter in FILTERS"
         :key="filter.value"
         type="button"
-        class="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
+        class="h-[30px] shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
         :class="
           activeFilter === filter.value
             ? 'bg-[var(--pf-tab-active-bg)] text-[var(--pf-tab-active-text)]'
@@ -99,33 +99,34 @@ const handleBuyConfirm = async (amount) => {
       </button>
     </div>
 
-    <p v-if="store.summary" class="text-xs text-[var(--pf-text-muted)]">
+    <p v-if="store.summary" class="shrink-0 text-xs text-[var(--pf-text-muted)]">
       구매 가능 현금
       <span class="font-bold text-[var(--pf-text)]"
         >{{ store.summary.cashBalance.toLocaleString('ko-KR') }}원</span
       >
     </p>
 
-    <p v-if="store.error" class="text-sm text-[var(--pf-negative)]">{{ store.error }}</p>
+    <p v-if="store.error" class="shrink-0 text-sm text-[var(--pf-negative)]">{{ store.error }}</p>
 
-    <div
-      v-if="filteredProducts.length"
-      class="overflow-hidden rounded-2xl border border-[var(--pf-card-border)] bg-white/8"
-    >
-      <ul class="divide-y divide-white/5">
-        <ProductListItem
-          v-for="product in filteredProducts"
-          :key="product.productId"
-          :product="product"
-          :is-held="heldProductIds.has(product.productId)"
-          @buy="openBuyModal"
-        />
-      </ul>
+    <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div
+        v-if="filteredProducts.length"
+        class="rounded-2xl border border-[var(--pf-card-border)] bg-white/8"
+      >
+        <ul class="divide-y divide-white/5">
+          <ProductListItem
+            v-for="product in filteredProducts"
+            :key="product.productId"
+            :product="product"
+            :is-held="heldProductIds.has(product.productId)"
+            @buy="openBuyModal"
+          />
+        </ul>
+      </div>
+
+      <p v-else-if="store.isLoading" class="text-sm text-[var(--pf-text-muted)]">불러오는 중…</p>
+      <p v-else class="text-sm text-[var(--pf-text-muted)]">해당 자산군의 상품이 없어요.</p>
     </div>
-
-    <p v-else-if="store.isLoading" class="text-sm text-[var(--pf-text-muted)]">불러오는 중…</p>
-    <p v-else class="text-sm text-[var(--pf-text-muted)]">해당 자산군의 상품이 없어요.</p>
-
     <BuyProductModal
       v-if="buyTargetProduct && store.summary"
       :product="buyTargetProduct"
