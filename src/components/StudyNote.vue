@@ -42,7 +42,7 @@ const questSteps = computed(() => {
   return Array.from({ length: total }, (_, i) => {
     const index = i + 1
     const done = status === 'COMPLETED' || index <= answered
-    const current = status === 'IN_PROGRESS' && index === answered + 1
+    const current = status !== 'COMPLETED' && index === answered + 1
     return { index, label: `#${index}`, done, current }
   })
 })
@@ -51,7 +51,7 @@ const questStatusLabel = computed(() => {
   const status = dailyQuest.value?.status
   if (status === 'COMPLETED') return '오늘 퀘스트 완료'
   if (status === 'IN_PROGRESS') return '진행 중'
-  if (status === 'NOT_STARTED') return '아직 시작 전'
+  if (status === 'ASSIGNED') return '아직 시작 전'
   return '불러오는 중'
 })
 
@@ -59,6 +59,7 @@ const questCtaLabel = computed(() => {
   const status = dailyQuest.value?.status
   if (status === 'COMPLETED') return '결과 보기 →'
   if (status === 'IN_PROGRESS') return '이어하기 →'
+  if (status === 'ASSIGNED') return '시작하기 →'
   return '시작하기 →'
 })
 
