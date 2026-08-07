@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
 import checkboxInProgress from '@/assets/study/checkbox-in-progress.svg'
 import penguin from '@/assets/study/penguin.png'
+import BaseLoading from '@/components/BaseLoading.vue'
 
 const studyStore = useStudyStore()
 const router = useRouter()
@@ -97,12 +98,13 @@ const goLearning = () => {
       </div>
 
       <div class="relative flex min-h-[300px] flex-col gap-2 px-4 py-3">
-        <div
+        <BaseLoading
           v-if="isLoading"
-          class="py-10 text-center font-serif text-xs text-[var(--study-muted)]"
-        >
-          학습 현황을 불러오는 중…
-        </div>
+          class="py-10 text-center"
+          tone="onLight"
+          size="xs"
+          message="학습 현황을 불러오는 중…"
+        />
 
         <div
           v-else-if="error"

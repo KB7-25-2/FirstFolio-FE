@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
+import BaseLoading from '@/components/BaseLoading.vue'
 
 const store = usePortfolioStore()
 
@@ -105,7 +106,7 @@ watch(
         </section>
       </div>
 
-      <p v-else-if="store.isLoading" class="text-sm text-[var(--pf-text-muted)]">불러오는 중…</p>
+      <BaseLoading v-else-if="store.isLoading" />
       <p v-else class="text-sm text-[var(--pf-text-muted)]">시간 압축이 적용되는 상품이 없어요.</p>
     </div>
 

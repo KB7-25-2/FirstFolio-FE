@@ -17,17 +17,29 @@ const props = defineProps({
     default: 'onDark',
     validator: (value) => ['onDark', 'onLight'].includes(value),
   },
+  /** sm | xs | 2xs */
+  size: {
+    type: String,
+    default: 'sm',
+    validator: (value) => ['sm', 'xs', '2xs'].includes(value),
+  },
 })
 
 const toneClass = computed(() =>
   props.tone === 'onLight' ? 'text-[rgba(41,33,26,0.55)]' : 'text-[rgba(245,237,217,0.55)]',
 )
+
+const sizeClass = computed(() => {
+  if (props.size === 'xs') return 'text-xs'
+  if (props.size === '2xs') return 'text-[10px]'
+  return 'text-sm'
+})
 </script>
 
 <template>
   <div
-    class="font-serif text-sm"
-    :class="[toneClass, fullPage ? 'flex flex-1 items-center justify-center py-10' : '']"
+    class="font-serif"
+    :class="[toneClass, sizeClass, fullPage ? 'flex flex-1 items-center justify-center py-10' : '']"
     role="status"
     aria-live="polite"
     aria-busy="true"

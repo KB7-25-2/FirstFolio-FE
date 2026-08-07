@@ -6,6 +6,7 @@ import PointBalanceCard from '@/components/pointMarket/PointBalanceCard.vue'
 import GifticonGridItem from '@/components/pointMarket/GifticonGridItem.vue'
 import SelectedGifticonBar from '@/components/pointMarket/SelectedGifticonBar.vue'
 import RedemptionHistoryItem from '@/components/pointMarket/RedemptionHistoryItem.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 import portfolioBg from '@/assets/portfolio/portfolio-bg.png'
 
 const gifticonStore = useGifticonStore()
@@ -145,7 +146,7 @@ const handleRedeem = async () => {
               @select="selectGifticon"
             />
           </div>
-          <p v-else-if="gifticonStore.isLoading" class="text-sm text-[#9aa1b0]">불러오는 중…</p>
+          <BaseLoading v-else-if="gifticonStore.isLoading" />
           <p v-else class="text-sm text-[#9aa1b0]">해당 카테고리 상품이 없어요.</p>
         </div>
       </div>
@@ -181,7 +182,7 @@ const handleRedeem = async () => {
             :order="order"
           />
         </ul>
-        <p v-else-if="gifticonStore.isLoading" class="text-sm text-[#9aa1b0]">불러오는 중…</p>
+        <BaseLoading v-else-if="gifticonStore.isLoading" />
         <p v-else class="text-sm text-[#9aa1b0]">아직 교환 내역이 없어요.</p>
       </div>
     </template>

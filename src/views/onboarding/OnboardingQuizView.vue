@@ -4,6 +4,7 @@ import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import QuizExamPaper from '@/components/learning/QuizExamPaper.vue'
 import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 import { useLevelTestQuiz } from '@/composables/useLevelTestQuiz.js'
 import { computed } from 'vue'
 
@@ -51,9 +52,7 @@ const scorePerQuestion = computed(() =>
       </template>
 
       <div class="px-4">
-        <p v-if="!currentQuestion" class="font-serif text-sm text-[rgba(245,237,217,0.55)]">
-          불러오는 중…
-        </p>
+        <BaseLoading v-if="!currentQuestion" />
 
         <LearningNotePaper v-else ruled surface-class="bg-[#faf5eb]">
           <QuizExamPaper

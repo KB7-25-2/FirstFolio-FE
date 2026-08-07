@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useNewsStore } from '@/store/newsStore.js'
 import NewsClipping from '@/components/NewsClipping.vue'
 import NewsDetailModal from '@/components/NewsDetailModal.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 
 const newsStore = useNewsStore()
 const { items, isLoading, error } = storeToRefs(newsStore)
@@ -38,12 +39,12 @@ const onSelect = (id) => {
       </span>
     </div>
 
-    <div
+    <BaseLoading
       v-if="isLoading"
-      class="py-8 text-center font-serif text-xs text-[var(--news-section-muted)]"
-    >
-      뉴스를 불러오는 중…
-    </div>
+      class="py-8 text-center"
+      size="xs"
+      message="뉴스를 불러오는 중…"
+    />
 
     <div v-else-if="error" class="py-8 text-center font-serif text-xs text-[var(--study-total)]">
       {{ error }}
