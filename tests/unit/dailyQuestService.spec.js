@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import {
+  __POINTS_PER_CORRECT,
   __QUESTION_SEED_COUNT,
   __STORAGE_KEY,
   getTodayDailyQuest,
@@ -9,6 +10,7 @@ import {
   resolveInitialPhase,
   resolveResumeItemIndex,
   saveDailyQuestAnswer,
+  submitDailyQuest,
   DailyQuestApiError,
 } from '@/services/dailyQuestService.js'
 import { useDailyQuestStore } from '@/store/dailyQuestStore.js'
@@ -202,7 +204,7 @@ describe('dailyQuestService (unit)', () => {
 
   it('resolveResumeItemIndex·resolveInitialPhase가 status에 맞게 동작한다', () => {
     expect(resolveInitialPhase('ASSIGNED')).toBe('INTRO')
-    expect(resolveInitialPhase('IN_PROGRESS')).toBe('PLAY')
+    expect(resolveInitialPhase('IN_PROGRESS')).toBe('INTRO')
     expect(resolveInitialPhase('COMPLETED')).toBe('RESULT')
 
     expect(
@@ -221,6 +223,35 @@ describe('dailyQuestService (unit)', () => {
     await expect(
       saveDailyQuestAnswer({ dailyQuestItemId: 9999, answer: { selectedKey: '1' } }),
     ).rejects.toMatchObject({ code: 'ITEM_NOT_FOUND', status: 404 })
+  })
+
+  it('답안 미완료 제출은 DAILY_QUEST_ANSWERS_INCOMPLETE를 던진다', async () => {
+    await getTodayDailyQuest()
+    await expect(submitDailyQuest()).rejects.toMatchObject({
+      code: 'DAILY_QUEST_ANSWERS_INCOMPLETE',
+      status: 409,
+    })
+  })
+
+  it('5문항 저장 후 submit은 채점·보상하고 재호출은 멱등이다', async () => {
+    const { data: quest } = await getTodayDailyQuest()
+    for (const item of quest.items) {
+      await saveDailyQuestAnswer({
+        dailyQuestItemId: item.dailyQuestItemId,
+        answer: { selectedKey: '1' },
+      })
+    }
+
+    const first = await submitDailyQuest()
+    expect(first.data.status).toBe('COMPLETED')
+    expect(first.data.totalCount).toBe(5)
+    expect(first.data.results).toHaveLength(5)
+    expect(first.data.reward.points).toBe(first.data.correctCount * __POINTS_PER_CORRECT)
+    expect(first.data.results.every((row) => typeof row.explanation === 'string')).toBe(true)
+
+    const second = await submitDailyQuest()
+    expect(second.data.reward.pointTransactionId).toBe(first.data.reward.pointTransactionId)
+    expect(second.data.correctCount).toBe(first.data.correctCount)
   })
 })
 
@@ -242,21 +273,43 @@ describe('dailyQuestStore (unit)', () => {
     expect(store.progressLabel).toBe('0/5')
   })
 
-  it('startPlay 후 selectChoice로 진행하고 재조회 시 PLAY로 이어한다', async () => {
+  it('openItem·saveAndReturnToHub로 허브에서 문항을 골라 저장한다', async () => {
     const store = useDailyQuestStore()
     await store.fetchToday()
 
-    store.startPlay()
+    store.openItem(0)
     expect(store.isPlay).toBe(true)
 
-    await store.selectChoice('2')
+    await store.saveAndReturnToHub('2')
     expect(store.answeredCount).toBe(1)
     expect(store.isInProgress).toBe(true)
-    expect(store.currentSelectedKey).toBe('2')
+    expect(store.isIntro).toBe(true)
 
     await store.fetchToday()
-    expect(store.isPlay).toBe(true)
-    expect(store.currentItemIndex).toBe(1)
+    expect(store.isIntro).toBe(true)
+    expect(store.answeredCount).toBe(1)
+  })
+
+  it('5문항 저장 후 submitToday로 채점·보상을 확정한다', async () => {
+    const store = useDailyQuestStore()
+    await store.fetchToday()
+
+    for (let i = 0; i < store.itemTotal; i += 1) {
+      store.openItem(i)
+      await store.saveAndReturnToHub('1')
+    }
+
+    expect(store.canSubmit).toBe(true)
+    const result = await store.submitToday()
+
+    expect(result?.status).toBe('COMPLETED')
+    expect(store.isResult).toBe(true)
+    expect(store.correctCount).toBeGreaterThanOrEqual(0)
+    expect(store.rewardPoints).toBe(store.correctCount * 100)
+    expect(store.resultRows).toHaveLength(5)
+
+    const again = await store.submitToday()
+    expect(again?.reward.pointTransactionId).toBe(result.reward.pointTransactionId)
   })
 
   it('clear 시 세션과 localStorage를 초기화한다', async () => {
