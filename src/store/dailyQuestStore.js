@@ -7,6 +7,7 @@ import {
   resolveInitialPhase,
   resolveResumeItemIndex,
   saveDailyQuestAnswer,
+  submitDailyQuest,
 } from '@/services/dailyQuestService.js'
 
 export const useDailyQuestStore = defineStore('dailyQuest', () => {
@@ -14,11 +15,14 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
   const quest = ref(null)
   /** @type {import('vue').Ref<import('@/types/dailyQuest.js').DailyQuestPhase>} */
   const phase = ref('INTRO')
+  /** @type {import('vue').Ref<import('@/types/dailyQuest.js').DailyQuestSubmitResult | null>} */
+  const submitResult = ref(null)
   /** 0-based items 인덱스 */
   const currentItemIndex = ref(0)
 
   const isLoading = ref(false)
   const isSaving = ref(false)
+  const isSubmitting = ref(false)
   const error = ref(null)
   const errorCode = ref(null)
 
@@ -26,8 +30,10 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
   const status = computed(() => quest.value?.status ?? null)
   const answeredCount = computed(() => quest.value?.answeredCount ?? 0)
   const totalCount = computed(() => quest.value?.totalCount ?? 0)
-  const correctCount = computed(() => quest.value?.correctCount ?? 0)
-  const score = computed(() => quest.value?.score ?? 0)
+  const correctCount = computed(
+    () => submitResult.value?.correctCount ?? quest.value?.correctCount ?? 0,
+  )
+  const score = computed(() => submitResult.value?.score ?? quest.value?.score ?? 0)
   const questDate = computed(() => quest.value?.questDate ?? '')
   const questionTypes = computed(() => quest.value?.questionTypes ?? [])
   const questionTypeSummary = computed(() => quest.value?.questionTypeSummary ?? [])
@@ -35,6 +41,13 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
   const isAssigned = computed(() => status.value === 'ASSIGNED')
   const isInProgress = computed(() => status.value === 'IN_PROGRESS')
   const isCompleted = computed(() => status.value === 'COMPLETED')
+  const allAnswered = computed(
+    () =>
+      itemTotal.value > 0 &&
+      answeredCount.value >= totalCount.value &&
+      items.value.every((item) => item.userAnswer != null),
+  )
+  const canSubmit = computed(() => allAnswered.value && !isCompleted.value)
 
   const isIntro = computed(() => phase.value === 'INTRO')
   const isPlay = computed(() => phase.value === 'PLAY')
@@ -62,16 +75,12 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
     () => itemTotal.value > 0 && currentItemIndex.value >= itemTotal.value - 1,
   )
   const isFirstItem = computed(() => currentItemIndex.value <= 0)
-
   const currentSelectedKey = computed(() => currentItem.value?.userAnswer?.selectedKey ?? null)
   const progressLabel = computed(() => `${answeredCount.value}/${totalCount.value || 5}`)
 
-  /**
-   * GET /daily-quests/today
-   * — ASSIGNED → INTRO(유형 안내)
-   * — IN_PROGRESS → PLAY(재개)
-   * — COMPLETED → RESULT
-   */
+  const rewardPoints = computed(() => submitResult.value?.reward?.points ?? 0)
+  const resultRows = computed(() => submitResult.value?.results ?? [])
+
   const fetchToday = async () => {
     if (isLoading.value) return quest.value
 
@@ -83,7 +92,17 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
       const { data } = await getTodayDailyQuest()
       quest.value = data
       phase.value = resolveInitialPhase(data.status)
-      currentItemIndex.value = data.status === 'ASSIGNED' ? 0 : resolveResumeItemIndex(data)
+      currentItemIndex.value = 0
+
+      if (data.status === 'COMPLETED') {
+        // 재진입 시 제출 결과 복원
+        const { data: submitted } = await submitDailyQuest()
+        submitResult.value = submitted
+        phase.value = 'RESULT'
+      } else {
+        submitResult.value = null
+      }
+
       return data
     } catch (err) {
       quest.value = null
@@ -96,11 +115,20 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
     }
   }
 
-  /** INTRO에서 배정 유형 확인 후 풀이 시작 */
-  const startPlay = () => {
+  /** 허브에서 문항 선택 → 풀이 */
+  const openItem = (index) => {
     if (!quest.value || isCompleted.value) return
+    if (index < 0 || index >= itemTotal.value) return
+    currentItemIndex.value = index
     phase.value = 'PLAY'
-    currentItemIndex.value = resolveResumeItemIndex(quest.value)
+  }
+
+  const backToHub = () => {
+    if (isCompleted.value) {
+      phase.value = 'RESULT'
+      return
+    }
+    phase.value = 'INTRO'
   }
 
   /**
@@ -142,26 +170,65 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
     }
   }
 
-  const goNextItem = () => {
-    if (isLastItem.value) return
-    currentItemIndex.value += 1
+  /** 선택 저장 후 허브로 */
+  const saveAndReturnToHub = async (selectedKey) => {
+    await selectChoice(selectedKey)
+    phase.value = 'INTRO'
   }
 
-  const goPrevItem = () => {
-    if (isFirstItem.value) return
-    currentItemIndex.value -= 1
-  }
+  const submitToday = async () => {
+    if (isSubmitting.value) return null
 
-  /**
-   * @param {number} index
-   */
-  const goToItem = (index) => {
-    if (index < 0 || index >= itemTotal.value) return
-    currentItemIndex.value = index
+    // 이미 완료된 경우 — 결과 화면으로 (멱등 재조회)
+    if (isCompleted.value) {
+      if (submitResult.value) {
+        phase.value = 'RESULT'
+        return submitResult.value
+      }
+    } else if (!canSubmit.value) {
+      return null
+    }
+
+    isSubmitting.value = true
+    error.value = null
+    errorCode.value = null
+
+    try {
+      const { data } = await submitDailyQuest()
+      submitResult.value = data
+
+      if (quest.value) {
+        quest.value.status = 'COMPLETED'
+        quest.value.correctCount = data.correctCount
+        quest.value.score = data.score
+        quest.value.answeredCount = data.totalCount
+        quest.value.completedAt = new Date().toISOString()
+
+        for (const row of data.results) {
+          const item = quest.value.items.find((i) => i.dailyQuestItemId === row.dailyQuestItemId)
+          if (item) {
+            item.isCorrect = row.isCorrect
+            if (item.questionSnapshot) {
+              item.questionSnapshot.explanation = row.explanation
+            }
+          }
+        }
+      }
+
+      phase.value = 'RESULT'
+      return data
+    } catch (err) {
+      error.value = err?.message || '제출에 실패했습니다.'
+      errorCode.value = err?.code ?? null
+      throw err
+    } finally {
+      isSubmitting.value = false
+    }
   }
 
   const clear = () => {
     quest.value = null
+    submitResult.value = null
     phase.value = 'INTRO'
     currentItemIndex.value = 0
     error.value = null
@@ -173,14 +240,14 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
     quest,
     session: quest,
     phase,
+    submitResult,
     currentItemIndex,
-    currentQuestionIndex: currentItemIndex,
     isLoading,
     isSaving,
+    isSubmitting,
     error,
     errorCode,
     items,
-    questions: items,
     status,
     answeredCount,
     totalCount,
@@ -189,42 +256,37 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
     questDate,
     questionTypes,
     questionTypeSummary,
-    formatSummary: questionTypeSummary,
     isAssigned,
-    isNotStarted: isAssigned,
     isInProgress,
     isCompleted,
+    allAnswered,
+    canSubmit,
     isIntro,
     isPlay,
     isResult,
     itemTotal,
-    questionTotal: itemTotal,
     currentItem,
-    currentQuestion: currentItem,
     currentSnapshot,
     currentQuestionType,
     currentQuestionTypeLabel,
-    currentFormat: currentQuestionType,
-    currentFormatLabel: currentQuestionTypeLabel,
     isCurrentScenario,
     isCurrentObjective,
-    isCurrentQuiz: isCurrentObjective,
     questionNumber,
     isLastItem,
-    isLastQuestion: isLastItem,
     isFirstItem,
-    isFirstQuestion: isFirstItem,
     currentSelectedKey,
     progressLabel,
+    rewardPoints,
+    resultRows,
     fetchToday,
-    startPlay,
+    openItem,
+    backToHub,
     selectChoice,
-    goNextItem,
-    goPrevItem,
-    goToItem,
-    goNextQuestion: goNextItem,
-    goPrevQuestion: goPrevItem,
-    goToQuestion: goToItem,
+    saveAndReturnToHub,
+    submitToday,
     clear,
+    // 호환 별칭
+    startPlay: () => openItem(resolveResumeItemIndex(quest.value)),
+    goToQuestion: openItem,
   }
 })

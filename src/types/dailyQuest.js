@@ -31,8 +31,10 @@
  *   quiz_questions.scenario_json — question_type=SCENARIO 일 때 필수
  * @property {string} [title]
  * @property {object} [persona] 캐릭터·고객 상황
+ * @property {{ assets?: string, risk?: string, goal?: string }} [requirements] 고객 요구사항 카드
  * @property {object} [market] 금융시장 상황
  * @property {string[]} [constraints] 제약 조건
+ * @property {string} [narrative] 시나리오 본문 (UI 표시용)
  * @property {string} [paperTitle] 클립보드 서류 제목 등 UI 보조
  *
  * 배정 당시 문항 스냅샷 (question_snapshot_json)
@@ -104,6 +106,27 @@
  * @property {number} totalCount
  * @property {number} dailyQuestItemId
  * @property {DailyQuestUserAnswer} userAnswer
+ *
+ * POST /daily-quests/today/submit — 문항별 채점 결과
+ * @typedef {object} DailyQuestSubmitItemResult
+ * @property {number} questionId
+ * @property {number} dailyQuestItemId
+ * @property {boolean} isCorrect
+ * @property {string} explanation
+ * @property {DailyQuestSourceRef[] | null} [sourceRefs] 뉴스 문항 근거
+ *
+ * @typedef {object} DailyQuestReward
+ * @property {number} points
+ * @property {number} pointTransactionId
+ *
+ * @typedef {object} DailyQuestSubmitResult
+ * @property {number} dailyQuestId
+ * @property {'COMPLETED'} status
+ * @property {number} correctCount
+ * @property {number} totalCount
+ * @property {number} score
+ * @property {DailyQuestSubmitItemResult[]} results
+ * @property {DailyQuestReward} reward
  */
 
 export {}

@@ -37,7 +37,10 @@ const DAILY_QUEST_ERROR_MESSAGES = {
   VALIDATION_ERROR: '답안 형식이 올바르지 않습니다.',
   ITEM_NOT_FOUND: '문항을 찾을 수 없습니다.',
   DAILY_QUEST_ALREADY_COMPLETED: '오늘의 퀘스트를 이미 완료했습니다.',
+  DAILY_QUEST_ANSWERS_INCOMPLETE: '아직 풀지 않은 문제가 있습니다. 5문제를 모두 저장해 주세요.',
 }
+
+const POINTS_PER_CORRECT = 100
 
 export class DailyQuestApiError extends Error {
   /**
@@ -124,6 +127,11 @@ const QUESTION_SEED = [
         monthlyIncome: '300만',
         monthlySaving: '50만',
       },
+      requirements: {
+        assets: '800만원',
+        risk: '중위험 선호',
+        goal: '안정+성장',
+      },
       market: {
         title: '오늘의 금융 시황',
         bullets: ['시중은행 정기예금 금리 연 3.2% 수준', '단기 유동성 수요가 늘어난 달'],
@@ -133,10 +141,10 @@ const QUESTION_SEED = [
         '첫 직장 3년 차, 월급의 일부를 꾸준히 모아두었지만 어디에 투자해야 할지 막막합니다. 안정적인 수익을 원하면서도 성장 기회를 놓치고 싶지 않아, 오늘 포트폴리오 구성 조언을 받으러 왔습니다.',
     },
     options_json: [
-      { key: '1', label: '예금 80%, 주식 20%' },
-      { key: '2', label: '주식 100%' },
-      { key: '3', label: '예금 40%, 주식 40%, 채권 20%' },
-      { key: '4', label: '채권 100%' },
+      { key: '1', label: '예금 80%, 주식 20%', description: '안정 중심' },
+      { key: '2', label: '주식 100%', description: '성장 중심' },
+      { key: '3', label: '예금 40%, 주식 40%, 채권 20%', description: '균형 배분' },
+      { key: '4', label: '채권 100%', description: '수익 중심' },
     ],
     source_refs_json: null,
     source_type: 'WRONG_RETRY',
@@ -183,20 +191,27 @@ const QUESTION_SEED = [
         name: '펭귄',
         age: '30세',
         job: '직장인',
+        monthlyIncome: '350만',
+        monthlySaving: '80만',
+      },
+      requirements: {
+        assets: '1,200만원',
+        risk: '저위험 선호',
+        goal: '금리 비교',
       },
       market: {
         title: '오늘의 금융 시황',
         bullets: ['은행권 예·적금 금리 경쟁 심화', '우대금리 조건이 까다로워지는 추세'],
       },
-      constraints: [],
+      constraints: ['여유 자금의 일부만 예·적금에 배분'],
       narrative:
         '최근 은행권 예·적금 금리 경쟁이 뜨겁다는 뉴스를 봤습니다. 여유 자금 일부를 예·적금에 넣으려는데, 어디에 주목해야 할지 모르겠습니다.',
     },
     options_json: [
-      { key: '1', label: '우대금리 조건과 실질 적용 금리' },
-      { key: '2', label: '은행 로고 색상' },
-      { key: '3', label: '지점 인테리어' },
-      { key: '4', label: '모바일 앱 아이콘' },
+      { key: '1', label: '우대금리 조건과 실질 적용 금리', description: '조건 확인' },
+      { key: '2', label: '은행 로고 색상', description: '브랜드' },
+      { key: '3', label: '지점 인테리어', description: '분위기' },
+      { key: '4', label: '모바일 앱 아이콘', description: '디자인' },
     ],
     source_refs_json: [
       {
@@ -608,6 +623,127 @@ export const saveDailyQuestAnswer = async (input) => {
 }
 
 /**
+ * 해설 + 뉴스 근거 문구
+ * @param {object} snapshot
+ * @returns {string}
+ */
+const buildExplanation = (snapshot) => {
+  let text = snapshot._explanation || snapshot.explanation || '해설이 준비되지 않았습니다.'
+  const refs = snapshot.source_refs_json
+  if (Array.isArray(refs) && refs.length > 0) {
+    const lines = refs.map((ref) => {
+      const title = ref.title || '출처'
+      const at = ref.reference_at ? ` · 기준 ${String(ref.reference_at).slice(0, 10)}` : ''
+      return `${title}${at}`
+    })
+    text = `${text}\n\n근거: ${lines.join(' / ')}`
+  }
+  return text
+}
+
+/**
+ * @param {object} raw
+ * @returns {import('@/types/dailyQuest.js').DailyQuestSubmitResult}
+ */
+export const mapSubmitResult = (raw) => ({
+  dailyQuestId: raw.daily_quest_id,
+  status: raw.status,
+  correctCount: raw.correct_count,
+  totalCount: raw.total_count,
+  score: raw.score,
+  results: (raw.results ?? []).map((row) => ({
+    questionId: row.question_id,
+    dailyQuestItemId: row.daily_quest_item_id,
+    isCorrect: row.is_correct,
+    explanation: row.explanation,
+    sourceRefs: mapSourceRefs(row.source_refs_json ?? row.source_refs),
+  })),
+  reward: {
+    points: raw.reward?.points ?? 0,
+    pointTransactionId: raw.reward?.point_transaction_id ?? 0,
+  },
+})
+
+/**
+ * POST /daily-quests/today/submit — 최종 제출·채점 (멱등)
+ * @returns {Promise<{ data: import('@/types/dailyQuest.js').DailyQuestSubmitResult }>}
+ */
+export const submitDailyQuest = async () => {
+  await delay()
+  const quest = ensureTodayQuest()
+
+  if (quest.submit_result) {
+    return { data: mapSubmitResult(structuredClone(quest.submit_result)) }
+  }
+
+  if (quest.status === 'COMPLETED' && quest.submit_result) {
+    return { data: mapSubmitResult(structuredClone(quest.submit_result)) }
+  }
+
+  const items = quest.items ?? []
+  if (items.length < quest.total_count || items.some((item) => !item.user_answer_json)) {
+    throw new DailyQuestApiError(
+      'DAILY_QUEST_ANSWERS_INCOMPLETE',
+      DAILY_QUEST_ERROR_MESSAGES.DAILY_QUEST_ANSWERS_INCOMPLETE,
+      409,
+    )
+  }
+
+  let correctCount = 0
+  const results = []
+
+  for (const item of items) {
+    const snapshot = item.question_snapshot_json
+    const selectedKey = item.user_answer_json?.selected_key
+    const correctKey = snapshot._correct_key
+    const isCorrect = Boolean(selectedKey && correctKey && selectedKey === correctKey)
+    if (isCorrect) correctCount += 1
+
+    item.is_correct = isCorrect
+    snapshot.explanation = buildExplanation(snapshot)
+    snapshot.correct_answer_json = { key: correctKey }
+
+    results.push({
+      question_id: item.question_id,
+      daily_quest_item_id: item.daily_quest_item_id,
+      is_correct: isCorrect,
+      explanation: snapshot.explanation,
+      source_refs_json: snapshot.source_refs_json,
+    })
+  }
+
+  const score = correctCount
+  const points = correctCount * POINTS_PER_CORRECT
+  const completedAt = new Date().toISOString()
+  const pointTransactionId = 7100 + Number(quest.daily_quest_id)
+
+  quest.status = 'COMPLETED'
+  quest.correct_count = correctCount
+  quest.score = score
+  quest.answered_count = items.length
+  quest.completed_at = completedAt
+  quest.point_transaction_id = pointTransactionId
+
+  const submit_result = {
+    daily_quest_id: quest.daily_quest_id,
+    status: 'COMPLETED',
+    correct_count: correctCount,
+    total_count: quest.total_count,
+    score,
+    results,
+    reward: {
+      points,
+      point_transaction_id: pointTransactionId,
+    },
+  }
+  quest.submit_result = submit_result
+
+  writeState({ quest })
+
+  return { data: mapSubmitResult(structuredClone(submit_result)) }
+}
+
+/**
  * @param {DailyQuest | null | undefined} quest
  * @returns {number} 0-based items index
  */
@@ -621,12 +757,12 @@ export const resolveResumeItemIndex = (quest) => {
 }
 
 /**
+ * 허브 진입용 — COMPLETED만 RESULT, 그 외 INTRO(문항 선택)
  * @param {DailyQuestStatus | null | undefined} status
  * @returns {import('@/types/dailyQuest.js').DailyQuestPhase}
  */
 export const resolveInitialPhase = (status) => {
   if (status === 'COMPLETED') return 'RESULT'
-  if (status === 'IN_PROGRESS') return 'PLAY'
   return 'INTRO'
 }
 
@@ -637,3 +773,4 @@ export const resetDailyQuestState = () => {
 /** @internal 테스트용 */
 export const __QUESTION_SEED_COUNT = QUESTION_SEED.length
 export const __STORAGE_KEY = STORAGE_KEY
+export const __POINTS_PER_CORRECT = POINTS_PER_CORRECT

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
 import { getDashboard } from '@/services/dashboardService.js'
 import checkboxInProgress from '@/assets/study/checkbox-in-progress.svg'
@@ -300,17 +300,8 @@ const goDailyQuest = (event) => {
                 </ul>
               </div>
             </div>
-            <p
-              class="mt-1 flex items-center justify-between gap-2 font-serif text-[8px] text-[var(--study-score-label)]"
-            >
-              <span>매일 5문제 · 정답 수만큼 포인트</span>
-              <RouterLink
-                :to="{ name: 'daily-quest' }"
-                class="study-continue-cta study-continue-cta--quest shrink-0 rounded px-1 py-0.5 text-[10px] font-bold text-[var(--study-quest-continue)]"
-                @click.stop
-              >
-                리더보드 →
-              </RouterLink>
+            <p class="mt-1 font-serif text-[8px] text-[var(--study-score-label)]">
+              매일 5문제 · 정답 수만큼 포인트
             </p>
           </template>
         </div>

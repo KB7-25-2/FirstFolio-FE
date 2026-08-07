@@ -11,3 +11,6 @@ export const getToday = () => apiClient.get('/daily-quests/today')
  * }} body
  */
 export const saveAnswer = (body) => apiClient.put('/daily-quests/today/answers', body)
+
+/** POST /daily-quests/today/submit — 최종 제출·채점 (body 없음) */
+export const submitToday = () => apiClient.post('/daily-quests/today/submit')
