@@ -10,6 +10,7 @@ import ScenarioChoiceOption from '@/components/learning/ScenarioChoiceOption.vue
 import ScenarioEvaluationBlock from '@/components/learning/ScenarioEvaluationBlock.vue'
 import ScenarioMarketBar from '@/components/learning/ScenarioMarketBar.vue'
 import ScenarioResultPanel from '@/components/learning/ScenarioResultPanel.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 import { useMainChapterScenarioQuiz } from '@/composables/useMainChapterScenarioQuiz.js'
 
 const {
@@ -71,9 +72,7 @@ const {
       />
     </div>
 
-    <p v-if="isLoading" class="px-4 py-6 font-serif text-sm text-[rgba(245,237,217,0.55)]">
-      불러오는 중…
-    </p>
+    <BaseLoading v-if="isLoading" class="px-4 py-6" />
     <p v-else-if="error" class="px-4 py-6 font-serif text-sm text-red-300">{{ error }}</p>
 
     <template v-else>
