@@ -1,7 +1,23 @@
 /**
+ * GET /leaderboard 서비스
+ * — 실 API 우선, DEV에서 실패 시 목업 폴백
+ * — 404 LEADERBOARD_SNAPSHOT_NOT_FOUND 는 폴백하지 않고 UI에 전달
+ */
+
+/**
  * @typedef {import('@/types/leaderboard.js').LeaderboardItem} LeaderboardItem
  * @typedef {import('@/types/leaderboard.js').LeaderboardSnapshot} LeaderboardSnapshot
  */
+
+import { getLeaderboard as getLeaderboardApi } from '@/api/leaderboardApi.js'
+import { ApiError } from '@/api/errorHandler.js'
+
+/** @type {Record<string, string>} */
+const LEADERBOARD_ERROR_MESSAGES = {
+  UNAUTHORIZED: '인증이 필요합니다. 다시 로그인해 주세요.',
+  LEADERBOARD_SNAPSHOT_NOT_FOUND:
+    '이번 주 리더보드를 집계하는 중이에요. 잠시 후 다시 확인해 주세요.',
+}
 
 export class LeaderboardApiError extends Error {
   /**
@@ -24,20 +40,46 @@ export class LeaderboardApiError extends Error {
 const mapItem = (raw) => ({
   rank: raw.rank,
   nickname: raw.nickname,
-  weeklyScore: raw.weekly_score,
+  weeklyScore: raw.weekly_score ?? raw.weeklyScore,
 })
 
 /**
  * @param {object} raw
  * @returns {LeaderboardSnapshot}
  */
-const mapSnapshot = (raw) => ({
-  snapshotDate: raw.snapshot_date,
-  weekStartDate: raw.week_start_date,
+export const mapLeaderboardSnapshot = (raw) => ({
+  snapshotDate: raw.snapshot_date ?? raw.snapshotDate ?? '',
+  weekStartDate: raw.week_start_date ?? raw.weekStartDate ?? '',
   items: (raw.items ?? []).map(mapItem),
-  myRank: raw.my_rank ? mapItem(raw.my_rank) : null,
-  nextCursor: raw.next_cursor ?? null,
+  myRank: raw.my_rank || raw.myRank ? mapItem(raw.my_rank ?? raw.myRank) : null,
+  nextCursor: raw.next_cursor ?? raw.nextCursor ?? null,
 })
+
+/**
+ * @param {unknown} error
+ * @param {string} fallbackCode
+ * @param {string} fallbackMessage
+ * @returns {LeaderboardApiError}
+ */
+const mapLeaderboardError = (error, fallbackCode, fallbackMessage) => {
+  if (error instanceof LeaderboardApiError) return error
+
+  if (error instanceof ApiError) {
+    const code = error.code ?? fallbackCode
+    const message = LEADERBOARD_ERROR_MESSAGES[code] ?? error.message ?? fallbackMessage
+    return new LeaderboardApiError(code, message, error.status)
+  }
+
+  if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+    const code = /** @type {{ code: string, message: string, status?: number }} */ (error).code
+    const message =
+      LEADERBOARD_ERROR_MESSAGES[code] ?? /** @type {{ message: string }} */ (error).message
+    const status = /** @type {{ status?: number }} */ (error).status ?? 400
+    return new LeaderboardApiError(code, message, status)
+  }
+
+  return new LeaderboardApiError(fallbackCode, fallbackMessage, 500)
+}
 
 const MOCK_NICKNAMES = [
   '금융새싹',
@@ -83,7 +125,6 @@ const MOCK_NICKNAMES = [
 ]
 
 /**
- * TOP 40 목업 목록 생성
  * @returns {{ rank: number, nickname: string, weekly_score: number }[]}
  */
 const buildMockItems = () =>
@@ -96,21 +137,14 @@ const buildMockItems = () =>
     }
   })
 
-/**
- * GET /leaderboard 목업 (API 원본 snake_case)
- * TODO: API 연동 시 leaderboardApi.getLeaderboard 로 교체
- */
 const MOCK_ALL_ITEMS = buildMockItems()
-
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
- * 최신 일일 스냅샷 리더보드 조회 (목업, cursor 페이지네이션)
- * GET /leaderboard
  * @param {{ cursor?: string, size?: number }} [params]
  * @returns {Promise<{ data: LeaderboardSnapshot }>}
  */
-export const getLeaderboard = async (params = {}) => {
+const getLeaderboardMock = async (params = {}) => {
   await delay()
 
   const size = Math.min(Math.max(Number(params.size) || 10, 1), 40)
@@ -121,7 +155,7 @@ export const getLeaderboard = async (params = {}) => {
   const nextCursor = nextStart < MOCK_ALL_ITEMS.length ? String(nextStart) : null
 
   return {
-    data: mapSnapshot({
+    data: mapLeaderboardSnapshot({
       snapshot_date: '2026-07-30',
       week_start_date: '2026-07-27',
       items: pageItems,
@@ -136,26 +170,56 @@ export const getLeaderboard = async (params = {}) => {
 }
 
 /**
- * 목업 전체 TOP 40 (화면 확장·클라이언트 페이지네이션용)
+ * GET /leaderboard
+ * @param {{ cursor?: string, size?: number }} [params]
  * @returns {Promise<{ data: LeaderboardSnapshot }>}
  */
-export const getLeaderboardTop40 = async () => {
-  await delay()
-  return {
-    data: mapSnapshot({
-      snapshot_date: '2026-07-30',
-      week_start_date: '2026-07-27',
-      items: structuredClone(MOCK_ALL_ITEMS),
-      my_rank: {
-        rank: 47,
-        nickname: '채권꿈나무',
-        weekly_score: 18,
-      },
-      next_cursor: null,
-    }),
+export const getLeaderboard = async (params = {}) => {
+  const query = {}
+  if (params.cursor) query.cursor = params.cursor
+  if (params.size != null) query.size = params.size
+
+  try {
+    const { data } = await getLeaderboardApi(query)
+    const raw = data?.data ?? data
+    return { data: mapLeaderboardSnapshot(raw) }
+  } catch (error) {
+    const mapped = mapLeaderboardError(
+      error,
+      'LEADERBOARD_FETCH_FAILED',
+      '리더보드를 불러오지 못했습니다.',
+    )
+
+    // 스냅샷 없음(명시 코드)은 목업으로 가리지 않고 UI에 전달
+    if (mapped.code === 'LEADERBOARD_SNAPSHOT_NOT_FOUND') {
+      throw mapped
+    }
+
+    if (!import.meta.env.DEV) {
+      if (mapped.status === 404) {
+        throw new LeaderboardApiError(
+          'LEADERBOARD_SNAPSHOT_NOT_FOUND',
+          LEADERBOARD_ERROR_MESSAGES.LEADERBOARD_SNAPSHOT_NOT_FOUND,
+          404,
+        )
+      }
+      throw mapped
+    }
+
+    console.warn('[leaderboardService] API 호출 실패 — 목데이터로 대체합니다.', mapped)
+    return getLeaderboardMock(params)
   }
 }
 
+/**
+ * TOP 목록 (화면 초기 로드용, size 기본 40)
+ * @param {{ size?: number }} [params]
+ * @returns {Promise<{ data: LeaderboardSnapshot }>}
+ */
+export const getLeaderboardTop40 = async (params = {}) =>
+  getLeaderboard({ size: params.size ?? 40 })
+
 /** @internal 테스트용 */
-export const __mapLeaderboardSnapshot = mapSnapshot
+export const __mapLeaderboardSnapshot = mapLeaderboardSnapshot
 export const __MOCK_TOP40_COUNT = MOCK_ALL_ITEMS.length
+export const __getLeaderboardMock = getLeaderboardMock
