@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 
 /**
  * Figma 09 커리큘럼 편집 — 포함(드래그) / 장바구니 미선택
@@ -99,9 +100,7 @@ const onHandlePointerUp = (event) => {
         드래그로 순서 변경 · 필수 과정은 고정
       </p>
 
-      <p v-if="loading" class="mt-6 font-serif text-[13px] text-[rgba(139,100,60,0.65)]">
-        불러오는 중…
-      </p>
+      <BaseLoading v-if="loading" class="mt-6" tone="onLight" />
 
       <template v-else>
         <section class="mt-4">

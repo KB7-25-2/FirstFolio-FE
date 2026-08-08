@@ -8,6 +8,7 @@ import { withScheduleStatus } from '@/utils/scheduleStatus.js'
 import LearningLayout from '@/components/learning/LearningLayout.vue'
 import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
 import TimetableSheet from '@/components/learning/TimetableSheet.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -157,7 +158,7 @@ const startScenarioQuiz = () => {
       ← 좌우 스와이프 = 대단원 · 상하 슬라이드 = 소단원 →
     </p>
 
-    <p v-if="isLoading" class="font-serif text-sm text-[rgba(245,237,217,0.55)]">불러오는 중…</p>
+    <BaseLoading v-if="isLoading" />
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
 
     <div

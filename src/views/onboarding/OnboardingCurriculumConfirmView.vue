@@ -1,6 +1,7 @@
 <script setup>
 import CurriculumCompletionNote from '@/components/onboarding/CurriculumCompletionNote.vue'
 import TimetableSheet from '@/components/learning/TimetableSheet.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 import { useCurriculumConfirm } from '@/composables/useCurriculumConfirm.js'
 
 const {
@@ -28,9 +29,7 @@ const {
       </div>
 
       <div class="mt-5 w-full max-w-[350px] self-center">
-        <p v-if="isLoading" class="font-serif text-[13px] text-[rgba(245,237,217,0.55)]">
-          불러오는 중…
-        </p>
+        <BaseLoading v-if="isLoading" />
         <TimetableSheet
           v-else
           category-label="금융 기초 카테고리"

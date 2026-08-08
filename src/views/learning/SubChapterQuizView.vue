@@ -7,6 +7,7 @@ import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
 import QuizFeedbackBlock from '@/components/learning/QuizFeedbackBlock.vue'
 import QuizResultModal from '@/components/learning/QuizResultModal.vue'
 import QuizGradeMark from '@/components/learning/QuizGradeMark.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 import { useSubChapterQuiz } from '@/composables/useSubChapterQuiz.js'
 
 const {
@@ -52,7 +53,7 @@ const {
       </LearningPageHeader>
     </template>
 
-    <p v-if="isLoading" class="font-serif text-sm text-[rgba(245,237,217,0.55)]">불러오는 중…</p>
+    <BaseLoading v-if="isLoading" />
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
 
     <LearningNotePaper v-else-if="quizCurrentQuestion" ruled surface-class="bg-[#faf5eb]">

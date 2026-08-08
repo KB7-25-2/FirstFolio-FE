@@ -2,6 +2,7 @@
 import LearningLayout from '@/components/learning/LearningLayout.vue'
 import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
+import BaseLoading from '@/components/BaseLoading.vue'
 import { useLearningRoadmap } from '@/composables/useLearningRoadmap.js'
 
 const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, openMainChapter } =
@@ -14,7 +15,7 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
       <LearningPageHeader title="학습 로드맵" />
     </template>
 
-    <p v-if="isLoading" class="font-serif text-sm text-[rgba(245,237,217,0.55)]">불러오는 중…</p>
+    <BaseLoading v-if="isLoading" />
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
 
     <template v-else>

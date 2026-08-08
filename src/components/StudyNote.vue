@@ -6,6 +6,7 @@ import { useStudyStore } from '@/store/studyStore.js'
 import { getDashboard } from '@/services/dashboardService.js'
 import checkboxInProgress from '@/assets/study/checkbox-in-progress.svg'
 import penguin from '@/assets/study/penguin.png'
+import BaseLoading from '@/components/BaseLoading.vue'
 
 const studyStore = useStudyStore()
 const router = useRouter()
@@ -150,15 +151,14 @@ const goDailyQuest = (event) => {
             :style="{ top: `${top}px` }"
           />
         </div>
-
-        <div class="relative flex min-h-[220px] flex-col gap-2 px-4 py-3 pb-5">
-          <div
+        <div class="relative flex min-h-[300px] flex-col gap-2 px-4 py-3">
+          <BaseLoading
             v-if="isLoading"
-            class="py-10 text-center font-serif text-xs text-[var(--study-muted)]"
-          >
-            학습 현황을 불러오는 중…
-          </div>
-
+            class="py-10 text-center"
+            tone="onLight"
+            size="xs"
+            message="학습 현황을 불러오는 중…"
+          />
           <div
             v-else-if="error"
             class="py-10 text-center font-serif text-xs text-[var(--study-total)]"

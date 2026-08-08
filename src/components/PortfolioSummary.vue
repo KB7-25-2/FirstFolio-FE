@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import { useUserStore } from '@/store/userStore.js'
+import BaseLoading from '@/components/BaseLoading.vue'
 
 const portfolioStore = usePortfolioStore()
 const userStore = useUserStore()
@@ -84,12 +85,13 @@ const goPortfolios = () => {
       />
 
       <div class="relative flex flex-col gap-2 py-5 pr-4 pl-[38px]">
-        <div
+        <BaseLoading
           v-if="isLoading"
-          class="py-6 text-center font-serif text-[10px] text-[var(--portfolio-muted)]"
-        >
-          포트폴리오를 불러오는 중…
-        </div>
+          class="py-6 text-center"
+          tone="onLight"
+          size="2xs"
+          message="포트폴리오를 불러오는 중…"
+        />
 
         <div
           v-else-if="error || !portfolioSummary?.available"
