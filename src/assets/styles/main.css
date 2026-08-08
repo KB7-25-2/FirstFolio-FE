@@ -78,6 +78,20 @@
     height: clamp(3px, 0.5dvh, 5px);
   }
 
+  .nav-home-fab {
+    transform: translate(-50%, -10%);
+  }
+
+  .nav-home-fab__btn {
+    width: clamp(48px, 7.2dvh, 58px);
+    height: clamp(48px, 7.2dvh, 58px);
+  }
+
+  .nav-home-fab__icon {
+    width: clamp(18px, 2.6dvh, 22px);
+    height: clamp(18px, 2.6dvh, 22px);
+  }
+
   .auth-clip-board {
     background-image: linear-gradient(
       149.11deg,

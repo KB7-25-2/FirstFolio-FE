@@ -62,6 +62,23 @@ const router = createRouter({
           path: 'home',
           name: 'home',
           component: () => import('@/views/HomeView.vue'),
+          meta: { navTab: 'home' },
+        },
+        {
+          path: 'daily',
+          name: 'daily',
+          component: () => import('@/views/DailyView.vue'),
+          meta: { navTab: 'daily' },
+        },
+        {
+          path: 'daily-quest',
+          name: 'daily-quest',
+          component: () => import('@/views/DailyQuestView.vue'),
+          meta: { hideNavbar: true },
+        },
+        {
+          path: 'leaderboard',
+          redirect: { name: 'daily-quest' },
         },
         {
           path: 'learning',
@@ -140,6 +157,7 @@ const router = createRouter({
           path: 'point-market',
           name: 'point-market',
           component: () => import('@/views/PointMarketView.vue'),
+          meta: { navTab: 'point-market' },
         },
       ],
     },

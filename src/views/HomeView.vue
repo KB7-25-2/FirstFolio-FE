@@ -6,7 +6,6 @@ import { useUserStore } from '@/store/userStore.js'
 import { formatKoreanDate } from '@/utils/date.js'
 import PortfolioSummary from '@/components/PortfolioSummary.vue'
 import StudyNote from '@/components/StudyNote.vue'
-import NewsScrap from '@/components/NewsScrap.vue'
 import UserProfileModal from '@/components/UserProfileModal.vue'
 import BaseConfirmModal from '@/components/BaseConfirmModal.vue'
 
@@ -107,8 +106,6 @@ const confirmLogout = async () => {
           <StudyNote />
         </div>
       </div>
-
-      <NewsScrap />
     </div>
 
     <UserProfileModal :open="isProfileOpen" @close="closeProfile" />
