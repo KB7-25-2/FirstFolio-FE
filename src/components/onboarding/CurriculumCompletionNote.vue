@@ -9,7 +9,7 @@ import MemoPin from '@/components/MemoPin.vue'
   <div class="relative w-full">
     <MemoPin side="right" tone="gold" />
     <section
-      class="overflow-hidden rounded-[3px] border border-[rgba(212,184,150,0.55)] bg-[#fffaed] px-4 pt-4 pb-3.5 shadow-[0_3px_10px_rgba(0,0,0,0.28)]"
+      class="overflow-hidden rounded-[3px] border-[0.5px] border-[rgba(212,184,150,0.55)] bg-[#fffaed] px-4 pt-4 pb-3.5 shadow-[0_3px_10px_rgba(0,0,0,0.28)]"
     >
       <h2 class="font-serif text-[16px] leading-snug font-black text-[#29211a]">
         나만의 금융 커리큘럼을 만들었어요

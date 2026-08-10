@@ -137,7 +137,7 @@ const goLearning = () => {
       </div>
 
       <section
-        class="relative min-h-[220px] w-full -rotate-[0.9deg] overflow-hidden rounded-[3px] border-[0.8px] border-[var(--study-border)] bg-[var(--study-surface)] shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
+        class="relative min-h-[220px] w-full -rotate-[0.9deg] overflow-hidden rounded-[3px] border-[0.5px] border-[var(--study-border)] bg-[var(--study-surface)] shadow-[0_4px_10px_rgba(0,0,0,0.3)]"
         aria-label="현재 학습 현황"
       >
         <div class="pointer-events-none absolute inset-0" aria-hidden="true">
@@ -177,7 +177,7 @@ const goLearning = () => {
             <button
               v-if="reviewLesson"
               type="button"
-              class="mt-1 w-full rounded-[4px] border border-[rgba(89,140,82,0.35)] bg-[#eef8ea] px-3 py-2.5 text-left transition-transform duration-150 hover:scale-[1.01]"
+              class="mt-1 w-full rounded-[4px] border-[0.5px] border-[rgba(89,140,82,0.35)] bg-[#eef8ea] px-3 py-2.5 text-left transition-transform duration-150 hover:scale-[1.01]"
               :aria-label="`${reviewLesson.title} 복습하기`"
               @click="goReviewLesson"
             >
@@ -224,7 +224,7 @@ const goLearning = () => {
               >
                 <div class="flex w-8 shrink-0 items-start justify-center pt-1">
                   <span
-                    class="flex size-8 items-center justify-center rounded-full border-[2px] font-pen text-[15px] leading-none"
+                    class="flex size-8 items-center justify-center rounded-full border-[0.5px] font-pen text-[15px] leading-none"
                     :class="{
                       'border-[rgba(89,140,82,0.75)] bg-[#e8f5e4] text-[#598c52]':
                         node.role === 'prev',
@@ -242,7 +242,7 @@ const goLearning = () => {
                   class="min-w-0 flex-1 rounded-[4px] px-2.5 py-2"
                   :class="{
                     'bg-[rgba(237,229,209,0.75)]': node.role === 'prev',
-                    'border-[1.5px] border-[rgba(193,127,36,0.65)] bg-[#fae8a8]':
+                    'border-[0.5px] border-[rgba(193,127,36,0.65)] bg-[#fae8a8]':
                       node.role === 'current',
                     'bg-[rgba(240,232,214,0.6)]': node.role === 'next',
                   }"

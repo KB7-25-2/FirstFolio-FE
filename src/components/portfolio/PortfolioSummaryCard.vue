@@ -43,7 +43,7 @@ const activeHoldingCount = computed(
 
 <template>
   <section
-    class="rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
+    class="rounded-2xl border-[0.5px] border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
   >
     <span
       class="mb-2 inline-block rounded-full bg-white/10 px-2 py-0.5 font-pen text-xs text-[var(--pf-highlight)]"

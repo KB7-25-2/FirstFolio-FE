@@ -14,7 +14,7 @@ defineProps({
 
 <template>
   <div
-    class="relative w-full rounded-[14px] border-[0.8px] border-[#5a3820] shadow-[0_6px_28px_rgba(0,0,0,0.45)]"
+    class="relative w-full rounded-[14px] border-[0.5px] border-[#5a3820] shadow-[0_6px_28px_rgba(0,0,0,0.45)]"
     :class="fill ? 'flex h-full min-h-0 flex-col' : ''"
     style="background-image: linear-gradient(150deg, #4a2e1a 8%, #3a2010 58%, #2e1a0c 92%)"
   >
@@ -35,7 +35,7 @@ defineProps({
     <div class="p-[0.8px] pt-0" :class="fill ? 'flex min-h-0 flex-1 flex-col' : ''">
       <div class="px-2 pt-[22px] pb-2" :class="fill ? 'flex min-h-0 flex-1 flex-col' : ''">
         <div
-          class="relative overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.8px] border-[#d4b896] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
+          class="relative overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.5px] border-[#d4b896] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
           :class="fill ? 'flex min-h-0 flex-1 flex-col' : ''"
           style="background-image: linear-gradient(180deg, #f2e8d0 0%, #f5edd8 30%, #f0e5cc 100%)"
         >

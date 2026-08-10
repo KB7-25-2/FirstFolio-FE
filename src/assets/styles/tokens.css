@@ -27,15 +27,15 @@
   --width-mobile: 390px;
   --height-mobile: 844px;
 
-  /* Navbar — 코르크보드와 어울리는 밝은 톤 */
-  --color-nav-bg: #f3e6c8;
-  --color-nav-border: rgba(90, 58, 30, 0.18);
+  /* Navbar — 크림 대시보드 패널과 맞춤 */
+  --color-nav-bg: #f7f1e4;
+  --color-nav-border: rgba(60, 48, 36, 0.12);
   --color-nav-text: #2c1810;
   --color-nav-text-muted: rgba(44, 24, 16, 0.48);
   --color-nav-active-primary: #c17f24;
   --color-nav-active-secondary: #c45c6a;
-  --color-nav-fab: #fff8ec;
-  --color-nav-fab-muted: #e8d4ad;
+  --color-nav-fab: #fffdf6;
+  --color-nav-fab-muted: #efe6d4;
 
   /* Scrollbar */
   --color-scrollbar-thumb: rgba(255, 255, 255, 0.14);
@@ -90,10 +90,11 @@
   --color-portfolio-shop-paper: #fcf7ed;
 
   /* Cork board — 메모지 화면 배경 */
-  --color-cork-base: #d6bc8e;
-  --color-cork-deep: #b89562;
-  --color-cork-light: #e8d4ad;
-  --color-cork-speckle: rgba(90, 58, 30, 0.18);
+  /* Screen surfaces — ivory cream dashboard panel */
+  --color-cork-base: #f7f1e4;
+  --color-cork-deep: #efe6d4;
+  --color-cork-light: #fbf7ee;
+  --color-cork-speckle: rgba(60, 48, 36, 0.08);
   --color-cork-ink: #2c1810;
   --color-cork-ink-muted: rgba(44, 24, 16, 0.58);
   --color-cork-ink-faint: rgba(44, 24, 16, 0.42);

@@ -118,7 +118,7 @@ const handleClose = () => {
     <div class="mt-5 flex gap-2">
       <button
         type="button"
-        class="flex-1 rounded-full border border-[var(--pf-card-border)] py-2 text-sm text-[var(--pf-text)] disabled:opacity-40"
+        class="flex-1 rounded-full border-[0.5px] border-[var(--pf-card-border)] py-2 text-sm text-[var(--pf-text)] disabled:opacity-40"
         :disabled="isSubmitting"
         @click="handleClose"
       >

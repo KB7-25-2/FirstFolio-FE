@@ -47,7 +47,7 @@ defineEmits(['select-period', 'start-scenario'])
           </div>
           <div
             v-if="unitIndex"
-            class="shrink-0 -rotate-3 rounded border-[1.5px] border-[rgba(193,127,36,0.85)] px-2 py-1"
+            class="shrink-0 -rotate-3 rounded border-[0.5px] border-[rgba(193,127,36,0.85)] px-2 py-1"
           >
             <p class="font-serif text-[11px] font-black whitespace-nowrap text-[#c17f24]">
               {{ unitIndex }}
@@ -82,7 +82,7 @@ defineEmits(['select-period', 'start-scenario'])
           <button
             v-if="showScenarioCta"
             type="button"
-            class="flex h-14 w-full shrink-0 cursor-pointer items-center gap-2.5 overflow-hidden border-[1.5px] border-[#c17f24] bg-[#fae8a8] p-2.5 text-left shadow-[0_2px_6px_rgba(139,80,20,0.25)] transition-shadow duration-200 ease-out hover:shadow-[0_2px_10px_rgba(139,80,20,0.35)]"
+            class="flex h-14 w-full shrink-0 cursor-pointer items-center gap-2.5 overflow-hidden border-[0.5px] border-[#c17f24] bg-[#fae8a8] p-2.5 text-left shadow-[0_2px_6px_rgba(139,80,20,0.25)] transition-shadow duration-200 ease-out hover:shadow-[0_2px_10px_rgba(139,80,20,0.35)]"
             @click="$emit('start-scenario')"
           >
             <span

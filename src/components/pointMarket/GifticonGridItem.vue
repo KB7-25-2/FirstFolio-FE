@@ -34,7 +34,7 @@ const accentColor = computed(() => {
 <template>
   <button
     type="button"
-    class="flex flex-col items-start gap-2 rounded-2xl border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+    class="flex flex-col items-start gap-2 rounded-2xl border-[0.5px] p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
     :class="
       isSelected
         ? 'border-[#8B93A6] bg-white/[0.08]'

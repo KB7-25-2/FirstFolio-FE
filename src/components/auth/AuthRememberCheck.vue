@@ -24,7 +24,7 @@ defineEmits(['update:modelValue'])
     class="relative flex items-center gap-[5px] disabled:cursor-not-allowed disabled:opacity-50"
     @click="$emit('update:modelValue', !modelValue)"
   >
-    <span class="relative size-[11px] rounded-[2px] border border-[rgba(139,100,60,0.6)]">
+    <span class="relative size-[11px] rounded-[2px] border-[0.5px] border-[rgba(139,100,60,0.6)]">
       <span
         v-if="modelValue"
         class="absolute top-[-7px] left-px font-pen text-[14px] leading-none text-[var(--auth-hand)]"

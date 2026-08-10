@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import LearningLayout from '@/components/learning/LearningLayout.vue'
 import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
@@ -23,7 +23,14 @@ const {
   focusMainChapterId,
 } = useLearningRoadmap()
 
+const listRef = ref(null)
+/** 스크롤로 보이는 대단원 (상단 강조) */
+const focusStageIndex = ref(0)
+
 const orderLabel = (index) => String(index + 1).padStart(2, '0')
+
+const periodDomId = (stage, period) =>
+  `period-${period.progressId ?? `${stage.mainChapterId}-${period.order}`}`
 
 const periodDoneCount = (stage) =>
   (stage.periods ?? []).filter((period) => period.scheduleStatus === 'COMPLETED').length
@@ -51,30 +58,143 @@ const overall = computed(() => {
   }
 })
 
+const focusStage = computed(() => stages.value[focusStageIndex.value] ?? null)
+
 const isPeriodCurrent = (period) =>
   period.scheduleStatus === 'IN_PROGRESS' || period.scheduleStatus === 'NEXT'
 
 const isPeriodLocked = (stage, period) =>
   stage.status === 'LOCKED' || period.scheduleStatus === 'LOCKED'
 
+const findCurrentPeriodTarget = () => {
+  const list = stages.value
+  if (!list.length) return null
+
+  const preferredId = focusMainChapterId.value
+  const ordered =
+    preferredId != null
+      ? [
+          ...list.filter((stage) => stage.mainChapterId === preferredId),
+          ...list.filter((stage) => stage.mainChapterId !== preferredId),
+        ]
+      : list
+
+  for (const status of ['IN_PROGRESS', 'NEXT']) {
+    for (const stage of ordered) {
+      const period = (stage.periods ?? []).find((row) => row.scheduleStatus === status)
+      if (period) {
+        const stageIndex = list.findIndex((row) => row.mainChapterId === stage.mainChapterId)
+        return { stage, period, stageIndex }
+      }
+    }
+  }
+
+  return null
+}
+
+const scrollToElement = (id, behavior = 'smooth') => {
+  document.getElementById(id)?.scrollIntoView({ behavior, block: 'center' })
+}
+
+/** 클릭으로 이동 중에는 스크롤 스파이가 강조를 되돌리지 않게 잠금 */
+const scrollSpyLocked = ref(false)
+/** @type {ReturnType<typeof setTimeout> | null} */
+let scrollSpyUnlockTimer = null
+
+const unlockScrollSpy = () => {
+  scrollSpyLocked.value = false
+  if (scrollSpyUnlockTimer != null) {
+    clearTimeout(scrollSpyUnlockTimer)
+    scrollSpyUnlockTimer = null
+  }
+  updateFocusFromScroll()
+}
+
+const lockScrollSpyTemporarily = (ms = 500) => {
+  scrollSpyLocked.value = true
+  if (scrollSpyUnlockTimer != null) clearTimeout(scrollSpyUnlockTimer)
+  scrollSpyUnlockTimer = setTimeout(() => {
+    unlockScrollSpy()
+  }, ms)
+}
+
+const updateFocusFromScroll = () => {
+  if (scrollSpyLocked.value) return
+
+  const root = listRef.value
+  if (!root || !stages.value.length) return
+
+  const marker = root.getBoundingClientRect().top + 56
+  let current = 0
+
+  for (let index = 0; index < stages.value.length; index += 1) {
+    const stage = stages.value[index]
+    const el = document.getElementById(`chapter-${stage.mainChapterId}`)
+    if (!el) continue
+    if (el.getBoundingClientRect().top <= marker) current = index
+  }
+
+  if (current !== focusStageIndex.value) {
+    focusStageIndex.value = current
+  }
+}
+
 const jumpToStage = async (index) => {
+  focusStageIndex.value = index
   selectStage(index)
+  lockScrollSpyTemporarily(550)
   await nextTick()
   const stage = stages.value[index]
-  if (!stage) return
+  if (!stage) {
+    unlockScrollSpy()
+    return
+  }
   document
     .getElementById(`chapter-${stage.mainChapterId}`)
     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+const didAutoFocus = ref(false)
+
+const focusCurrentPeriod = async () => {
+  await nextTick()
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
+  const target = findCurrentPeriodTarget()
+  if (target) {
+    if (target.stageIndex >= 0) {
+      focusStageIndex.value = target.stageIndex
+      lockScrollSpyTemporarily(400)
+      if (target.stageIndex !== activeStageIndex.value) {
+        selectStage(target.stageIndex)
+        await nextTick()
+      }
+    }
+    scrollToElement(periodDomId(target.stage, target.period), 'auto')
+    return
+  }
+
+  if (focusMainChapterId.value != null) {
+    lockScrollSpyTemporarily(400)
+    scrollToElement(`chapter-${focusMainChapterId.value}`, 'auto')
+  }
+}
+
+watch(activeStageIndex, (index) => {
+  if (index >= 0) focusStageIndex.value = index
+})
+
+watch(isLoading, (loading, prev) => {
+  if (prev && !loading) didAutoFocus.value = false
+})
+
 watch(
-  () => [hasRoadmap.value, focusMainChapterId.value, isLoading.value],
-  async ([ready, focusId, loading]) => {
-    if (!ready || loading || focusId == null) return
-    await nextTick()
-    document
-      .getElementById(`chapter-${focusId}`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  () => [hasRoadmap.value, isLoading.value],
+  async ([ready, loading]) => {
+    if (!ready || loading || didAutoFocus.value) return
+    didAutoFocus.value = true
+    focusStageIndex.value = activeStageIndex.value
+    await focusCurrentPeriod()
   },
 )
 </script>
@@ -123,7 +243,7 @@ watch(
                 type="button"
                 class="learning-syllabus__seg"
                 :class="{
-                  'learning-syllabus__seg--active': index === activeStageIndex,
+                  'learning-syllabus__seg--active': index === focusStageIndex,
                   'learning-syllabus__seg--locked': stage.status === 'LOCKED',
                   'learning-syllabus__seg--done': stage.status === 'COMPLETED',
                 }"
@@ -146,128 +266,170 @@ watch(
 
       <!-- 스크롤: 대단원 × 소단원 목차 -->
       <div
+        ref="listRef"
         data-scroll-reveal-root
-        class="hide-scrollbar min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pb-1"
+        class="hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pb-1"
+        @scroll.passive="updateFocusFromScroll"
       >
-        <section
-          v-for="(stage, stageIndex) in stages"
-          :id="`chapter-${stage.mainChapterId}`"
-          :key="stage.curriculumItemId"
-          class="learning-syllabus__chapter scroll-mt-2"
-          :class="{
-            'learning-syllabus__chapter--active': stageIndex === activeStageIndex,
-            'learning-syllabus__chapter--locked': stage.status === 'LOCKED',
-          }"
+        <div
+          v-if="focusStage"
+          class="learning-syllabus__focus sticky top-0 z-10 mb-3"
+          :class="accentClass(focusStage.accent)"
         >
-          <ScrollReveal>
-            <LearningNotePaper :surface-class="accentClass(stage.accent)" :show-pin="false">
-              <div class="px-3.5 py-3">
-                <button
-                  type="button"
-                  class="flex w-full items-start gap-2 text-left"
-                  @click="jumpToStage(stageIndex)"
-                >
-                  <span v-if="stage.icon" class="mt-0.5 text-lg leading-none" aria-hidden="true">
-                    {{ stage.icon }}
-                  </span>
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-start justify-between gap-2">
-                      <p class="font-pen text-[13px] leading-none text-[rgba(33,43,92,0.5)]">
-                        {{ orderLabel(stageIndex) }} · {{ statusLabel(stage.status) }}
-                      </p>
-                      <p class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24]">
-                        {{ periodDoneCount(stage) }}/{{ periodTotalCount(stage) }}
+          <div class="learning-syllabus__focus-inner">
+            <span v-if="focusStage.icon" class="learning-syllabus__focus-icon" aria-hidden="true">
+              {{ focusStage.icon }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="font-pen text-[11px] leading-none text-[rgba(33,43,92,0.55)]">
+                {{ orderLabel(focusStageIndex) }} · {{ statusLabel(focusStage.status) }}
+              </p>
+              <p class="mt-0.5 truncate font-pen text-[18px] leading-none text-[#212b5c]">
+                {{ focusStage.title }}
+              </p>
+            </div>
+            <div class="shrink-0 text-right">
+              <p class="font-serif text-[11px] font-bold text-[#c17f24]">
+                {{ periodDoneCount(focusStage) }}/{{ periodTotalCount(focusStage) }}
+              </p>
+              <div
+                class="mt-1 h-1 w-12 overflow-hidden rounded-[2px] bg-[rgba(44,24,16,0.12)]"
+                aria-hidden="true"
+              >
+                <div
+                  class="h-full rounded-[2px] bg-[#c17f24]"
+                  :style="{ width: `${stageFillPercent(focusStage)}%` }"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <section
+            v-for="(stage, stageIndex) in stages"
+            :id="`chapter-${stage.mainChapterId}`"
+            :key="stage.curriculumItemId"
+            class="learning-syllabus__chapter scroll-mt-[3.75rem]"
+            :class="{
+              'learning-syllabus__chapter--active': stageIndex === focusStageIndex,
+              'learning-syllabus__chapter--locked': stage.status === 'LOCKED',
+            }"
+          >
+            <ScrollReveal>
+              <LearningNotePaper :surface-class="accentClass(stage.accent)" :show-pin="false">
+                <div class="px-3.5 py-3">
+                  <button
+                    type="button"
+                    class="flex w-full items-start gap-2 text-left"
+                    @click="jumpToStage(stageIndex)"
+                  >
+                    <span v-if="stage.icon" class="mt-0.5 text-lg leading-none" aria-hidden="true">
+                      {{ stage.icon }}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-start justify-between gap-2">
+                        <p class="font-pen text-[13px] leading-none text-[rgba(33,43,92,0.5)]">
+                          {{ orderLabel(stageIndex) }} · {{ statusLabel(stage.status) }}
+                        </p>
+                        <p class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24]">
+                          {{ periodDoneCount(stage) }}/{{ periodTotalCount(stage) }}
+                        </p>
+                      </div>
+                      <h2 class="mt-1 font-pen text-[22px] leading-none text-[#212b5c]">
+                        {{ stage.title }}
+                      </h2>
+                      <p
+                        v-if="stage.description"
+                        class="mt-1.5 font-serif text-[11px] leading-snug text-[rgba(61,31,8,0.6)]"
+                      >
+                        {{ stage.description }}
                       </p>
                     </div>
-                    <h2 class="mt-1 font-pen text-[22px] leading-none text-[#212b5c]">
-                      {{ stage.title }}
-                    </h2>
-                    <p
-                      v-if="stage.description"
-                      class="mt-1.5 font-serif text-[11px] leading-snug text-[rgba(61,31,8,0.6)]"
-                    >
-                      {{ stage.description }}
-                    </p>
-                  </div>
-                </button>
+                  </button>
 
-                <div
-                  class="mt-2.5 h-1.5 w-full overflow-hidden rounded-[3px] bg-[rgba(44,24,16,0.12)]"
-                  aria-hidden="true"
-                >
                   <div
-                    class="h-full rounded-[3px] bg-[#c17f24] transition-[width] duration-200"
-                    :style="{ width: `${stageFillPercent(stage)}%` }"
-                  />
-                </div>
+                    class="mt-2.5 h-1.5 w-full overflow-hidden rounded-[3px] bg-[rgba(44,24,16,0.12)]"
+                    aria-hidden="true"
+                  >
+                    <div
+                      class="h-full rounded-[3px] bg-[#c17f24] transition-[width] duration-200"
+                      :style="{ width: `${stageFillPercent(stage)}%` }"
+                    />
+                  </div>
 
-                <p
-                  v-if="stage.status === 'LOCKED'"
-                  class="mt-2 font-serif text-[11px] text-[rgba(61,31,8,0.5)]"
-                >
-                  이전 대단원을 완료하면 열려요
-                </p>
+                  <p
+                    v-if="stage.status === 'LOCKED'"
+                    class="mt-2 font-serif text-[11px] text-[rgba(61,31,8,0.5)]"
+                  >
+                    이전 대단원을 완료하면 열려요
+                  </p>
 
-                <ul v-if="stage.periods.length" class="learning-syllabus__list mt-3">
-                  <li
-                    v-for="(period, periodIndex) in stage.periods"
-                    :key="period.progressId ?? `${stage.mainChapterId}-${period.order}`"
+                  <ul v-if="stage.periods.length" class="learning-syllabus__list mt-3">
+                    <li
+                      v-for="(period, periodIndex) in stage.periods"
+                      :key="period.progressId ?? `${stage.mainChapterId}-${period.order}`"
+                    >
+                      <button
+                        :id="periodDomId(stage, period)"
+                        type="button"
+                        class="learning-syllabus__row"
+                        :class="{
+                          'learning-syllabus__row--done': period.scheduleStatus === 'COMPLETED',
+                          'learning-syllabus__row--now': isPeriodCurrent(period),
+                          'learning-syllabus__row--locked': isPeriodLocked(stage, period),
+                        }"
+                        :disabled="isPeriodLocked(stage, period)"
+                        @click="openPeriod(period)"
+                      >
+                        <span class="learning-syllabus__mark" aria-hidden="true">
+                          <span
+                            v-if="period.scheduleStatus === 'COMPLETED'"
+                            class="learning-syllabus__check"
+                          >
+                            ✓
+                          </span>
+                          <span
+                            v-else-if="isPeriodCurrent(period)"
+                            class="learning-syllabus__dot"
+                          />
+                          <span v-else class="learning-syllabus__empty" />
+                        </span>
+                        <span class="learning-syllabus__row-body">
+                          <span class="learning-syllabus__row-meta">
+                            {{ orderLabel(periodIndex) }}교시 ·
+                            {{ periodStatusLabel(period.scheduleStatus) }}
+                          </span>
+                          <span class="learning-syllabus__row-title">{{ period.title }}</span>
+                        </span>
+                      </button>
+                    </li>
+                  </ul>
+
+                  <p v-else class="mt-3 font-serif text-[11px] text-[rgba(61,31,8,0.5)]">
+                    표시할 소단원이 없습니다
+                  </p>
+
+                  <div
+                    v-if="stage.scenarioReady"
+                    class="mt-3 border-t border-[rgba(107,68,35,0.12)] pt-3"
                   >
                     <button
                       type="button"
-                      class="learning-syllabus__row"
-                      :class="{
-                        'learning-syllabus__row--done': period.scheduleStatus === 'COMPLETED',
-                        'learning-syllabus__row--now': isPeriodCurrent(period),
-                        'learning-syllabus__row--locked': isPeriodLocked(stage, period),
-                      }"
-                      :disabled="isPeriodLocked(stage, period)"
-                      @click="openPeriod(period)"
+                      class="cork-btn cork-btn--primary w-full"
+                      @click="startScenarioQuiz(stage)"
                     >
-                      <span class="learning-syllabus__mark" aria-hidden="true">
-                        <span
-                          v-if="period.scheduleStatus === 'COMPLETED'"
-                          class="learning-syllabus__check"
-                        >
-                          ✓
-                        </span>
-                        <span v-else-if="isPeriodCurrent(period)" class="learning-syllabus__dot" />
-                        <span v-else class="learning-syllabus__empty" />
-                      </span>
-                      <span class="learning-syllabus__row-body">
-                        <span class="learning-syllabus__row-meta">
-                          {{ orderLabel(periodIndex) }}교시 ·
-                          {{ periodStatusLabel(period.scheduleStatus) }}
-                        </span>
-                        <span class="learning-syllabus__row-title">{{ period.title }}</span>
-                      </span>
+                      {{ stage.scenarioTitle }}
                     </button>
-                  </li>
-                </ul>
-
-                <p v-else class="mt-3 font-serif text-[11px] text-[rgba(61,31,8,0.5)]">
-                  표시할 소단원이 없습니다
-                </p>
-
-                <div
-                  v-if="stage.scenarioReady"
-                  class="mt-3 border-t border-[rgba(107,68,35,0.12)] pt-3"
-                >
-                  <button
-                    type="button"
-                    class="cork-btn cork-btn--primary w-full"
-                    @click="startScenarioQuiz(stage)"
-                  >
-                    {{ stage.scenarioTitle }}
-                  </button>
-                  <p class="mt-1.5 font-serif text-[10px] text-[rgba(61,31,8,0.55)]">
-                    {{ stage.scenarioSubtitle }}
-                  </p>
+                    <p class="mt-1.5 font-serif text-[10px] text-[rgba(61,31,8,0.55)]">
+                      {{ stage.scenarioSubtitle }}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </LearningNotePaper>
-          </ScrollReveal>
-        </section>
+              </LearningNotePaper>
+            </ScrollReveal>
+          </section>
+        </div>
       </div>
     </div>
 

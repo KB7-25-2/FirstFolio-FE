@@ -11,7 +11,7 @@ defineProps({
 
 <template>
   <div
-    class="auth-clip-board relative w-[340px] overflow-hidden rounded-[12px] border-[0.8px] border-[var(--auth-clip-border)] p-[0.8px] shadow-[0_6px_28px_rgba(0,0,0,0.45)]"
+    class="auth-clip-board relative w-[340px] overflow-hidden rounded-[12px] border-[0.5px] border-[var(--auth-clip-border)] p-[0.8px] shadow-[0_6px_28px_rgba(0,0,0,0.45)]"
   >
     <div class="absolute top-[-2px] left-1/2 z-20 flex -translate-x-1/2 flex-col items-center">
       <div
@@ -39,7 +39,7 @@ defineProps({
 
     <div class="relative px-1.5 pt-[20px] pb-1.5">
       <div
-        class="auth-paper relative overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.8px] border-[var(--auth-paper-border)] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
+        class="auth-paper relative overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.5px] border-[var(--auth-paper-border)] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
       >
         <img
           :src="paperTexture"

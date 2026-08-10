@@ -61,7 +61,7 @@ const {
 
         <div class="relative mt-7 w-full max-w-[320px] self-center">
           <section
-            class="relative w-full rotate-[0.6deg] overflow-hidden rounded-[2px] border border-[rgba(212,184,150,0.55)] bg-[#f5edd9] shadow-[0_4px_14px_rgba(0,0,0,0.28)]"
+            class="relative w-full rotate-[0.6deg] overflow-hidden rounded-[2px] border-[0.5px] border-[rgba(212,184,150,0.55)] bg-[#f5edd9] shadow-[0_4px_14px_rgba(0,0,0,0.28)]"
             aria-label="튜토리얼 진행 순서"
           >
             <div class="pointer-events-none absolute inset-0" aria-hidden="true">
@@ -85,7 +85,7 @@ const {
                 <li
                   v-for="(s, index) in tutorialSteps"
                   :key="s.key"
-                  class="rounded-[4px] border border-[rgba(184,173,148,0.35)] px-3 py-2.5"
+                  class="rounded-[4px] border-[0.5px] border-[rgba(184,173,148,0.35)] px-3 py-2.5"
                   :class="s.toneClass"
                 >
                   <p class="font-serif text-[13px] font-bold text-[#29211a]">
@@ -134,7 +134,7 @@ const {
         <div class="relative mt-5 w-[280px] self-center">
           <MemoPin side="center" tone="study" />
           <section
-            class="relative -rotate-[0.8deg] overflow-hidden rounded-[3px] border-[0.8px] border-[#89d973] bg-[#f1fff0] shadow-[0_3px_8px_rgba(0,0,0,0.28)]"
+            class="relative -rotate-[0.8deg] overflow-hidden rounded-[3px] border-[0.5px] border-[#89d973] bg-[#f1fff0] shadow-[0_3px_8px_rgba(0,0,0,0.28)]"
           >
             <div class="pointer-events-none absolute inset-0" aria-hidden="true">
               <div

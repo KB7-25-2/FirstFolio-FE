@@ -48,7 +48,7 @@ const {
       <div class="flex items-center">
         <button
           type="button"
-          class="flex size-8 items-center justify-center rounded border-[1.25px] border-[rgba(245,237,217,0.45)] text-[#f5edd9]"
+          class="flex size-8 items-center justify-center rounded border-[0.5px] border-[rgba(245,237,217,0.45)] text-[#f5edd9]"
           aria-label="닫기"
           @click="goToMainChapter"
         >
@@ -59,7 +59,7 @@ const {
           <p class="font-pen text-[13px] text-[rgba(245,237,217,0.55)]">{{ chapterSubtitle }}</p>
         </div>
         <span
-          class="rounded-[2px] border-[1.5px] border-[#c17f24] px-2 py-1 font-pen text-[12px] text-[#c17f24]"
+          class="rounded-[2px] border-[0.5px] border-[#c17f24] px-2 py-1 font-pen text-[12px] text-[#c17f24]"
         >
           {{ stampLabel }}
         </span>
@@ -83,7 +83,7 @@ const {
         />
         <div class="absolute inset-x-0 top-0 flex justify-center">
           <span
-            class="rounded-full border-[0.8px] border-[rgba(255,214,0,0.3)] bg-[rgba(255,214,0,0.15)] px-2.5 py-1 text-[10px] font-bold text-[#ffd600]"
+            class="rounded-full border-[0.5px] border-[rgba(255,214,0,0.3)] bg-[rgba(255,214,0,0.15)] px-2.5 py-1 text-[10px] font-bold text-[#ffd600]"
           >
             금융 상담실 · 실전 게임
           </span>
@@ -143,7 +143,7 @@ const {
           <ScenarioClipboardQuestion :prompt="scenarioCurrentStep.prompt">
             <template v-if="scenarioUiStatus === 'CORRECT' && stepCorrectOption">
               <div
-                class="scenario-grade-card relative rounded-[10px] border-[0.8px] border-[#c17f24] bg-[rgba(193,127,36,0.15)] px-3 py-2.5 shadow-[0_2px_8px_rgba(139,80,20,0.2)]"
+                class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[#c17f24] bg-[rgba(193,127,36,0.15)] px-3 py-2.5 shadow-[0_2px_8px_rgba(139,80,20,0.2)]"
               >
                 <div class="flex items-start gap-3 pr-16">
                   <span
@@ -181,7 +181,7 @@ const {
 
             <template v-else-if="scenarioUiStatus === 'WRONG' && stepSelectedOption">
               <div
-                class="scenario-grade-card relative rounded-[10px] border-[0.8px] border-[rgba(196,92,74,0.55)] bg-[#faebe5] px-3 py-2.5 shadow-[0_2px_8px_rgba(168,56,42,0.16)]"
+                class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[rgba(196,92,74,0.55)] bg-[#faebe5] px-3 py-2.5 shadow-[0_2px_8px_rgba(168,56,42,0.16)]"
               >
                 <div class="flex items-start gap-3 pr-16">
                   <span

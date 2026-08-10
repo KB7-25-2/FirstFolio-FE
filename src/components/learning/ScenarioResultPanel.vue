@@ -64,7 +64,7 @@ defineEmits(['confirm'])
 
     <p class="mt-4 font-serif text-[11px] font-bold text-[#3d1f08]">투자 상담 교육원장</p>
     <span
-      class="mt-2 -rotate-8 rounded border-[1.6px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
+      class="mt-2 -rotate-8 rounded border-[0.5px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
     >
       수료
     </span>

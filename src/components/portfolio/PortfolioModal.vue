@@ -15,7 +15,7 @@ defineEmits(['close'])
     @click.self="$emit('close')"
   >
     <div
-      class="w-full max-w-[var(--mobile-width)] rounded-2xl border border-[var(--pf-card-border)] bg-[#1a1a2e] p-4"
+      class="w-full max-w-[var(--mobile-width)] rounded-2xl border-[0.5px] border-[var(--pf-card-border)] bg-[#1a1a2e] p-4"
     >
       <div class="flex items-center justify-between">
         <h2 class="font-bold text-[var(--pf-text)]">{{ title }}</h2>

@@ -43,7 +43,7 @@ const setMax = () => {
 <template>
   <div class="flex items-center gap-2">
     <div
-      class="flex flex-1 items-center gap-1 rounded-lg border border-[var(--pf-card-border)] bg-white/5 px-3 py-2"
+      class="flex flex-1 items-center gap-1 rounded-lg border-[0.5px] border-[var(--pf-card-border)] bg-white/5 px-3 py-2"
     >
       <input
         type="text"
@@ -57,7 +57,7 @@ const setMax = () => {
     </div>
     <button
       type="button"
-      class="shrink-0 rounded-lg border border-[var(--pf-card-border)] px-2 py-2 text-xs text-[var(--pf-text)] disabled:opacity-40"
+      class="shrink-0 rounded-lg border-[0.5px] border-[var(--pf-card-border)] px-2 py-2 text-xs text-[var(--pf-text)] disabled:opacity-40"
       :disabled="disabled"
       @click="setMax"
     >

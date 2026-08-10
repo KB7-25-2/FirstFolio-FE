@@ -16,7 +16,7 @@ defineProps({
     <span class="font-serif text-[9px] text-[var(--auth-doc-faint)]">신청인</span>
     <span class="font-pen text-[22px] leading-none text-[var(--auth-hand)]">{{ name }}</span>
     <div class="flex h-[23px] w-[34px] items-center justify-center">
-      <div class="rotate-8 rounded border-[1.5px] border-[var(--auth-seal)] px-[7px] py-[3px]">
+      <div class="rotate-8 rounded border-[0.5px] border-[var(--auth-seal)] px-[7px] py-[3px]">
         <span class="font-serif text-[9px] font-black whitespace-nowrap text-[var(--auth-seal)]">
           {{ sealLabel }}
         </span>

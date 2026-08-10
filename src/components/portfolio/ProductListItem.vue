@@ -68,7 +68,7 @@ const priceText = computed(() => {
     </button>
     <span
       v-else
-      class="shrink-0 rounded-full border border-[var(--pf-card-border)] px-3 py-1.5 text-xs text-[var(--pf-text-muted)]"
+      class="shrink-0 rounded-full border-[0.5px] border-[var(--pf-card-border)] px-3 py-1.5 text-xs text-[var(--pf-text-muted)]"
     >
       가입 완료
     </span>

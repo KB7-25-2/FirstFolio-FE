@@ -25,7 +25,7 @@ defineEmits(['select'])
   <button
     type="button"
     :disabled="disabled"
-    class="flex w-full items-start gap-2.5 rounded-[8px] border px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
+    class="flex w-full items-start gap-2.5 rounded-[8px] border-[0.5px] px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
     :class="
       selected
         ? 'border-[rgba(139,100,60,0.55)] bg-white/70'
@@ -34,7 +34,7 @@ defineEmits(['select'])
     @click="$emit('select')"
   >
     <span
-      class="mt-0.5 flex size-[14px] shrink-0 items-center justify-center rounded-[2px] border border-[rgba(139,100,60,0.6)]"
+      class="mt-0.5 flex size-[14px] shrink-0 items-center justify-center rounded-[2px] border-[0.5px] border-[rgba(139,100,60,0.6)]"
     >
       <span v-if="selected" class="font-pen text-[12px] leading-none text-[var(--auth-hand)]"
         >✓</span

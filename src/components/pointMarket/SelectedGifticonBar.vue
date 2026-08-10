@@ -24,7 +24,7 @@ const isInsufficient = computed(() => remainingAfter.value < 0)
 
 <template>
   <div
-    class="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#14161f] p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.3)]"
+    class="flex items-center justify-between gap-3 rounded-2xl border-[0.5px] border-white/10 bg-[#14161f] p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.3)]"
   >
     <div class="min-w-0">
       <p class="truncate text-xs text-[#9aa1b0]">선택한 상품</p>

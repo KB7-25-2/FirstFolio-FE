@@ -31,7 +31,7 @@ const goPointMarket = () => {
       <MemoPin side="right" tone="gold" />
 
       <section
-        class="relative w-full rotate-[1.2deg] overflow-hidden rounded-[3px] border-[0.8px] border-[rgba(193,127,36,0.55)] bg-[var(--portfolio-shop-paper)] shadow-[0_4px_12px_rgba(0,0,0,0.28)]"
+        class="relative w-full rotate-[1.2deg] overflow-hidden rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.55)] bg-[var(--portfolio-shop-paper)] shadow-[0_4px_12px_rgba(0,0,0,0.28)]"
       >
         <div
           class="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[var(--portfolio-shop)]"
@@ -40,7 +40,7 @@ const goPointMarket = () => {
 
         <div class="relative flex items-center gap-3 px-4 pt-4 pb-3.5">
           <div
-            class="flex size-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[rgba(193,127,36,0.45)] bg-[#fff8ec]"
+            class="flex size-11 shrink-0 items-center justify-center rounded-full border-[0.5px] border-[rgba(193,127,36,0.45)] bg-[#fff8ec]"
             aria-hidden="true"
           >
             <font-awesome-icon

@@ -9,7 +9,7 @@ defineProps({
 
 <template>
   <section
-    class="rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
+    class="rounded-2xl border-[0.5px] border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
   >
     <p class="font-pen text-sm text-[var(--pf-highlight)]">💡 AI 피드백</p>
     <p class="mt-2 text-sm leading-relaxed text-[var(--pf-text)]">{{ message }}</p>

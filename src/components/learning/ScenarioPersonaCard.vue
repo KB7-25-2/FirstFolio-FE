@@ -10,7 +10,7 @@ defineProps({
 
 <template>
   <div
-    class="w-[148px] overflow-hidden rounded-[14px] border border-[rgba(255,255,255,0.3)] bg-[rgba(20,26,41,0.68)] px-2.5 py-2 backdrop-blur-[10px]"
+    class="w-[148px] overflow-hidden rounded-[14px] border-[0.5px] border-[rgba(255,255,255,0.3)] bg-[rgba(20,26,41,0.68)] px-2.5 py-2 backdrop-blur-[10px]"
   >
     <p class="font-pen text-[11px] text-[#f5c76b]">고객 프로필</p>
     <div

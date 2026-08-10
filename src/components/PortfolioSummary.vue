@@ -30,7 +30,7 @@ const goPortfolios = () => {
     <MemoPin side="center" tone="portfolio" />
 
     <section
-      class="relative min-h-[133px] w-full rotate-[0.8deg] overflow-hidden rounded border-[0.8px] border-[var(--portfolio-border)] bg-[var(--portfolio-surface)] shadow-[0_5px_14px_rgba(0,0,0,0.35)]"
+      class="relative min-h-[133px] w-full rotate-[0.8deg] overflow-hidden rounded border-[0.5px] border-[var(--portfolio-border)] bg-[var(--portfolio-surface)] shadow-[0_5px_14px_rgba(0,0,0,0.35)]"
       aria-label="현재 포트폴리오로 이동"
       role="button"
       tabindex="0"
@@ -111,7 +111,7 @@ const goPortfolios = () => {
 
       <!-- 투자 성향 칩 -->
       <div
-        class="pointer-events-none absolute top-11 right-3 z-10 flex max-w-[42%] items-center gap-1.5 rounded-[14px] border border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
+        class="pointer-events-none absolute top-11 right-3 z-10 flex max-w-[42%] items-center gap-1.5 rounded-[14px] border-[0.5px] border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
         aria-hidden="true"
       >
         <span class="font-pen text-[12px] leading-none text-[var(--portfolio-chip-label)]"

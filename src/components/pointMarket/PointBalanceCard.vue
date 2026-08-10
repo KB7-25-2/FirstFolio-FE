@@ -8,7 +8,7 @@ defineProps({
 </script>
 
 <template>
-  <section class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+  <section class="rounded-2xl border-[0.5px] border-white/10 bg-white/[0.04] p-4">
     <p class="text-xs text-[#9aa1b0]">사용 가능한 포인트</p>
     <div class="mt-2 flex items-center justify-between">
       <p class="text-3xl font-bold text-white">

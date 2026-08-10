@@ -51,7 +51,7 @@ onUnmounted(() => {
         />
 
         <div
-          class="news-zoom-modal__card relative z-10 flex max-h-[82dvh] w-full max-w-[min(360px,var(--mobile-width))] flex-col overflow-hidden rounded-[4px] border border-[rgba(139,100,60,0.35)] bg-[var(--news-modal-surface)] shadow-[0_12px_36px_rgba(0,0,0,0.45)]"
+          class="news-zoom-modal__card relative z-10 flex max-h-[82dvh] w-full max-w-[min(360px,var(--mobile-width))] flex-col overflow-hidden rounded-[4px] border-[0.5px] border-[rgba(139,100,60,0.35)] bg-[var(--news-modal-surface)] shadow-[0_12px_36px_rgba(0,0,0,0.45)]"
         >
           <div class="min-h-0 flex-1 overflow-y-auto px-4 pt-4 pb-3">
             <div class="flex items-center gap-1.5">
@@ -73,7 +73,7 @@ onUnmounted(() => {
             </p>
 
             <div
-              class="mt-3 aspect-[16/10] w-full overflow-hidden rounded-[3px] border border-[var(--news-modal-image-border)] shadow-[2px_3px_8px_rgba(0,0,0,0.2)]"
+              class="mt-3 aspect-[16/10] w-full overflow-hidden rounded-[3px] border-[0.5px] border-[var(--news-modal-image-border)] shadow-[2px_3px_8px_rgba(0,0,0,0.2)]"
             >
               <img
                 :src="selectedNews.image_url"

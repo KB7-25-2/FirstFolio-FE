@@ -60,7 +60,7 @@ const handleResetConfirm = async () => {
           <button
             v-if="showBankruptcyAction"
             type="button"
-            class="shrink-0 rounded-full border border-[var(--pf-danger-border)] bg-[var(--pf-danger-bg)] px-3 py-1 text-xs font-bold whitespace-nowrap text-[var(--pf-danger-text)]"
+            class="shrink-0 rounded-full border-[0.5px] border-[var(--pf-danger-border)] bg-[var(--pf-danger-bg)] px-3 py-1 text-xs font-bold whitespace-nowrap text-[var(--pf-danger-text)]"
             @click="openBankruptcyModal"
           >
             포트폴리오 초기화

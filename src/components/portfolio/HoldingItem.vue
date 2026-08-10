@@ -35,7 +35,7 @@ const formattedQuantity = computed(() =>
 
 <template>
   <li
-    class="group flex items-center justify-between gap-3 border border-transparent px-3 py-3 transition-all hover:mx-1 hover:my-1 hover:rounded-xl hover:border-[var(--pf-highlight)] hover:bg-white/12"
+    class="group flex items-center justify-between gap-3 border-[0.5px] border-transparent px-3 py-3 transition-all hover:mx-1 hover:my-1 hover:rounded-xl hover:border-[var(--pf-highlight)] hover:bg-white/12"
   >
     <div class="flex min-w-0 items-start gap-2">
       <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="dotClass" />
@@ -70,7 +70,7 @@ const formattedQuantity = computed(() =>
 
     <button
       type="button"
-      class="shrink-0 rounded-full border border-[var(--pf-card-border)] px-3 py-1.5 text-xs font-bold text-[var(--pf-text)] transition-colors group-hover:border-transparent group-hover:bg-[var(--pf-cta-bg)] group-hover:text-[var(--pf-cta-text)]"
+      class="shrink-0 rounded-full border-[0.5px] border-[var(--pf-card-border)] px-3 py-1.5 text-xs font-bold text-[var(--pf-text)] transition-colors group-hover:border-transparent group-hover:bg-[var(--pf-cta-bg)] group-hover:text-[var(--pf-cta-text)]"
       @click="$emit('request-sell', holding)"
     >
       {{ sellActionLabel }}

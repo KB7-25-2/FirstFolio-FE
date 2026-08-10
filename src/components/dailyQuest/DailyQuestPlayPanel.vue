@@ -97,7 +97,7 @@ const onSave = async () => {
         ← 목록
       </button>
       <span
-        class="rounded border border-[rgba(193,127,36,0.45)] px-2 py-0.5 font-serif text-[10px] font-bold text-[#8b5014]"
+        class="rounded border-[0.5px] border-[rgba(193,127,36,0.45)] px-2 py-0.5 font-serif text-[10px] font-bold text-[#8b5014]"
       >
         {{ currentQuestionTypeLabel }} · {{ questionNumber }}/{{ totalCount }}
       </span>

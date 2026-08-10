@@ -54,7 +54,9 @@ defineEmits(['close'])
             닫기
           </button>
         </div>
-        <div class="flex w-full flex-col gap-3 rounded-xl border border-[#e0e0e5] bg-white p-4">
+        <div
+          class="flex w-full flex-col gap-3 rounded-xl border-[0.5px] border-[#e0e0e5] bg-white p-4"
+        >
           <p v-if="title" class="text-[14px] font-bold text-[#1f2e59]">{{ title }}</p>
           <p v-if="example" class="text-[12px] text-[#666b75]">{{ example }}</p>
           <p v-if="body" class="text-[12px] leading-5 whitespace-pre-line text-[#1f2e59]">

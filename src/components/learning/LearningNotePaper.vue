@@ -30,7 +30,7 @@ defineProps({
     <MemoPin v-if="showPin" side="center" :tone="pinTone" />
 
     <div
-      class="relative overflow-hidden rounded-[2px] border border-[rgba(212,184,150,0.55)] shadow-[0_4px_14px_rgba(0,0,0,0.28)]"
+      class="relative overflow-hidden rounded-[2px] border-[0.5px] border-[rgba(212,184,150,0.4)] shadow-[0_3px_10px_rgba(0,0,0,0.16)]"
       :class="surfaceClass"
     >
       <!-- 줄노트 배경 -->

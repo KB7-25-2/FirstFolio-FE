@@ -68,7 +68,7 @@ const showSlash = computed(() => props.variant === 'wrong')
 <template>
   <button
     type="button"
-    class="memo-selectable relative flex min-h-[52px] w-full items-center gap-3 overflow-visible rounded-md border-[0.8px] px-3 py-2 text-left transition-[box-shadow,background-color] duration-200 disabled:cursor-default"
+    class="memo-selectable relative flex min-h-[52px] w-full items-center gap-3 overflow-visible rounded-md border-[0.5px] px-3 py-2 text-left transition-[box-shadow,background-color] duration-200 disabled:cursor-default"
     :class="[toneClass, variantClass]"
     :disabled="disabled"
     @click="$emit('select', optionKey)"

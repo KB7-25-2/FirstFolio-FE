@@ -97,7 +97,7 @@ const goDailyQuest = () => {
     <MemoPin side="center" tone="quest" />
 
     <section
-      class="relative overflow-hidden rounded-[3px] border-[0.8px] border-[var(--study-quest-border)] bg-[var(--study-quest-surface)] shadow-[0_4px_10px_rgba(0,0,0,0.28)]"
+      class="relative overflow-hidden rounded-[3px] border-[0.5px] border-[var(--study-quest-border)] bg-[var(--study-quest-surface)] shadow-[0_4px_10px_rgba(0,0,0,0.28)]"
       aria-label="오늘의 일일 퀘스트"
     >
       <div class="relative flex flex-col gap-2.5 px-3.5 py-3 pt-4">
@@ -110,7 +110,7 @@ const goDailyQuest = () => {
           </div>
           <div class="flex shrink-0 flex-col items-end gap-1">
             <span
-              class="inline-flex items-center gap-1 rounded-full border border-[rgba(196,92,42,0.35)] bg-[#fff6ef] px-2 py-0.5"
+              class="inline-flex items-center gap-1 rounded-full border-[0.5px] border-[rgba(196,92,42,0.35)] bg-[#fff6ef] px-2 py-0.5"
               :aria-label="`${streakDays}일 연속`"
             >
               <span
@@ -174,7 +174,7 @@ const goDailyQuest = () => {
 
           <!-- 점수 · 순위 -->
           <div
-            class="grid grid-cols-2 gap-2 rounded-[6px] border border-[rgba(196,92,42,0.28)] bg-[rgba(255,255,255,0.45)] px-3 py-2.5"
+            class="grid grid-cols-2 gap-2 rounded-[6px] border-[0.5px] border-[rgba(196,92,42,0.28)] bg-[rgba(255,255,255,0.45)] px-3 py-2.5"
           >
             <div>
               <p class="font-serif text-[9px] text-[rgba(139,100,60,0.7)]">{{ scoreHint }}</p>

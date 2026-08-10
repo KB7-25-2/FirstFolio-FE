@@ -92,7 +92,7 @@ const handleBuyConfirm = async (amount) => {
         :class="
           activeFilter === filter.value
             ? 'bg-[var(--pf-tab-active-bg)] text-[var(--pf-tab-active-text)]'
-            : 'border border-[var(--pf-card-border)] text-[var(--pf-text-muted)]'
+            : 'border-[0.5px] border-[var(--pf-card-border)] text-[var(--pf-text-muted)]'
         "
         @click="activeFilter = filter.value"
       >
@@ -112,7 +112,7 @@ const handleBuyConfirm = async (amount) => {
     <div class="nav-scroll-pad min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <div
         v-if="filteredProducts.length"
-        class="rounded-2xl border border-[var(--pf-card-border)] bg-white/8"
+        class="rounded-2xl border-[0.5px] border-[var(--pf-card-border)] bg-white/8"
       >
         <ul class="divide-y divide-white/5">
           <ProductListItem

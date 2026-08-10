@@ -96,7 +96,7 @@ const handleRedeem = async () => {
         </div>
         <button
           type="button"
-          class="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-xs text-white"
+          class="shrink-0 rounded-full border-[0.5px] border-white/15 px-3 py-1.5 text-xs text-white"
           @click="currentView = currentView === 'catalog' ? 'history' : 'catalog'"
         >
           {{ currentView === 'catalog' ? '교환 내역 ›' : '‹ 스토어로' }}
@@ -123,7 +123,7 @@ const handleRedeem = async () => {
               :class="
                 activeFilter === filter.value
                   ? 'bg-[#f5a647] text-[#1f1a14]'
-                  : 'border border-white/15 text-[#9aa1b0]'
+                  : 'border-[0.5px] border-white/15 text-[#9aa1b0]'
               "
               @click="activeFilter = filter.value"
             >
