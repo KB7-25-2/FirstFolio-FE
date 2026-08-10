@@ -287,6 +287,190 @@
     text-shadow: 0 1px 0 rgba(255, 240, 210, 0.35);
   }
 
+  /* 학습 목차 — 전체 진행 + 대단원/소단원 체크리스트 */
+  .learning-syllabus__overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+    gap: 8px;
+  }
+
+  .learning-syllabus__seg {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .learning-syllabus__seg-track {
+    display: block;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: rgba(44, 24, 16, 0.12);
+  }
+
+  .learning-syllabus__seg-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: #c17f24;
+    transition: width 0.2s ease;
+  }
+
+  .learning-syllabus__seg--done .learning-syllabus__seg-fill {
+    background: #5f8f55;
+  }
+
+  .learning-syllabus__seg--locked .learning-syllabus__seg-track {
+    background: rgba(44, 24, 16, 0.08);
+  }
+
+  .learning-syllabus__seg--locked .learning-syllabus__seg-fill {
+    background: rgba(44, 24, 16, 0.18);
+  }
+
+  .learning-syllabus__seg--active .learning-syllabus__seg-track {
+    box-shadow: 0 0 0 1.5px rgba(193, 127, 36, 0.45);
+  }
+
+  .learning-syllabus__seg-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-serif, serif);
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(44, 24, 16, 0.55);
+  }
+
+  .learning-syllabus__seg--active .learning-syllabus__seg-label {
+    color: #1a2248;
+  }
+
+  .learning-syllabus__chapter--locked {
+    opacity: 0.72;
+  }
+
+  .learning-syllabus__chapter--active {
+    border-radius: 4px;
+    box-shadow: 0 0 0 1.5px rgba(193, 127, 36, 0.4);
+  }
+
+  .learning-syllabus__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid rgba(107, 68, 35, 0.12);
+  }
+
+  .learning-syllabus__row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    border-bottom: 1px solid rgba(107, 68, 35, 0.08);
+    background: transparent;
+    padding: 10px 2px;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s ease;
+  }
+
+  .learning-syllabus__row:last-child {
+    border-bottom: 0;
+  }
+
+  .learning-syllabus__row:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  .learning-syllabus__row:disabled {
+    cursor: not-allowed;
+  }
+
+  .learning-syllabus__mark {
+    display: flex;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .learning-syllabus__check {
+    font-family: var(--font-serif, serif);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    color: #4f7d48;
+  }
+
+  .learning-syllabus__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #c17f24;
+    box-shadow: 0 0 0 3px rgba(193, 127, 36, 0.22);
+  }
+
+  .learning-syllabus__empty {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(107, 68, 35, 0.35);
+    background: rgba(255, 250, 237, 0.8);
+  }
+
+  .learning-syllabus__row-body {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .learning-syllabus__row-meta {
+    font-family: var(--font-serif, serif);
+    font-size: 10px;
+    color: rgba(61, 31, 8, 0.5);
+  }
+
+  .learning-syllabus__row-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-pen, cursive);
+    font-size: 17px;
+    line-height: 1.15;
+    color: #212b5c;
+  }
+
+  .learning-syllabus__row--now {
+    background: rgba(255, 248, 230, 0.65);
+  }
+
+  .learning-syllabus__row--now .learning-syllabus__row-meta {
+    color: #c17f24;
+    font-weight: 700;
+  }
+
+  .learning-syllabus__row--done .learning-syllabus__row-title {
+    color: rgba(33, 43, 92, 0.55);
+  }
+
+  .learning-syllabus__row--locked {
+    opacity: 0.45;
+  }
+
   /* 뉴스 스크랩 즉시 확대 */
   .news-zoom-enter-active,
   .news-zoom-leave-active {

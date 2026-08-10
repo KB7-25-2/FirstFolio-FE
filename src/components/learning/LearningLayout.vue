@@ -13,6 +13,11 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  /** 스크롤 패널 추가 클래스 (snap 등) */
+  contentClass: {
+    type: String,
+    default: '',
+  },
 })
 </script>
 
@@ -25,10 +30,12 @@ defineProps({
       <slot name="header" />
     </div>
     <div
+      data-scroll-reveal-root
       class="flex min-h-0 w-full max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto"
       :class="[
-        immersive ? (bleedHeader ? 'px-4 pt-4 pb-2' : 'mt-4 pb-2') : 'mt-4 px-5',
+        immersive ? (bleedHeader ? 'px-4 pt-4 pb-2' : 'pt-4 pb-2') : 'pt-4 px-5',
         !immersive && !$slots.footer ? 'nav-scroll-pad' : '',
+        contentClass,
       ]"
     >
       <slot />

@@ -115,8 +115,8 @@ export const useLessonPlayer = () => {
     const mainChapterId = currentContent.value?.mainChapterId
     if (mainChapterId) {
       router.push({
-        name: 'learning-main-chapter',
-        params: { mainChapterId },
+        name: 'learning',
+        query: { mainChapterId: String(mainChapterId) },
       })
       return
     }

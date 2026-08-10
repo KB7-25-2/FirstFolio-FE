@@ -103,7 +103,10 @@ const router = createRouter({
             {
               path: 'main-chapters/:mainChapterId',
               name: 'learning-main-chapter',
-              component: () => import('@/views/learning/SubChapterSelectView.vue'),
+              redirect: (to) => ({
+                name: 'learning',
+                query: { mainChapterId: String(to.params.mainChapterId) },
+              }),
             },
             {
               path: 'sub-chapters/:subChapterId',
