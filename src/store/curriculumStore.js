@@ -9,7 +9,6 @@ import {
   chapterTitle,
 } from '@/services/curriculumService.js'
 import { LevelTestApiError } from '@/services/levelTestService.js'
-import { useAuthStore } from '@/store/authStore.js'
 
 export const useCurriculumStore = defineStore('curriculum', () => {
   /** @type {import('vue').Ref<import('@/types/curriculum.js').CurriculumDraft | null>} */
@@ -199,7 +198,6 @@ export const useCurriculumStore = defineStore('curriculum', () => {
         main_chapter_ids: selectedAssetIds.value,
       })
       confirmed.value = true
-      useAuthStore().setOnboardingStep('HOME')
       return data
     } catch (err) {
       error.value = err?.message || '커리큘럼을 확정하지 못했습니다.'

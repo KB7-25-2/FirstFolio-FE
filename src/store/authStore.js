@@ -38,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * 온보딩 단계 갱신 (로그인 응답·플로우 완료 시)
+   * 온보딩 단계 갱신 — auth API(login/signup) 응답 onboarding_step만 저장
    * @param {import('@/router/onboardingRedirect.js').OnboardingStep | string} step
    */
   const setOnboardingStep = (step) => {
