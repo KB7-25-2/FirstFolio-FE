@@ -24,7 +24,7 @@ const buttonClass = computed(() => variantClasses[props.variant] ?? variantClass
 <template>
   <button
     type="button"
-    class="rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+    class="btn-hover rounded-lg px-4 py-2 text-sm font-medium"
     :class="buttonClass"
   >
     {{ label }}

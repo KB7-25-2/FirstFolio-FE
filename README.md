@@ -25,6 +25,7 @@ Firstfolio는 투자 수익을 보장하거나 특정 금융상품을 직접 권
 | 빌드            | Vite                      |
 | 스타일          | Tailwind CSS              |
 | PWA             | vite-plugin-pwa (Workbox) |
+| 테스트          | Vitest / Playwright       |
 | 배포            | Vercel                    |
 
 ---
@@ -59,6 +60,11 @@ Firstfolio는 투자 수익을 보장하거나 특정 금융상품을 직접 권
 | `lint-staged`                     | ^16.4.0  | 커밋 전 staged 파일 린트/포맷 |
 | `@commitlint/cli`                 | ^19.x    | 커밋 메시지 린트              |
 | `@commitlint/config-conventional` | ^19.x    | Conventional Commits 규칙     |
+| `vitest`                          | ^4.x     | 단위·통합 테스트 러너         |
+| `@vue/test-utils`                 | ^2.x     | Vue 컴포넌트 테스트 유틸      |
+| `jsdom`                           | ^27.x    | Vitest DOM 환경               |
+| `@vitest/coverage-v8`             | ^4.x     | 커버리지                      |
+| `@playwright/test`                | ^1.x     | UI/E2E 테스트                 |
 
 ---
 
@@ -95,15 +101,39 @@ npm run dev
 
 ### 스크립트
 
-| 명령어                 | 설명                 |
-| ---------------------- | -------------------- |
-| `npm run dev`          | 개발 서버 실행       |
-| `npm run build`        | 프로덕션 빌드        |
-| `npm run preview`      | 빌드 결과물 미리보기 |
-| `npm run lint`         | ESLint 검사          |
-| `npm run lint:fix`     | ESLint 자동 수정     |
-| `npm run format`       | Prettier 포맷 적용   |
-| `npm run format:check` | Prettier 포맷 검사   |
+| 명령어                     | 설명                       |
+| -------------------------- | -------------------------- |
+| `npm run dev`              | 개발 서버 실행             |
+| `npm run build`            | 프로덕션 빌드              |
+| `npm run preview`          | 빌드 결과물 미리보기       |
+| `npm run lint`             | ESLint 검사                |
+| `npm run lint:fix`         | ESLint 자동 수정           |
+| `npm run format`           | Prettier 포맷 적용         |
+| `npm run format:check`     | Prettier 포맷 검사         |
+| `npm run test`             | 단위·통합 테스트 (Vitest)  |
+| `npm run test:unit`        | 단위 테스트만              |
+| `npm run test:integration` | 통합 테스트만              |
+| `npm run test:coverage`    | 커버리지 리포트            |
+| `npm run test:e2e`         | UI/E2E 테스트 (Playwright) |
+| `npm run test:e2e:ui`      | Playwright UI 모드         |
+| `npm run test:all`         | 단위·통합 + E2E            |
+
+### 테스트
+
+| 구분   | 도구                    | 위치                 | 목적                        |
+| ------ | ----------------------- | -------------------- | --------------------------- |
+| 단위   | Vitest                  | `tests/unit/`        | 유틸·순수 함수              |
+| 통합   | Vitest + Vue Test Utils | `tests/integration/` | 스토어·서비스·컴포넌트 연동 |
+| UI/E2E | Playwright              | `e2e/`               | 브라우저 실제 흐름          |
+
+```bash
+# 단위·통합
+npm run test
+
+# E2E (최초 1회 브라우저 설치 필요)
+npx playwright install
+npm run test:e2e
+```
 
 ### Git Hooks (Husky)
 

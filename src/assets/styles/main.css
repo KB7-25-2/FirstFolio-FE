@@ -3,14 +3,38 @@
 
 @layer base {
   body {
-    @apply min-h-screen bg-[var(--auth-page)] font-sans text-[var(--auth-title)];
+    @apply h-dvh overflow-hidden bg-[var(--auth-page)] font-sans text-[var(--auth-title)];
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: var(--scrollbar-size);
+    height: var(--scrollbar-size);
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
   }
 }
 
 @layer components {
   .mobile-frame {
-    width: var(--mobile-width);
-    height: var(--mobile-height);
+    width: 100%;
+    max-width: var(--mobile-width);
+    height: 100dvh;
   }
 
   .auth-paper {
@@ -24,6 +48,36 @@
       linear-gradient(90deg, rgb(245, 237, 216) 0%, rgb(245, 237, 216) 100%);
   }
 
+  /* Navbar — dvh 기반 반응형 */
+  .nav-bar {
+    height: clamp(52px, 8dvh, 72px);
+  }
+
+  .nav-icon-wrap {
+    width: clamp(20px, 3dvh, 28px);
+    height: clamp(20px, 3dvh, 28px);
+  }
+
+  .nav-icon {
+    width: clamp(16px, 2.4dvh, 22px);
+    height: clamp(16px, 2.4dvh, 22px);
+  }
+
+  .nav-icon-active {
+    width: clamp(13px, 1.9dvh, 18px);
+    height: clamp(13px, 1.9dvh, 18px);
+  }
+
+  .nav-label {
+    font-size: clamp(9px, 1.4dvh, 13px);
+    line-height: 1.2;
+  }
+
+  .nav-dot {
+    width: clamp(3px, 0.5dvh, 5px);
+    height: clamp(3px, 0.5dvh, 5px);
+  }
+
   .auth-clip-board {
     background-image: linear-gradient(
       149.11deg,
@@ -32,4 +86,41 @@
       rgb(46, 26, 12) 91.51%
     );
   }
+
+  /* 선택 가능한 메모지 컨셉 컴포넌트 */
+  .memo-selectable {
+    @apply cursor-pointer transition-transform duration-200 ease-out hover:scale-[1.02];
+  }
+
+  /* StudyNote 「이어서 / 이어하기」 텍스트 CTA — 메모지 전체 hover와 구분 */
+  .study-continue-cta {
+    @apply transition-[color,background-color,transform] duration-150 ease-out;
+  }
+
+  .study-continue-cta:hover {
+    color: #15803d;
+    background-color: rgba(34, 197, 94, 0.14);
+  }
+
+  .study-continue-cta--quest:hover {
+    color: #9a3f18;
+    background-color: rgba(196, 92, 42, 0.14);
+  }
+
+  .study-continue-cta:active {
+    transform: scale(0.97);
+  }
+}
+
+/* 버튼 공통 hover — 활성화된 버튼에만 클래스 부여 */
+.btn-hover {
+  @apply cursor-pointer transition-[transform,opacity,color,background-color] duration-200 ease-out;
+}
+
+.btn-hover:hover {
+  @apply scale-[1.02];
+}
+
+.btn-hover:active {
+  @apply scale-[0.99];
 }
