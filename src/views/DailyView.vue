@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { formatKoreanDate } from '@/utils/date.js'
 import DailyQuestNote from '@/components/DailyQuestNote.vue'
 import NewsScrap from '@/components/NewsScrap.vue'
+import ScrollReveal from '@/components/ScrollReveal.vue'
 
 const todayLabel = computed(() => formatKoreanDate())
 </script>
@@ -23,12 +24,17 @@ const todayLabel = computed(() => formatKoreanDate())
       </p>
     </header>
 
-    <div class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-4">
-      <div class="flex justify-center">
+    <div
+      data-scroll-reveal-root
+      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-4"
+    >
+      <ScrollReveal class="flex justify-center">
         <DailyQuestNote />
-      </div>
+      </ScrollReveal>
 
-      <NewsScrap />
+      <ScrollReveal>
+        <NewsScrap />
+      </ScrollReveal>
     </div>
   </div>
 </template>

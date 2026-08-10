@@ -7,6 +7,7 @@ import { formatKoreanDate } from '@/utils/date.js'
 import PortfolioSummary from '@/components/PortfolioSummary.vue'
 import StudyNote from '@/components/StudyNote.vue'
 import PointShopNote from '@/components/PointShopNote.vue'
+import ScrollReveal from '@/components/ScrollReveal.vue'
 import UserProfileModal from '@/components/UserProfileModal.vue'
 import BaseConfirmModal from '@/components/BaseConfirmModal.vue'
 
@@ -95,18 +96,21 @@ const confirmLogout = async () => {
       </div>
     </header>
 
-    <div class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-5">
-      <div class="flex justify-center">
+    <div
+      data-scroll-reveal-root
+      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-5"
+    >
+      <ScrollReveal class="flex justify-center">
         <PortfolioSummary />
-      </div>
+      </ScrollReveal>
 
-      <div class="flex justify-center">
+      <ScrollReveal class="flex justify-center">
         <StudyNote />
-      </div>
+      </ScrollReveal>
 
-      <div class="flex justify-center">
+      <ScrollReveal class="flex justify-center">
         <PointShopNote />
-      </div>
+      </ScrollReveal>
     </div>
 
     <UserProfileModal :open="isProfileOpen" @close="closeProfile" />

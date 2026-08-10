@@ -98,6 +98,28 @@
   /* 오버레이 네비 — 페이지 루트 padding 없음. 스크롤 끝 여백은 .nav-scroll-pad */
 
   /* 스크롤 영역 맨 아래 여백 — 마지막 아이템이 네비 위에 보이도록 */
+  .nav-scroll-pad {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .nav-scroll-pad::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   .nav-scroll-pad::after {
     content: '';
     display: block;
@@ -105,6 +127,19 @@
     width: 100%;
     height: calc(clamp(52px, 8dvh, 72px) + 16px);
     pointer-events: none;
+  }
+
+  /* 스크롤 중 카드 blur + scale — 수치는 ScrollReveal 인라인 스타일 */
+  .scroll-reveal {
+    width: 100%;
+    transform-origin: center center;
+  }
+
+  .scroll-reveal--active {
+    transition:
+      opacity 80ms linear,
+      filter 80ms linear,
+      transform 80ms linear;
   }
 
   /* 스크롤 밖 하단 고정 영역(푸터 등)이 네비에 가리지 않도록 */
@@ -221,6 +256,69 @@
     color: var(--chalk-stamp);
     text-shadow: 0 0 0.5px rgba(240, 217, 160, 0.4);
     background: rgba(240, 217, 160, 0.06);
+  }
+
+  /* 뉴스 스크랩 보드 — 크라프트지 게시판 */
+  .scrap-board {
+    position: relative;
+    box-sizing: border-box;
+    border: 6px solid #6b4423;
+    border-color: #a8743f #5a3820 #5a3820 #8b5e34;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 236, 200, 0.35),
+      inset 0 -1px 0 rgba(70, 40, 16, 0.25),
+      0 6px 14px rgba(44, 24, 16, 0.26);
+    background-color: #c4a574;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='fiber'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.3 0 0 0 0 0.14 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23fiber)' opacity='0.55'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 80% 60% at 20% 15%, rgba(255, 240, 210, 0.35), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 85% 90%, rgba(110, 70, 35, 0.22), transparent 50%),
+      linear-gradient(155deg, #d2b88a 0%, #c4a574 45%, #a88455 100%);
+    background-size:
+      160px 160px,
+      100% 100%,
+      100% 100%,
+      100% 100%;
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+  }
+
+  .scrap-board__title {
+    color: var(--cork-ink);
+    text-shadow: 0 1px 0 rgba(255, 240, 210, 0.35);
+  }
+
+  /* 뉴스 스크랩 즉시 확대 */
+  .news-zoom-enter-active,
+  .news-zoom-leave-active {
+    transition: opacity 0.18s ease;
+  }
+
+  .news-zoom-enter-active .news-zoom-modal__card,
+  .news-zoom-leave-active .news-zoom-modal__card {
+    transition:
+      transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.18s ease;
+  }
+
+  .news-zoom-enter-active .news-zoom-modal__dim,
+  .news-zoom-leave-active .news-zoom-modal__dim {
+    transition: opacity 0.18s ease;
+  }
+
+  .news-zoom-enter-from,
+  .news-zoom-leave-to {
+    opacity: 1;
+  }
+
+  .news-zoom-enter-from .news-zoom-modal__dim,
+  .news-zoom-leave-to .news-zoom-modal__dim {
+    opacity: 0;
+  }
+
+  .news-zoom-enter-from .news-zoom-modal__card,
+  .news-zoom-leave-to .news-zoom-modal__card {
+    opacity: 0.6;
+    transform: scale(0.86);
   }
 
   /* 메모 압정 */
