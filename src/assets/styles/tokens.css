@@ -77,14 +77,38 @@
   --color-portfolio-shop: #c17f24;
   --color-portfolio-shop-paper: #fcf7ed;
 
+  /* Cork board — 메모지 화면 배경 */
+  --color-cork-base: #d6bc8e;
+  --color-cork-deep: #b89562;
+  --color-cork-light: #e8d4ad;
+  --color-cork-speckle: rgba(90, 58, 30, 0.18);
+  --color-cork-ink: #2c1810;
+  --color-cork-ink-muted: rgba(44, 24, 16, 0.58);
+  --color-cork-ink-faint: rgba(44, 24, 16, 0.42);
+  --color-cork-stamp: rgba(122, 58, 18, 0.88);
+  --color-cork-stamp-border: rgba(122, 58, 18, 0.75);
+
+  /* Chalkboard header */
+  --color-chalk-surface: #2f4a3a;
+  --color-chalk-surface-deep: #243a2e;
+  --color-chalk-surface-light: #3a5a48;
+  --color-chalk-frame: #8b5e34;
+  --color-chalk-frame-deep: #6b4423;
+  --color-chalk-frame-light: #a8743f;
+  --color-chalk-text: #f4f0e1;
+  --color-chalk-text-muted: rgba(244, 240, 225, 0.62);
+  --color-chalk-text-faint: rgba(244, 240, 225, 0.45);
+  --color-chalk-stamp: #f0d9a0;
+  --color-chalk-stamp-border: rgba(240, 217, 160, 0.7);
+
   /* NewsClipping */
   --color-news-surface: #f5edd9;
   --color-news-ink: #2c1810;
   --color-news-muted: rgba(44, 24, 16, 0.45);
   --color-news-masthead: rgba(44, 24, 16, 0.55);
   --color-news-line: rgba(44, 24, 16, 0.35);
-  --color-news-section: rgba(245, 237, 217, 0.9);
-  --color-news-section-muted: rgba(245, 237, 217, 0.5);
+  --color-news-section: rgba(44, 24, 16, 0.88);
+  --color-news-section-muted: rgba(44, 24, 16, 0.5);
   --color-news-tape: rgba(255, 161, 184, 0.55);
 
   /* NewsDetailModal */
@@ -198,6 +222,30 @@
   --portfolio-chip-value: var(--color-portfolio-chip-value);
   --portfolio-shop: var(--color-portfolio-shop);
   --portfolio-shop-paper: var(--color-portfolio-shop-paper);
+
+  /* Cork board */
+  --cork-base: var(--color-cork-base);
+  --cork-deep: var(--color-cork-deep);
+  --cork-light: var(--color-cork-light);
+  --cork-speckle: var(--color-cork-speckle);
+  --cork-ink: var(--color-cork-ink);
+  --cork-ink-muted: var(--color-cork-ink-muted);
+  --cork-ink-faint: var(--color-cork-ink-faint);
+  --cork-stamp: var(--color-cork-stamp);
+  --cork-stamp-border: var(--color-cork-stamp-border);
+
+  /* Chalkboard header */
+  --chalk-surface: var(--color-chalk-surface);
+  --chalk-surface-deep: var(--color-chalk-surface-deep);
+  --chalk-surface-light: var(--color-chalk-surface-light);
+  --chalk-frame: var(--color-chalk-frame);
+  --chalk-frame-deep: var(--color-chalk-frame-deep);
+  --chalk-frame-light: var(--color-chalk-frame-light);
+  --chalk-text: var(--color-chalk-text);
+  --chalk-text-muted: var(--color-chalk-text-muted);
+  --chalk-text-faint: var(--color-chalk-text-faint);
+  --chalk-stamp: var(--color-chalk-stamp);
+  --chalk-stamp-border: var(--color-chalk-stamp-border);
 
   /* NewsClipping */
   --news-surface: var(--color-news-surface);

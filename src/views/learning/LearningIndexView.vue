@@ -8,6 +8,6 @@ import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
     <template #header>
       <LearningPageHeader title="학습" />
     </template>
-    <p class="font-serif text-sm text-[rgba(245,237,217,0.65)]">학습 화면입니다.</p>
+    <p class="font-serif text-sm text-[var(--cork-ink-muted)]">학습 화면입니다.</p>
   </LearningLayout>
 </template>

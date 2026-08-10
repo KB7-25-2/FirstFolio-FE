@@ -154,7 +154,7 @@ const startScenarioQuiz = () => {
       <LearningPageHeader title="학습 시간표" />
     </template>
 
-    <p class="mb-3 font-pen text-[14px] text-[rgba(245,237,217,0.5)]">
+    <p class="mb-3 font-pen text-[14px] text-[var(--cork-ink-muted)]">
       ← 좌우 스와이프 = 대단원 · 상하 슬라이드 = 소단원 →
     </p>
 
@@ -220,7 +220,7 @@ const startScenarioQuiz = () => {
           :key="item.curriculumItemId"
           type="button"
           class="size-1.5 rounded-full transition-colors"
-          :class="index === activeIndex ? 'bg-[#c17f24]' : 'bg-[rgba(245,237,217,0.35)]'"
+          :class="index === activeIndex ? 'bg-[#c17f24]' : 'bg-[var(--cork-ink-faint)]'"
           :aria-label="`${item.title}로 이동`"
           @click="syncRoute(item.mainChapterId)"
         />

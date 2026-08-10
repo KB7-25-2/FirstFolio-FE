@@ -8,13 +8,17 @@ const todayLabel = computed(() => formatKoreanDate())
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden bg-[#0d1117]">
-    <header class="shrink-0 px-5 pt-6 pb-3">
-      <p class="font-serif text-[10px] text-[rgba(245,237,217,0.55)]">
+  <div class="cork-board flex h-full flex-col overflow-hidden">
+    <header class="chalk-header shrink-0 px-5">
+      <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
         {{ todayLabel }}
       </p>
-      <h1 class="mt-1 font-serif text-[21px] font-black text-[#f5edd9]">데일리</h1>
-      <p class="mt-1 font-serif text-[11px] text-[rgba(245,237,217,0.55)]">
+      <h1
+        class="chalk-header__title mt-1 font-pen text-[28px] leading-none font-normal text-[var(--chalk-text)]"
+      >
+        데일리
+      </h1>
+      <p class="mt-1 font-serif text-[11px] leading-tight text-[var(--chalk-text-faint)]">
         오늘의 퀘스트와 금융 뉴스
       </p>
     </header>

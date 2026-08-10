@@ -24,16 +24,18 @@ const resolvedDate = computed(() => props.dateLabel || formatKoreanDate())
 </script>
 
 <template>
-  <header class="relative">
-    <p class="font-serif text-[10px] text-[rgba(245,237,217,0.55)]">
+  <header class="chalk-header shrink-0 px-5">
+    <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
       {{ resolvedDate }}
     </p>
-    <div class="mt-1 flex items-start justify-between gap-3">
+    <div class="mt-1 flex items-center justify-between gap-3">
       <div class="min-w-0 flex-1">
-        <p v-if="eyebrow" class="mb-0.5 font-serif text-[10px] text-[rgba(245,237,217,0.55)]">
+        <p v-if="eyebrow" class="mb-0.5 font-serif text-[10px] text-[var(--chalk-text-faint)]">
           {{ eyebrow }}
         </p>
-        <h1 class="font-serif text-[21px] font-black text-[#f5edd9]">
+        <h1
+          class="chalk-header__title font-pen text-[28px] leading-none font-normal text-[var(--chalk-text)]"
+        >
           {{ title }}
         </h1>
       </div>

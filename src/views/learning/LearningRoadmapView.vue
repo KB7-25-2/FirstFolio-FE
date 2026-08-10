@@ -21,9 +21,7 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
     <template v-else>
       <!-- 필수 선행: 포트폴리오 기초 -->
       <section v-if="foundationCard" class="mb-6 px-2">
-        <p class="mb-2 font-serif text-[11px] font-bold text-[rgba(245,237,217,0.7)]">
-          필수 선행 과정
-        </p>
+        <p class="mb-2 font-serif text-[11px] font-bold text-[var(--cork-ink)]">필수 선행 과정</p>
         <button
           type="button"
           class="memo-selectable w-full text-left"
@@ -59,8 +57,8 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
       <!-- 선택형 대단원 -->
       <section>
         <div class="mb-2 flex items-baseline justify-between px-2">
-          <p class="font-serif text-[11px] font-bold text-[rgba(245,237,217,0.7)]">금융 카테고리</p>
-          <p class="font-serif text-[10px] text-[rgba(245,237,217,0.45)]">
+          <p class="font-serif text-[11px] font-bold text-[var(--cork-ink)]">금융 카테고리</p>
+          <p class="font-serif text-[10px] text-[var(--cork-ink-faint)]">
             {{ coreCards.length }}개 영역
           </p>
         </div>
@@ -117,7 +115,7 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
           </button>
         </div>
 
-        <p class="mt-5 text-center font-pen text-[16px] text-[rgba(245,237,217,0.55)]">
+        <p class="mt-5 text-center font-pen text-[16px] text-[var(--cork-ink-muted)]">
           카테고리를 골라 학습 지도를 펼쳐보자!
         </p>
       </section>
