@@ -78,11 +78,11 @@ const { leftTabs, rightTabs, centerTab, isActive, navigate } = useNavTabs()
       @click="navigate(centerTab.path)"
     >
       <span
-        class="nav-home-fab__btn flex items-center justify-center rounded-full border-[3px] border-[var(--nav-bg)] shadow-[0_4px_14px_rgba(0,0,0,0.35)] transition-transform active:scale-95"
+        class="nav-home-fab__btn flex items-center justify-center rounded-full border-[3px] border-[var(--nav-bg)] shadow-[0_3px_10px_rgba(44,24,16,0.18)] transition-transform active:scale-95"
         :class="
           isActive(centerTab.name)
             ? 'bg-[var(--nav-active-primary)] text-[#fff8ec]'
-            : 'bg-[#2a2a2a] text-[var(--nav-text-muted)]'
+            : 'bg-[var(--nav-fab)] text-[var(--nav-text-muted)]'
         "
       >
         <font-awesome-icon :icon="centerTab.icon" class="nav-home-fab__icon" />

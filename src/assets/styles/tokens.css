@@ -27,13 +27,15 @@
   --width-mobile: 390px;
   --height-mobile: 844px;
 
-  /* Navbar */
-  --color-nav-bg: #121212;
-  --color-nav-border: rgba(0, 0, 0, 0.08);
-  --color-nav-text: #1a1a1a;
-  --color-nav-text-muted: #b0b0b0;
+  /* Navbar — 코르크보드와 어울리는 밝은 톤 */
+  --color-nav-bg: #f3e6c8;
+  --color-nav-border: rgba(90, 58, 30, 0.18);
+  --color-nav-text: #2c1810;
+  --color-nav-text-muted: rgba(44, 24, 16, 0.48);
   --color-nav-active-primary: #c17f24;
-  --color-nav-active-secondary: #ffa1b8;
+  --color-nav-active-secondary: #c45c6a;
+  --color-nav-fab: #fff8ec;
+  --color-nav-fab-muted: #e8d4ad;
 
   /* Scrollbar */
   --color-scrollbar-thumb: rgba(255, 255, 255, 0.14);
@@ -180,6 +182,8 @@
   --nav-text-muted: var(--color-nav-text-muted);
   --nav-active-primary: var(--color-nav-active-primary);
   --nav-active-secondary: var(--color-nav-active-secondary);
+  --nav-fab: var(--color-nav-fab);
+  --nav-fab-muted: var(--color-nav-fab-muted);
 
   /* Scrollbar */
   --scrollbar-thumb: var(--color-scrollbar-thumb);
