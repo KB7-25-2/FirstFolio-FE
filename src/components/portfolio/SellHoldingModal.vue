@@ -60,20 +60,22 @@ const handleClose = () => {
 
 <template>
   <PortfolioModal :title="modalTitle" @close="handleClose">
-    <p class="text-sm font-bold text-[var(--pf-text)]">{{ holding.displayName }}</p>
-    <p class="text-xs text-[var(--pf-text-muted)]">{{ holding.cycleSummary }}</p>
+    <p class="font-serif text-sm font-bold text-[#f5edd9]">{{ holding.displayName }}</p>
+    <p class="font-serif text-xs text-[rgba(245,237,217,0.6)]">{{ holding.cycleSummary }}</p>
 
     <!-- 예·적금·채권: 입력 없이 금액 읽기 전용 -->
     <div
       v-if="isSubscription"
-      class="mt-4 rounded-lg bg-white/5 px-3 py-2.5 text-sm text-[var(--pf-text)]"
+      class="mt-4 rounded-lg bg-[rgba(245,237,217,0.06)] px-3 py-2.5 font-serif text-sm text-[#f5edd9]"
     >
       {{ holdingValue.toLocaleString('ko-KR') }}원 전액 {{ actionLabel }}
     </div>
 
     <!-- 주식·펀드: 정수 개수 입력 -->
     <div v-else class="mt-4">
-      <div class="mb-1.5 flex items-center justify-between text-xs text-[var(--pf-text-muted)]">
+      <div
+        class="mb-1.5 flex items-center justify-between font-serif text-xs text-[rgba(245,237,217,0.6)]"
+      >
         <span>{{ actionLabel }} 개수</span>
         <span
           >보유 {{ holding.quantity.toLocaleString('ko-KR') }}{{ meta.quantityUnit }} · 최대
@@ -88,19 +90,19 @@ const handleClose = () => {
         max-button-label="전량"
         :disabled="isSubmitting"
       />
-      <p class="mt-1.5 text-xs text-[var(--pf-text-muted)]">
+      <p class="mt-1.5 font-serif text-xs text-[rgba(245,237,217,0.6)]">
         예상 {{ actionLabel }} 금액 {{ estimatedAmount.toLocaleString('ko-KR') }}원
       </p>
     </div>
 
-    <p v-if="errorMessage" class="mt-3 text-xs text-[var(--pf-negative)]">
+    <p v-if="errorMessage" class="mt-3 font-serif text-xs text-[#f0b4b4]">
       {{ errorMessage }}
     </p>
 
     <div class="mt-5 flex gap-2">
       <button
         type="button"
-        class="flex-1 rounded-full border-[0.5px] border-[var(--pf-card-border)] py-2 text-sm text-[var(--pf-text)] disabled:opacity-40"
+        class="flex-1 rounded-xl border-[0.5px] border-[rgba(245,237,217,0.18)] py-2.5 font-serif text-sm text-[rgba(245,237,217,0.85)] disabled:opacity-40"
         :disabled="isSubmitting"
         @click="handleClose"
       >
@@ -108,7 +110,7 @@ const handleClose = () => {
       </button>
       <button
         type="button"
-        class="flex-1 rounded-full bg-[var(--pf-cta-bg)] py-2 text-sm font-bold text-[var(--pf-cta-text)] disabled:opacity-40"
+        class="flex-1 rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208] disabled:opacity-40"
         :disabled="!canConfirm || isSubmitting"
         @click="handleConfirm"
       >
