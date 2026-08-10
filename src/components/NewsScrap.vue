@@ -21,7 +21,7 @@ const collectedLabel = computed(() => {
   return `${yyyy}. ${mm}. ${dd} 수집`
 })
 
-const tapeSide = (index) => (index % 2 === 0 ? 'left' : 'right')
+const pinSide = (index) => (index % 2 === 0 ? 'left' : 'right')
 
 const onSelect = (id) => {
   newsStore.selectNews(id)
@@ -55,7 +55,7 @@ const onSelect = (id) => {
         v-for="(item, index) in items"
         :key="item.financial_news_id"
         :item="item"
-        :tape-side="tapeSide(index)"
+        :pin-side="pinSide(index)"
         @select="onSelect"
       />
     </div>

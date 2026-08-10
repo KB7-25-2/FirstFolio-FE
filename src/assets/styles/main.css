@@ -3,7 +3,7 @@
 
 @layer base {
   body {
-    @apply h-dvh overflow-hidden bg-[var(--auth-page)] font-sans text-[var(--auth-title)];
+    @apply h-dvh overflow-hidden bg-[var(--cork-base)] font-sans text-[var(--cork-ink)];
   }
 
   * {
@@ -125,17 +125,18 @@
     position: relative;
     box-sizing: border-box;
     display: flex;
+    width: 100%;
     height: 96px;
     min-height: 96px;
     max-height: 96px;
+    margin: 0;
     flex-direction: column;
     justify-content: center;
     color: var(--chalk-text);
     border-bottom: 5px solid var(--chalk-frame-deep);
     box-shadow:
       inset 0 1px 0 rgba(255, 220, 170, 0.28),
-      inset 0 -1px 0 rgba(40, 22, 8, 0.35),
-      0 4px 10px rgba(44, 24, 16, 0.18);
+      inset 0 -1px 0 rgba(40, 22, 8, 0.35);
     background-color: var(--chalk-surface);
     background-image:
       linear-gradient(
@@ -174,6 +175,78 @@
     background: rgba(240, 217, 160, 0.06);
   }
 
+  /* 메모 압정 */
+  .memo-pin {
+    display: flex;
+    width: 16px;
+    flex-direction: column;
+    align-items: center;
+    filter: drop-shadow(0 2px 2px rgba(44, 24, 16, 0.28));
+  }
+
+  .memo-pin--center {
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .memo-pin--left {
+    top: -8px;
+    left: 14px;
+    transform: rotate(-8deg);
+  }
+
+  .memo-pin--right {
+    top: -8px;
+    right: 14px;
+    transform: rotate(10deg);
+  }
+
+  .memo-pin__head {
+    position: relative;
+    z-index: 1;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.7) 0 22%, transparent 45%),
+      radial-gradient(circle at 70% 75%, rgba(0, 0, 0, 0.18), transparent 50%),
+      var(--pin-color, var(--pin-study));
+    box-shadow: inset 0 -1.5px 2px rgba(0, 0, 0, 0.22);
+  }
+
+  .memo-pin__needle {
+    margin-top: -2px;
+    width: 2px;
+    height: 10px;
+    border-radius: 1px;
+    background: linear-gradient(
+      180deg,
+      var(--pin-needle) 0%,
+      var(--pin-needle-tip) 78%,
+      transparent 100%
+    );
+  }
+
+  .memo-pin--study {
+    --pin-color: var(--pin-study);
+  }
+  .memo-pin--quest {
+    --pin-color: var(--pin-quest);
+  }
+  .memo-pin--portfolio {
+    --pin-color: var(--pin-portfolio);
+  }
+  .memo-pin--news {
+    --pin-color: var(--pin-news);
+  }
+  .memo-pin--red {
+    --pin-color: var(--pin-red);
+  }
+  .memo-pin--gold {
+    --pin-color: var(--pin-gold);
+  }
+
   /* 선택 가능한 메모지 컨셉 컴포넌트 */
   .memo-selectable {
     @apply cursor-pointer transition-transform duration-200 ease-out hover:scale-[1.02];
@@ -196,6 +269,51 @@
 
   .study-continue-cta:active {
     transform: scale(0.97);
+  }
+
+  /* 코르크보드 화면용 버튼 */
+  .cork-btn {
+    @apply flex h-12 cursor-pointer items-center justify-center rounded-[3px] font-serif text-[15px] font-bold transition-[transform,opacity,color,background-color] duration-200 ease-out disabled:cursor-not-allowed;
+    box-shadow: 0 2px 6px rgba(44, 24, 16, 0.16);
+  }
+
+  .cork-btn:hover:not(:disabled) {
+    @apply scale-[1.02];
+  }
+
+  .cork-btn:active:not(:disabled) {
+    @apply scale-[0.99];
+  }
+
+  .cork-btn--primary {
+    border: 1px solid rgba(107, 68, 35, 0.35);
+    background: #c17f24;
+    color: #fff8ec;
+  }
+
+  .cork-btn--primary:disabled {
+    border-color: rgba(44, 24, 16, 0.12);
+    background: #e0cba3;
+    color: rgba(44, 24, 16, 0.42);
+    box-shadow: none;
+    opacity: 1;
+  }
+
+  .cork-btn--danger {
+    border: 1.5px solid rgba(163, 40, 34, 0.5);
+    background: #f5edd9;
+    color: #a32822;
+  }
+
+  .cork-btn--ghost {
+    border: 1.5px solid rgba(44, 24, 16, 0.28);
+    background: rgba(255, 248, 236, 0.82);
+    color: var(--cork-ink);
+  }
+
+  .cork-btn--ghost:disabled {
+    opacity: 0.4;
+    box-shadow: none;
   }
 }
 

@@ -151,7 +151,7 @@ const startScenarioQuiz = () => {
 <template>
   <LearningLayout>
     <template #header>
-      <LearningPageHeader title="학습 시간표" />
+      <LearningPageHeader title="학습 시간표" subtitle="대단원별 학습을 이어가요" />
     </template>
 
     <p class="mb-3 font-pen text-[14px] text-[var(--cork-ink-muted)]">

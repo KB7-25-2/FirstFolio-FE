@@ -3,11 +3,11 @@
   --font-serif: 'Noto Serif KR', serif;
   --font-pen: 'Nanum Pen Script', cursive;
 
-  --color-auth-page: #0d1117;
-  --color-auth-title: #ffffff;
-  --color-auth-subtitle: #9ca3af;
-  --color-auth-tab: #f5edd9;
-  --color-auth-tab-muted: rgba(245, 237, 217, 0.45);
+  --color-auth-page: #d6bc8e;
+  --color-auth-title: #2c1810;
+  --color-auth-subtitle: rgba(44, 24, 16, 0.58);
+  --color-auth-tab: #2c1810;
+  --color-auth-tab-muted: rgba(44, 24, 16, 0.45);
   --color-auth-clip-border: #5a3820;
   --color-auth-paper-border: #d4b896;
   --color-auth-doc-ink: #3d1f08;
@@ -20,7 +20,7 @@
   --color-auth-cta: #c17f24;
   --color-auth-cta-text: #fff8ec;
   --color-auth-seal: rgba(139, 69, 19, 0.55);
-  --color-auth-footer: #6b7280;
+  --color-auth-footer: rgba(44, 24, 16, 0.48);
   --color-auth-method-card: rgba(255, 255, 255, 0.55);
   --color-auth-method-border: rgba(139, 100, 60, 0.25);
 
@@ -56,11 +56,21 @@
   --color-study-divider: rgba(0, 0, 0, 0.2);
   --color-study-score-label: rgba(0, 0, 0, 0.55);
   --color-study-tape: rgba(255, 242, 204, 0.55);
+  --color-study-quest-tape: rgba(255, 196, 168, 0.72);
   --color-study-sticker: #fffaed;
   --color-study-quest-surface: #ffecdd;
   --color-study-quest-border: #e0a07a;
-  --color-study-quest-tape: rgba(255, 196, 168, 0.72);
   --color-study-quest-continue: #c45c2a;
+
+  /* Memo push pins */
+  --color-pin-study: #5b8fd9;
+  --color-pin-quest: #e07a4a;
+  --color-pin-portfolio: #c17f24;
+  --color-pin-news: #e891a8;
+  --color-pin-red: #d4524a;
+  --color-pin-gold: #e2b84a;
+  --color-pin-needle: #9aa0a6;
+  --color-pin-needle-tip: #6b7075;
 
   /* PortfolioSummary */
   --color-portfolio-surface: #f5edd9;
@@ -209,6 +219,16 @@
   --study-quest-border: var(--color-study-quest-border);
   --study-quest-tape: var(--color-study-quest-tape);
   --study-quest-continue: var(--color-study-quest-continue);
+
+  /* Memo push pins */
+  --pin-study: var(--color-pin-study);
+  --pin-quest: var(--color-pin-quest);
+  --pin-portfolio: var(--color-pin-portfolio);
+  --pin-news: var(--color-pin-news);
+  --pin-red: var(--color-pin-red);
+  --pin-gold: var(--color-pin-gold);
+  --pin-needle: var(--color-pin-needle);
+  --pin-needle-tip: var(--color-pin-needle-tip);
 
   /* PortfolioSummary */
   --portfolio-surface: var(--color-portfolio-surface);

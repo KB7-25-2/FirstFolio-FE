@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { formatRelativeTime } from '@/utils/date.js'
+import MemoPin from '@/components/MemoPin.vue'
 
 const props = defineProps({
   /** @type {import('vue').PropType<import('@/types/news.js').FinancialNewsItem>} */
@@ -8,8 +9,8 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  /** 테이프 위치 */
-  tapeSide: {
+  /** 압정 위치 */
+  pinSide: {
     type: String,
     default: 'left',
     validator: (value) => ['left', 'right', 'none'].includes(value),
@@ -27,21 +28,11 @@ const relativeTime = computed(() => formatRelativeTime(props.item.published_at))
     class="memo-selectable relative w-full max-w-[344px] text-left"
     @click="$emit('select', item.financial_news_id)"
   >
-    <!-- 와시 테이프 (CSS) -->
-    <span
-      v-if="tapeSide !== 'none'"
-      class="pointer-events-none absolute z-20 h-[18px] w-[58px] border border-white/25 bg-[var(--news-tape)]"
-      :class="
-        tapeSide === 'left'
-          ? 'top-[-6px] left-2 -rotate-[6deg]'
-          : 'top-[-6px] right-2 rotate-[8deg]'
-      "
-      aria-hidden="true"
-    />
+    <MemoPin v-if="pinSide !== 'none'" :side="pinSide" tone="news" />
 
     <article
       class="relative flex h-[111px] w-full overflow-hidden rounded-[2px] bg-[var(--news-surface)] shadow-[0_3px_8px_rgba(0,0,0,0.35)]"
-      :class="tapeSide === 'right' ? 'rotate-[0.6deg]' : '-rotate-[0.8deg]'"
+      :class="pinSide === 'right' ? 'rotate-[0.6deg]' : '-rotate-[0.8deg]'"
     >
       <!-- 본문 -->
       <div class="flex min-w-0 flex-1 flex-col px-3 pt-2.5 pb-2">

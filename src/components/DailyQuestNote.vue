@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { getDashboard } from '@/services/dashboardService.js'
 import checkboxInProgress from '@/assets/study/checkbox-in-progress.svg'
 import BaseLoading from '@/components/BaseLoading.vue'
+import MemoPin from '@/components/MemoPin.vue'
 
 const router = useRouter()
 
@@ -75,10 +76,7 @@ const goDailyQuest = () => {
     @click="goDailyQuest"
     @keydown.enter="goDailyQuest"
   >
-    <div
-      class="pointer-events-none absolute top-[-7px] left-1/2 z-30 h-4 w-[64px] -translate-x-1/2 rotate-[6deg] border-[0.5px] border-white/30 bg-[var(--study-quest-tape)] shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
-      aria-hidden="true"
-    />
+    <MemoPin side="center" tone="quest" />
 
     <section
       class="relative overflow-hidden rounded-[3px] border-[0.8px] border-[var(--study-quest-border)] bg-[var(--study-quest-surface)] shadow-[0_4px_10px_rgba(0,0,0,0.28)]"

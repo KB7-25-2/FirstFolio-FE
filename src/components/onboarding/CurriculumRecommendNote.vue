@@ -73,7 +73,7 @@ const onHandlePointerUp = (event) => {
 </script>
 
 <template>
-  <LearningNotePaper ruled :show-tape="false" surface-class="bg-[#fffaed]">
+  <LearningNotePaper ruled :show-pin="false" surface-class="bg-[#fffaed]">
     <div class="px-4 pt-5 pb-4">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">

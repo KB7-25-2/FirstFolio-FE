@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import BaseLoading from '@/components/BaseLoading.vue'
+import MemoPin from '@/components/MemoPin.vue'
 
 const portfolioStore = usePortfolioStore()
 const userStore = useUserStore()
@@ -35,11 +36,7 @@ const goPortfolios = () => {
 
 <template>
   <div class="memo-selectable relative w-full max-w-[346px]">
-    <!-- 테이프 -->
-    <div
-      class="pointer-events-none absolute -top-2 left-1/2 z-20 h-4 w-[90px] -translate-x-1/2 rotate-3 border-[0.5px] border-white/25 bg-[var(--portfolio-tape)]"
-      aria-hidden="true"
-    />
+    <MemoPin side="center" tone="portfolio" />
 
     <!-- 포인트 상점 보드 -->
     <button

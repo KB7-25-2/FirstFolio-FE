@@ -64,7 +64,7 @@ const confirmLogout = async () => {
         <h1
           class="chalk-header__title min-w-0 font-pen text-[28px] leading-none font-normal text-[var(--chalk-text)]"
         >
-          {{ greeting }}
+          홈
         </h1>
         <button
           type="button"
@@ -83,6 +83,9 @@ const confirmLogout = async () => {
           <font-awesome-icon icon="fa-solid fa-arrow-right-from-bracket" class="text-[14px]" />
         </button>
       </div>
+      <p class="mt-1 truncate font-serif text-[11px] leading-tight text-[var(--chalk-text-faint)]">
+        {{ greeting }}
+      </p>
       <div
         class="chalk-header__stamp absolute top-1/2 right-5 flex -translate-y-1/2 rotate-5 items-center justify-center rounded px-2 py-[3px]"
         aria-hidden="true"

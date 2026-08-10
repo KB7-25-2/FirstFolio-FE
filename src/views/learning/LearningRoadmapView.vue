@@ -12,7 +12,7 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
 <template>
   <LearningLayout>
     <template #header>
-      <LearningPageHeader title="학습 로드맵" />
+      <LearningPageHeader title="학습 로드맵" subtitle="나만의 금융 커리큘럼" />
     </template>
 
     <BaseLoading v-if="isLoading" />
@@ -86,7 +86,7 @@ const { isLoading, error, foundationCard, coreCards, statusLabel, accentClass, o
             :disabled="item.status === 'LOCKED'"
             @click="openMainChapter(item)"
           >
-            <LearningNotePaper :surface-class="accentClass(item.accent)" :show-tape="true">
+            <LearningNotePaper :surface-class="accentClass(item.accent)" :show-pin="true">
               <div class="flex min-h-[150px] flex-col px-3 py-3">
                 <div class="flex items-start justify-between">
                   <span class="text-lg" aria-hidden="true">{{ item.icon }}</span>

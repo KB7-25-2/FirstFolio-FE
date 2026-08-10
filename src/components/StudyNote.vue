@@ -6,6 +6,7 @@ import { useStudyStore } from '@/store/studyStore.js'
 import checkboxInProgress from '@/assets/study/checkbox-in-progress.svg'
 import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
+import MemoPin from '@/components/MemoPin.vue'
 
 const studyStore = useStudyStore()
 const router = useRouter()
@@ -63,10 +64,7 @@ const goLearning = () => {
       @click="goLearning"
       @keydown.enter="goLearning"
     >
-      <div
-        class="pointer-events-none absolute top-[-8px] left-3 z-20 h-4 w-[70px] -rotate-[4deg] border-[0.5px] border-white/25 bg-[var(--study-tape)]"
-        aria-hidden="true"
-      />
+      <MemoPin side="left" tone="study" />
 
       <div
         class="pointer-events-none absolute -top-5 -right-1 z-20 size-11 rotate-8 overflow-hidden rounded-[22px] border-[2.5px] border-white bg-[var(--study-sticker)] shadow-[0_3px_6px_rgba(0,0,0,0.3)]"

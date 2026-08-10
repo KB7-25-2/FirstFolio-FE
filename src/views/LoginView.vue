@@ -34,10 +34,7 @@ const {
 </script>
 
 <template>
-  <div
-    class="flex min-h-screen items-start justify-center bg-[var(--auth-page)]"
-    :aria-busy="isLoading"
-  >
+  <div class="cork-board flex min-h-screen items-start justify-center" :aria-busy="isLoading">
     <div class="mobile-frame relative flex flex-col items-center overflow-hidden px-3 pt-10 pb-6">
       <AuthPageHeader class="shrink-0" />
 

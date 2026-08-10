@@ -35,7 +35,7 @@ defineEmits(['select-period', 'start-scenario'])
       />
     </div>
 
-    <LearningNotePaper surface-class="bg-[#f5edd9]" :show-tape="true">
+    <LearningNotePaper surface-class="bg-[#f5edd9]" :show-pin="true">
       <div class="relative px-4 pt-5 pb-4">
         <div class="flex items-start justify-between gap-2 pr-10">
           <div class="min-w-0">

@@ -1,12 +1,14 @@
 <script setup>
+import MemoPin from '@/components/MemoPin.vue'
+
 defineProps({
   /** 배경색 (포스트잇/노트지) */
   surfaceClass: {
     type: String,
     default: 'bg-[#f5edd9]',
   },
-  /** 테이프 표시 */
-  showTape: {
+  /** 압정 표시 */
+  showPin: {
     type: Boolean,
     default: true,
   },
@@ -15,16 +17,17 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  /** 압정 색 톤 */
+  pinTone: {
+    type: String,
+    default: 'study',
+  },
 })
 </script>
 
 <template>
   <div class="relative w-full">
-    <div
-      v-if="showTape"
-      class="pointer-events-none absolute top-[-8px] left-1/2 z-20 h-4 w-[70px] -translate-x-1/2 -rotate-[2deg] border-[0.5px] border-white/25 bg-[var(--study-tape)]"
-      aria-hidden="true"
-    />
+    <MemoPin v-if="showPin" side="center" :tone="pinTone" />
 
     <div
       class="relative overflow-hidden rounded-[2px] border border-[rgba(212,184,150,0.55)] shadow-[0_4px_14px_rgba(0,0,0,0.28)]"

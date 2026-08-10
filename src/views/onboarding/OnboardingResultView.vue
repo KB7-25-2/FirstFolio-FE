@@ -13,7 +13,7 @@ const goCurriculum = () => {
 </script>
 
 <template>
-  <div class="mx-auto flex mobile-frame flex-col overflow-hidden bg-[#0d1117]">
+  <div class="cork-board mx-auto flex mobile-frame flex-col overflow-hidden">
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-10 pb-3">
       <ChapterProgress chapter-label="DIAGNOSIS" title="진단 결과" :current="4" :total="4" />
 
@@ -23,11 +23,7 @@ const goCurriculum = () => {
     </div>
 
     <div class="flex shrink-0 px-4 pt-2 pb-6">
-      <button
-        type="button"
-        class="btn-hover flex h-12 w-full items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec]"
-        @click="goCurriculum"
-      >
+      <button type="button" class="cork-btn cork-btn--primary flex-1" @click="goCurriculum">
         추천 보기 →
       </button>
     </div>

@@ -8,6 +8,11 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  /** 제목 아래 보조 설명 */
+  subtitle: {
+    type: String,
+    default: '',
+  },
   /** 날짜 라벨. 미전달 시 오늘 날짜 */
   dateLabel: {
     type: String,
@@ -24,7 +29,7 @@ const resolvedDate = computed(() => props.dateLabel || formatKoreanDate())
 </script>
 
 <template>
-  <header class="chalk-header shrink-0 px-5">
+  <header class="chalk-header m-0 w-full shrink-0 px-5">
     <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
       {{ resolvedDate }}
     </p>
@@ -38,6 +43,12 @@ const resolvedDate = computed(() => props.dateLabel || formatKoreanDate())
         >
           {{ title }}
         </h1>
+        <p
+          v-if="subtitle"
+          class="mt-1 truncate font-serif text-[11px] leading-tight text-[var(--chalk-text-faint)]"
+        >
+          {{ subtitle }}
+        </p>
       </div>
       <div v-if="$slots.badge || $slots.actions" class="shrink-0">
         <slot name="badge" />
