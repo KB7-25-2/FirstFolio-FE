@@ -168,7 +168,9 @@ const goLearning = () => {
               현재 학습 현황
             </p>
             <header class="flex h-9 items-end gap-2">
-              <h2 class="min-w-0 flex-1 font-pen text-[26px] leading-none text-[#212b5c]">
+              <h2
+                class="min-w-0 flex-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]"
+              >
                 {{ chapterTitle || '학습 현황' }}
               </h2>
             </header>
@@ -181,7 +183,7 @@ const goLearning = () => {
               :aria-label="`${reviewLesson.title} 복습하기`"
               @click="goReviewLesson"
             >
-              <p class="font-pen text-[16px] leading-none text-[#3d6b38]">
+              <p class="font-serif font-bold text-[16px] leading-none text-[#3d6b38]">
                 다시 한 번 복습해볼까요?
               </p>
               <div class="mt-2 flex items-center justify-between gap-2">
@@ -224,7 +226,7 @@ const goLearning = () => {
               >
                 <div class="flex w-8 shrink-0 items-start justify-center pt-1">
                   <span
-                    class="flex size-8 items-center justify-center rounded-full border-[0.5px] font-pen text-[15px] leading-none"
+                    class="flex size-8 items-center justify-center rounded-full border-[0.5px] font-serif text-[15px] leading-none"
                     :class="{
                       'border-[rgba(89,140,82,0.75)] bg-[#e8f5e4] text-[#598c52]':
                         node.role === 'prev',

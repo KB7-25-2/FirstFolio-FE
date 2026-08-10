@@ -73,10 +73,10 @@ const goPortfolios = () => {
           <p class="font-serif text-[10px] text-[var(--portfolio-muted)]">현재 포트폴리오</p>
 
           <div class="flex items-baseline gap-1.5">
-            <p class="font-pen text-[34px] leading-none text-[var(--portfolio-ink)]">
+            <p class="font-serif font-bold text-[22px] leading-none text-[var(--portfolio-ink)]">
               {{ totalAssetsDisplay }}
             </p>
-            <p class="font-serif text-[13px] text-[var(--portfolio-unit)]">원</p>
+            <p class="font-serif text-[11px] text-[var(--portfolio-unit)]">원</p>
           </div>
 
           <!-- 비중 바 -->
@@ -114,7 +114,7 @@ const goPortfolios = () => {
         class="pointer-events-none absolute top-11 right-3 z-10 flex max-w-[42%] items-center gap-1.5 rounded-[14px] border-[0.5px] border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
         aria-hidden="true"
       >
-        <span class="font-pen text-[12px] leading-none text-[var(--portfolio-chip-label)]"
+        <span class="font-serif text-[12px] leading-none text-[var(--portfolio-chip-label)]"
           >성향</span
         >
         <span

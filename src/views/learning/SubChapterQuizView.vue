@@ -48,7 +48,7 @@ const {
         :progress-total="quizQuestionTotal"
       >
         <template #badge>
-          <span class="learning-header__badge font-pen text-[11px]" :class="statusBadge.class">
+          <span class="learning-header__badge font-serif text-[11px]" :class="statusBadge.class">
             {{ statusBadge.label }}
           </span>
         </template>
@@ -120,7 +120,7 @@ const {
           :explanation="quizCurrentQuestion.explanation"
           :hint="feedbackHint"
         />
-        <p v-else class="mt-8 font-pen text-[15px] text-[rgba(33,43,92,0.75)]">
+        <p v-else class="mt-8 font-serif text-[15px] text-[rgba(33,43,92,0.75)]">
           보기 번호를 골라 답을 쓰세요
         </p>
       </QuizExamPaper>

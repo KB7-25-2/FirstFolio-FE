@@ -37,7 +37,7 @@ const onSelect = (id) => {
 
     <div class="relative z-[1] px-3.5 pt-3.5 pb-4">
       <div class="mb-3 flex items-end justify-between gap-2">
-        <h2 class="scrap-board__title font-pen text-[22px] leading-none font-normal">
+        <h2 class="scrap-board__title font-serif text-[18px] leading-none font-bold">
           오늘의 금융 뉴스 스크랩
         </h2>
         <span class="shrink-0 font-serif text-[10px] text-[var(--cork-ink-muted)]">

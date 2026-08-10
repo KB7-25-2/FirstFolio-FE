@@ -49,7 +49,7 @@ const {
               <p class="font-serif text-[10px] text-[rgba(139,100,60,0.55)]">
                 처음 만나는 금융 학습
               </p>
-              <p class="mt-1.5 font-pen text-[24px] leading-none text-[#212b5c]">
+              <p class="mt-1.5 font-serif font-bold text-[24px] leading-none text-[#212b5c]">
                 나만의 금융 로드맵을 만들어요
               </p>
               <p class="mt-2 font-serif text-[11px] leading-relaxed text-[rgba(61,31,8,0.7)]">
@@ -77,7 +77,7 @@ const {
               <p class="font-serif text-[10px] tracking-wide text-[rgba(139,100,60,0.55)]">
                 TUTORIAL · 진행 순서
               </p>
-              <h2 class="mt-1 font-pen text-[26px] leading-none text-[#212b5c]">
+              <h2 class="mt-1 font-serif font-bold text-[26px] leading-none text-[#212b5c]">
                 네 단계만 따라오세요
               </h2>
 
@@ -146,7 +146,7 @@ const {
             </div>
             <div class="relative px-3.5 py-3">
               <p class="font-serif text-[9px] text-[rgba(139,100,60,0.55)]">TIP</p>
-              <p class="mt-1 font-pen text-[18px] leading-tight text-[#212b5c]">
+              <p class="mt-1 font-serif font-bold text-[18px] leading-tight text-[#212b5c]">
                 틀려도 괜찮아요. 결과는 학습 추천에만 쓰여요.
               </p>
             </div>

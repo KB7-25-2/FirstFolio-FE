@@ -583,8 +583,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-family: var(--font-pen, cursive);
+    font-family: var(--font-serif, serif);
     font-size: 17px;
+    font-weight: 700;
     line-height: 1.15;
     color: #212b5c;
   }

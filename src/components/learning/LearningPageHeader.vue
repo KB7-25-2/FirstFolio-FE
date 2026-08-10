@@ -74,7 +74,7 @@ const showProgress = computed(() => isQuiz.value && props.progressTotal > 0)
           {{ resolvedEyebrow }}
         </p>
         <h1
-          class="font-pen leading-none text-[#212b5c]"
+          class="font-serif font-bold leading-none text-[#212b5c]"
           :class="[resolvedEyebrow ? 'mt-1' : '', isQuiz ? 'text-[26px]' : 'text-[28px]']"
         >
           {{ title }}

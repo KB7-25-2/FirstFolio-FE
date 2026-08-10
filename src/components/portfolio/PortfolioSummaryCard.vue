@@ -46,7 +46,7 @@ const activeHoldingCount = computed(
     class="rounded-2xl border-[0.5px] border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
   >
     <span
-      class="mb-2 inline-block rounded-full bg-white/10 px-2 py-0.5 font-pen text-xs text-[var(--pf-highlight)]"
+      class="mb-2 inline-block rounded-full bg-white/10 px-2 py-0.5 font-serif font-bold text-xs text-[var(--pf-highlight)]"
     >
       보유 자산 현황
     </span>

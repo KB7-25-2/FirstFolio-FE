@@ -53,9 +53,11 @@ const goPointMarket = () => {
             <p class="font-serif text-[10px] font-bold tracking-wide text-[rgba(193,127,36,0.85)]">
               포인트 상점
             </p>
-            <p class="mt-1 font-pen text-[26px] leading-none text-[var(--portfolio-shop)]">
+            <p
+              class="mt-1 font-serif font-bold text-[22px] leading-none text-[var(--portfolio-shop)]"
+            >
               {{ pointBalanceDisplay }}
-              <span class="font-serif text-[13px] font-bold">P</span>
+              <span class="font-serif text-[12px] font-bold">P</span>
             </p>
             <p class="mt-1.5 font-serif text-[11px] text-[rgba(41,33,26,0.55)]">
               모은 포인트로 혜택을 바꿔보세요

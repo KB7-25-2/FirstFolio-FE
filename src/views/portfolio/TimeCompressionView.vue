@@ -68,7 +68,7 @@ watch(
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden px-2">
     <div class="flex shrink-0 items-baseline justify-between">
-      <p class="font-pen text-sm text-[var(--pf-highlight)]">상품별 시간 압축 비교</p>
+      <p class="font-serif font-bold text-sm text-[var(--pf-highlight)]">상품별 시간 압축 비교</p>
       <p class="text-[10px] text-[var(--pf-text-muted)]">옆으로 넘겨서 비교해보세요 →</p>
     </div>
 

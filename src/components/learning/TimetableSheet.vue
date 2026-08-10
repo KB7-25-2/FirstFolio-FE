@@ -42,7 +42,9 @@ defineEmits(['select-period', 'start-scenario'])
             <p class="font-serif text-[10px] font-black text-[rgba(139,100,60,0.55)]">
               {{ categoryLabel }}
             </p>
-            <h2 class="mt-1 font-pen text-[28px] leading-none text-[#212b5c]">{{ title }}</h2>
+            <h2 class="mt-1 font-serif font-bold text-[28px] leading-none text-[#212b5c]">
+              {{ title }}
+            </h2>
             <p class="mt-2 font-serif text-[11px] text-[rgba(139,100,60,0.7)]">{{ description }}</p>
           </div>
           <div
@@ -61,7 +63,9 @@ defineEmits(['select-period', 'start-scenario'])
         </p>
 
         <div v-if="chapterLocked" class="py-10 text-center">
-          <p class="font-pen text-[18px] text-[rgba(139,100,60,0.55)]">아직 잠긴 대단원이에요</p>
+          <p class="font-serif font-bold text-[18px] text-[rgba(139,100,60,0.55)]">
+            아직 잠긴 대단원이에요
+          </p>
           <p class="mt-1 font-serif text-[11px] text-[rgba(139,100,60,0.4)]">
             선행 대단원을 먼저 수료해 주세요
           </p>
@@ -110,7 +114,7 @@ defineEmits(['select-period', 'start-scenario'])
 
         <p
           v-if="!chapterLocked && periods.length && !showScenarioCta && showScrollHint"
-          class="pointer-events-none absolute bottom-3 left-0 w-full text-center font-pen text-[13px] text-[rgba(139,100,60,0.55)]"
+          class="pointer-events-none absolute bottom-3 left-0 w-full text-center font-serif text-[13px] text-[rgba(139,100,60,0.55)]"
         >
           {{ scrollHint }}
         </p>

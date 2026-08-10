@@ -27,7 +27,7 @@ defineEmits(['update:modelValue'])
     <span class="relative size-[11px] rounded-[2px] border-[0.5px] border-[rgba(139,100,60,0.6)]">
       <span
         v-if="modelValue"
-        class="absolute top-[-7px] left-px font-pen text-[14px] leading-none text-[var(--auth-hand)]"
+        class="absolute top-[-7px] left-px font-serif font-bold text-[14px] leading-none text-[var(--auth-hand)]"
       >
         ✓
       </span>

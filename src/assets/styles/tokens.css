@@ -1,7 +1,6 @@
 @theme {
-  --font-sans: 'Noto Sans KR', sans-serif;
-  --font-serif: 'Noto Serif KR', serif;
-  --font-pen: 'Nanum Pen Script', cursive;
+  --font-sans: 'Gowun Dodum', sans-serif;
+  --font-serif: 'Gowun Batang', serif;
 
   --color-auth-page: #d6bc8e;
   --color-auth-title: #2c1810;

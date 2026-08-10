@@ -238,7 +238,7 @@ watch(
                 <p class="font-serif text-[10px] tracking-wide text-[rgba(139,100,60,0.55)]">
                   전체 진행
                 </p>
-                <p class="mt-1 font-pen text-[22px] leading-none text-[#212b5c]">
+                <p class="mt-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]">
                   {{ overall.done }}
                   <span class="text-[16px] text-[rgba(33,43,92,0.45)]"
                     >/ {{ overall.total }} 교시</span
@@ -293,10 +293,12 @@ watch(
               {{ focusStage.icon }}
             </span>
             <div class="min-w-0 flex-1">
-              <p class="font-pen text-[11px] leading-none text-[rgba(33,43,92,0.55)]">
+              <p class="font-serif text-[11px] leading-none text-[rgba(33,43,92,0.55)]">
                 {{ orderLabel(focusStageIndex) }} · {{ statusLabel(focusStage.status) }}
               </p>
-              <p class="mt-0.5 truncate font-pen text-[18px] leading-none text-[#212b5c]">
+              <p
+                class="mt-0.5 truncate font-serif font-bold text-[18px] leading-none text-[#212b5c]"
+              >
                 {{ focusStage.title }}
               </p>
             </div>
@@ -341,14 +343,14 @@ watch(
                     </span>
                     <div class="min-w-0 flex-1">
                       <div class="flex items-start justify-between gap-2">
-                        <p class="font-pen text-[13px] leading-none text-[rgba(33,43,92,0.5)]">
+                        <p class="font-serif text-[13px] leading-none text-[rgba(33,43,92,0.5)]">
                           {{ orderLabel(stageIndex) }} · {{ statusLabel(stage.status) }}
                         </p>
                         <p class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24]">
                           {{ periodDoneCount(stage) }}/{{ periodTotalCount(stage) }}
                         </p>
                       </div>
-                      <h2 class="mt-1 font-pen text-[22px] leading-none text-[#212b5c]">
+                      <h2 class="mt-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]">
                         {{ stage.title }}
                       </h2>
                       <p

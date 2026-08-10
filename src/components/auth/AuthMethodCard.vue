@@ -36,7 +36,7 @@ defineEmits(['select'])
     <span
       class="mt-0.5 flex size-[14px] shrink-0 items-center justify-center rounded-[2px] border-[0.5px] border-[rgba(139,100,60,0.6)]"
     >
-      <span v-if="selected" class="font-pen text-[12px] leading-none text-[var(--auth-hand)]"
+      <span v-if="selected" class="font-serif text-[12px] leading-none text-[var(--auth-hand)]"
         >✓</span
       >
     </span>

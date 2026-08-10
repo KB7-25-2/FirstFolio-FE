@@ -25,7 +25,7 @@ defineEmits(['open-learn-more'])
       <p class="font-serif text-[9px] font-black tracking-wide text-[rgba(139,100,60,0.5)]">
         TEXTBOOK · 핵심 개념
       </p>
-      <p class="mt-1 font-pen text-[28px] leading-tight text-[#212b5c]">
+      <p class="mt-1 font-serif font-bold text-[28px] leading-tight text-[#212b5c]">
         {{ title }}
       </p>
     </div>
