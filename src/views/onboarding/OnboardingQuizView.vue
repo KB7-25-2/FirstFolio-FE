@@ -35,14 +35,18 @@ const scorePerQuestion = computed(() =>
 
 <template>
   <div class="cork-board mx-auto flex mobile-frame flex-col overflow-hidden">
-    <LearningLayout immersive bleed-header>
+    <LearningLayout immersive>
       <template #header>
-        <LearningPageHeader title="시험지" subtitle="FIRSTFOLIO · DIAGNOSIS">
+        <LearningPageHeader
+          variant="quiz"
+          title="시험지"
+          :subtitle="subject"
+          eyebrow="FIRSTFOLIO · DIAGNOSIS"
+          :progress-current="questionNumber"
+          :progress-total="questionTotal"
+        >
           <template #badge>
-            <span
-              class="chalk-header__stamp rotate-3 rounded px-2 py-0.5 font-pen text-[12px]"
-              :class="statusBadge.class"
-            >
+            <span class="learning-header__badge font-pen text-[11px]" :class="statusBadge.class">
               {{ statusBadge.label }}
             </span>
           </template>

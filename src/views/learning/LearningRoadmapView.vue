@@ -26,6 +26,9 @@ const listRef = ref(null)
 /** 스크롤로 보이는 대단원 (상단 강조) */
 const focusStageIndex = ref(0)
 
+/** `scroll-mt-[3.75rem]` — 스크롤 스파이 마커와 scrollIntoView 오프셋을 맞춤 */
+const SCROLL_SPY_OFFSET = 60
+
 const orderLabel = (index) => String(index + 1).padStart(2, '0')
 
 const periodDomId = (stage, period) =>
@@ -99,21 +102,29 @@ const scrollToElement = (id, behavior = 'smooth') => {
 const scrollSpyLocked = ref(false)
 /** @type {ReturnType<typeof setTimeout> | null} */
 let scrollSpyUnlockTimer = null
+/** 프로그램matic 스크롤 직후 스파이 대신 유지할 대단원 인덱스 */
+let pendingFocusStageIndex = null
 
-const unlockScrollSpy = () => {
+const unlockScrollSpy = (runScrollSpy = true) => {
   scrollSpyLocked.value = false
   if (scrollSpyUnlockTimer != null) {
     clearTimeout(scrollSpyUnlockTimer)
     scrollSpyUnlockTimer = null
   }
-  updateFocusFromScroll()
+  if (pendingFocusStageIndex != null) {
+    focusStageIndex.value = pendingFocusStageIndex
+    pendingFocusStageIndex = null
+    return
+  }
+  if (runScrollSpy) updateFocusFromScroll()
 }
 
-const lockScrollSpyTemporarily = (ms = 500) => {
+const lockScrollSpyTemporarily = (ms = 500, preserveFocusIndex = null) => {
   scrollSpyLocked.value = true
+  pendingFocusStageIndex = preserveFocusIndex
   if (scrollSpyUnlockTimer != null) clearTimeout(scrollSpyUnlockTimer)
   scrollSpyUnlockTimer = setTimeout(() => {
-    unlockScrollSpy()
+    unlockScrollSpy(preserveFocusIndex == null)
   }, ms)
 }
 
@@ -123,7 +134,7 @@ const updateFocusFromScroll = () => {
   const root = listRef.value
   if (!root || !stages.value.length) return
 
-  const marker = root.getBoundingClientRect().top + 56
+  const marker = root.getBoundingClientRect().top + SCROLL_SPY_OFFSET
   let current = 0
 
   for (let index = 0; index < stages.value.length; index += 1) {
@@ -141,11 +152,11 @@ const updateFocusFromScroll = () => {
 const jumpToStage = async (index) => {
   focusStageIndex.value = index
   selectStage(index)
-  lockScrollSpyTemporarily(550)
+  lockScrollSpyTemporarily(700, index)
   await nextTick()
   const stage = stages.value[index]
   if (!stage) {
-    unlockScrollSpy()
+    unlockScrollSpy(false)
     return
   }
   document
@@ -163,7 +174,7 @@ const focusCurrentPeriod = async () => {
   if (target) {
     if (target.stageIndex >= 0) {
       focusStageIndex.value = target.stageIndex
-      lockScrollSpyTemporarily(400)
+      lockScrollSpyTemporarily(400, target.stageIndex)
       if (target.stageIndex !== activeStageIndex.value) {
         selectStage(target.stageIndex)
         await nextTick()
@@ -174,7 +185,10 @@ const focusCurrentPeriod = async () => {
   }
 
   if (focusMainChapterId.value != null) {
-    lockScrollSpyTemporarily(400)
+    const chapterIndex = stages.value.findIndex(
+      (stage) => stage.mainChapterId === focusMainChapterId.value,
+    )
+    lockScrollSpyTemporarily(400, chapterIndex >= 0 ? chapterIndex : null)
     scrollToElement(`chapter-${focusMainChapterId.value}`, 'auto')
   }
 }

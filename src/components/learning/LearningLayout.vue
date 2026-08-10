@@ -8,11 +8,6 @@ defineProps({
     type: Boolean,
     default: false,
   },
-  /** 헤더를 좌우·상단 풀블리드로 (칠판 헤더용) */
-  bleedHeader: {
-    type: Boolean,
-    default: false,
-  },
   /** 스크롤 패널 추가 클래스 (snap 등) */
   contentClass: {
     type: String,
@@ -24,16 +19,16 @@ defineProps({
 <template>
   <div
     class="cork-board flex h-full min-h-0 flex-col overflow-hidden"
-    :class="immersive && !bleedHeader ? 'px-4 pt-4' : ''"
+    :class="immersive ? 'px-4 pt-4' : ''"
   >
-    <div class="shrink-0" :class="bleedHeader ? 'w-full' : ''">
+    <div class="shrink-0">
       <slot name="header" />
     </div>
     <div
       data-scroll-reveal-root
       class="flex min-h-0 w-full max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto"
       :class="[
-        immersive ? (bleedHeader ? 'px-4 pt-4 pb-2' : 'pt-4 pb-2') : 'pt-4 px-5',
+        immersive ? 'pt-4 pb-2' : 'pt-4 px-5',
         !immersive && !$slots.footer ? 'nav-scroll-pad' : '',
         contentClass,
       ]"
@@ -43,7 +38,7 @@ defineProps({
     <div
       v-if="$slots.footer"
       class="shrink-0"
-      :class="immersive ? (bleedHeader ? 'px-4 pb-5' : 'pb-6') : 'nav-dock-pad px-5 pt-1'"
+      :class="immersive ? 'pb-6' : 'nav-dock-pad px-5 pt-1'"
     >
       <slot name="footer" />
     </div>

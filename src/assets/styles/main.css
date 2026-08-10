@@ -345,59 +345,29 @@
     background-blend-mode: soft-light, multiply, normal, normal, normal;
   }
 
-  /* 칠판 헤더 — 코르크보드 화면 상단 */
-  .chalk-header {
-    position: relative;
-    box-sizing: border-box;
-    display: flex;
-    width: 100%;
-    height: 96px;
-    min-height: 96px;
-    max-height: 96px;
-    margin: 0;
-    flex-direction: column;
-    justify-content: center;
-    color: var(--chalk-text);
-    border-bottom: 5px solid var(--chalk-frame-deep);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 220, 170, 0.28),
-      inset 0 -1px 0 rgba(40, 22, 8, 0.35);
-    background-color: var(--chalk-surface);
-    background-image:
-      linear-gradient(
-        180deg,
-        var(--chalk-frame-light) 0,
-        var(--chalk-frame) 4px,
-        var(--chalk-frame-deep) 7px,
-        transparent 8px
-      ),
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='120'%3E%3Cfilter id='dust'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.92 0 0 0 0 0.9 0 0 0 0 0.78 0 0 0 0.22 0'/%3E%3C/filter%3E%3Crect width='180' height='120' filter='url(%23dust)' opacity='0.35'/%3E%3C/svg%3E"),
-      radial-gradient(ellipse 90% 70% at 18% 20%, rgba(255, 255, 240, 0.08), transparent 55%),
-      radial-gradient(ellipse 70% 60% at 88% 80%, rgba(0, 0, 0, 0.22), transparent 50%),
-      linear-gradient(
-        165deg,
-        var(--chalk-surface-light) 0%,
-        var(--chalk-surface) 48%,
-        var(--chalk-surface-deep) 100%
-      );
-    background-size:
-      100% 8px,
-      180px 120px,
-      100% 100%,
-      100% 100%,
-      100% 100%;
-    background-repeat: no-repeat, repeat, no-repeat, no-repeat, no-repeat;
+  /* 학습 화면 페이지 헤더 */
+  .learning-header__progress-track {
+    height: 4px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: rgba(44, 24, 16, 0.12);
   }
 
-  .chalk-header__title {
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  .learning-header__progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: #c17f24;
+    transition: width 0.25s ease;
   }
 
-  .chalk-header__stamp {
-    border: 0.5px dashed var(--chalk-stamp-border);
-    color: var(--chalk-stamp);
-    text-shadow: 0 0 0.5px rgba(240, 217, 160, 0.4);
-    background: rgba(240, 217, 160, 0.06);
+  .learning-header__badge {
+    display: inline-block;
+    border-width: 0.5px;
+    border-style: solid;
+    border-radius: 9999px;
+    padding: 4px 10px;
+    font-weight: 600;
+    background: rgba(255, 248, 236, 0.82);
   }
 
   /* 뉴스 스크랩 보드 — 크라프트지 게시판 */
