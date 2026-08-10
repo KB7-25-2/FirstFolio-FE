@@ -28,10 +28,11 @@ describe('studyService + studyStore (integration)', () => {
 })
 
 describe('AppNavbar (integration)', () => {
-  it('4개 탭 라벨을 렌더링한다', async () => {
+  it('5개 탭 라벨을 렌더링한다', async () => {
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
+        { path: '/daily', name: 'daily', component: { template: '<div />' } },
         { path: '/home', name: 'home', component: { template: '<div />' } },
         { path: '/learning', name: 'learning', component: { template: '<div />' } },
         { path: '/portfolios', name: 'portfolios', component: { template: '<div />' } },
@@ -48,8 +49,9 @@ describe('AppNavbar (integration)', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('홈')
+    expect(wrapper.text()).toContain('데일리')
     expect(wrapper.text()).toContain('학습')
+    expect(wrapper.text()).toContain('홈')
     expect(wrapper.text()).toContain('포트폴리오')
     expect(wrapper.text()).toContain('상점')
   })

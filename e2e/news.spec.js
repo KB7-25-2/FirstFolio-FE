@@ -1,19 +1,19 @@
 import { test, expect } from '@playwright/test'
 import { seedHomeSession, skipUnlessChromium } from './helpers/authSession.js'
 
-test.describe('홈 금융 뉴스 스크랩 (UI)', () => {
+test.describe('데일리 금융 뉴스 스크랩 (UI)', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     skipUnlessChromium(testInfo)
     await seedHomeSession(page)
   })
 
-  test('홈에 뉴스 스크랩 섹션이 보인다', async ({ page }) => {
-    await page.goto('/home')
+  test('데일리 탭에 뉴스 스크랩 섹션이 보인다', async ({ page }) => {
+    await page.goto('/daily')
     await expect(page.getByText('오늘의 금융 뉴스 스크랩')).toBeVisible()
   })
 
   test('뉴스 카드 제목과 이미지가 보인다', async ({ page }) => {
-    await page.goto('/home')
+    await page.goto('/daily')
 
     const section = page.getByRole('region', { name: '오늘의 금융 뉴스 스크랩' })
     await expect(section).toBeVisible()
@@ -24,7 +24,7 @@ test.describe('홈 금융 뉴스 스크랩 (UI)', () => {
   })
 
   test('뉴스 카드를 클릭하면 상세 모달이 열린다', async ({ page }) => {
-    await page.goto('/home')
+    await page.goto('/daily')
 
     const firstCard = page
       .getByRole('region', { name: '오늘의 금융 뉴스 스크랩' })

@@ -13,8 +13,9 @@ test.describe('로그인 · 홈 네비게이션 (UI)', () => {
     await page.goto('/home')
 
     const nav = page.getByRole('navigation')
-    await expect(nav.getByRole('button', { name: '홈', exact: true })).toBeVisible()
+    await expect(nav.getByRole('button', { name: '데일리', exact: true })).toBeVisible()
     await expect(nav.getByRole('button', { name: '학습', exact: true })).toBeVisible()
+    await expect(nav.getByRole('button', { name: '홈', exact: true })).toBeVisible()
     await expect(nav.getByRole('button', { name: '포트폴리오', exact: true })).toBeVisible()
     await expect(nav.getByRole('button', { name: '상점', exact: true })).toBeVisible()
   })
