@@ -109,7 +109,7 @@ const handleBuyConfirm = async (amount) => {
 
     <p v-if="store.error" class="shrink-0 text-sm text-[var(--pf-negative)]">{{ store.error }}</p>
 
-    <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+    <div class="nav-scroll-pad min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <div
         v-if="filteredProducts.length"
         class="rounded-2xl border border-[var(--pf-card-border)] bg-white/8"

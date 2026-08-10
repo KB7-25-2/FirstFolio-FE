@@ -44,7 +44,7 @@ const handleResetConfirm = async () => {
 
 <template>
   <div
-    class="relative flex h-full min-h-0 flex-col gap-4 overflow-hidden px-5 pt-6 pb-3 text-[var(--pf-text)]"
+    class="relative flex h-full min-h-0 flex-col gap-4 overflow-hidden px-5 pt-6 text-[var(--pf-text)]"
   >
     <img
       :src="portfolioBg"

@@ -26,14 +26,17 @@ defineProps({
     </div>
     <div
       class="flex min-h-0 w-full max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto"
-      :class="immersive ? (bleedHeader ? 'px-4 pt-4 pb-2' : 'mt-4 pb-2') : 'mt-4 px-5 pb-3'"
+      :class="[
+        immersive ? (bleedHeader ? 'px-4 pt-4 pb-2' : 'mt-4 pb-2') : 'mt-4 px-5',
+        !immersive && !$slots.footer ? 'nav-scroll-pad' : '',
+      ]"
     >
       <slot />
     </div>
     <div
       v-if="$slots.footer"
       class="shrink-0"
-      :class="immersive ? (bleedHeader ? 'px-4 pb-5' : 'pb-6') : 'px-5 pb-3'"
+      :class="immersive ? (bleedHeader ? 'px-4 pb-5' : 'pb-6') : 'nav-dock-pad px-5 pt-1'"
     >
       <slot name="footer" />
     </div>

@@ -12,6 +12,11 @@ const hideNavbar = computed(() => route.matched.some((record) => record.meta.hid
     <main class="relative z-0 min-h-0 flex-1 overflow-y-auto">
       <RouterView />
     </main>
-    <AppNavbar v-if="!hideNavbar" />
+    <div v-if="!hideNavbar" class="nav-dock pointer-events-none absolute inset-x-0 bottom-0 z-20">
+      <div class="nav-content-blur" aria-hidden="true" />
+      <div class="pointer-events-auto">
+        <AppNavbar />
+      </div>
+    </div>
   </div>
 </template>

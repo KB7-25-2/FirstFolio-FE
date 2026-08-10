@@ -23,7 +23,7 @@ const todayLabel = computed(() => formatKoreanDate())
       </p>
     </header>
 
-    <div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-4 pb-8">
+    <div class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-4">
       <div class="flex justify-center">
         <DailyQuestNote />
       </div>

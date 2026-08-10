@@ -72,7 +72,7 @@ const handleRedeem = async () => {
 </script>
 
 <template>
-  <div class="relative flex h-full min-h-0 flex-col gap-4 overflow-hidden px-5 pt-6 pb-3">
+  <div class="relative flex h-full min-h-0 flex-col gap-4 overflow-hidden px-5 pt-6">
     <img
       :src="portfolioBg"
       alt=""
@@ -136,7 +136,7 @@ const handleRedeem = async () => {
           </p>
         </div>
 
-        <div class="mt-3 min-h-0 flex-1 overflow-y-scroll overscroll-contain px-2 pb-1">
+        <div class="nav-scroll-pad mt-3 min-h-0 flex-1 overflow-y-scroll overscroll-contain px-2">
           <div v-if="filteredGifticons.length" class="grid grid-cols-2 gap-3">
             <GifticonGridItem
               v-for="gifticon in filteredGifticons"
@@ -174,7 +174,7 @@ const handleRedeem = async () => {
     </template>
 
     <template v-else>
-      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div class="nav-scroll-pad min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <ul v-if="gifticonStore.redemptionHistory.length" class="flex flex-col gap-2">
           <RedemptionHistoryItem
             v-for="order in gifticonStore.redemptionHistory"

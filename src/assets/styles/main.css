@@ -51,6 +51,9 @@
   /* Navbar — dvh 기반 반응형 */
   .nav-bar {
     height: clamp(52px, 8dvh, 72px);
+    background: color-mix(in srgb, var(--nav-bg) 78%, transparent);
+    backdrop-filter: blur(18px) saturate(1.1);
+    -webkit-backdrop-filter: blur(18px) saturate(1.1);
   }
 
   .nav-icon-wrap {
@@ -90,6 +93,51 @@
   .nav-home-fab__icon {
     width: clamp(18px, 2.6dvh, 22px);
     height: clamp(18px, 2.6dvh, 22px);
+  }
+
+  /* 오버레이 네비 — 페이지 루트 padding 없음. 스크롤 끝 여백은 .nav-scroll-pad */
+
+  /* 스크롤 영역 맨 아래 여백 — 마지막 아이템이 네비 위에 보이도록 */
+  .nav-scroll-pad::after {
+    content: '';
+    display: block;
+    flex-shrink: 0;
+    width: 100%;
+    height: calc(clamp(52px, 8dvh, 72px) + 16px);
+    pointer-events: none;
+  }
+
+  /* 스크롤 밖 하단 고정 영역(푸터 등)이 네비에 가리지 않도록 */
+  .nav-dock-pad {
+    padding-bottom: calc(clamp(52px, 8dvh, 72px) + 12px);
+  }
+
+  /* Content → Navbar blur (색 없이 blur만) */
+  .nav-content-blur {
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    z-index: 1;
+    height: clamp(36px, 5.5dvh, 52px);
+    background: transparent;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 40%,
+      rgba(0, 0, 0, 0.85) 75%,
+      black 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.4) 40%,
+      rgba(0, 0, 0, 0.85) 75%,
+      black 100%
+    );
   }
 
   .auth-clip-board {

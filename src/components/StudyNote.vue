@@ -3,7 +3,6 @@ import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
-import checkboxInProgress from '@/assets/study/checkbox-in-progress.svg'
 import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
@@ -16,16 +15,63 @@ onMounted(() => {
   studyStore.fetchStudyNote()
 })
 
-const checklistLabel = (item) => {
-  const base = `${item.order}. ${item.title}`
-  if (item.status === 'IN_PROGRESS') return `${base}  · 진행 중`
-  return base
-}
+const ruledOffsets = computed(() => Array.from({ length: 10 }, (_, index) => 48 + index * 22))
 
-const ruledOffsets = computed(() => Array.from({ length: 12 }, (_, index) => 48 + index * 22))
+/** 시나리오 퀴즈를 제외한 소단원 (order 순) */
+const lessonItems = computed(() =>
+  learningItems.value
+    .filter((item) => item.entryType !== 'SCENARIO_QUIZ')
+    .slice()
+    .sort((a, b) => a.order - b.order),
+)
 
 /**
- * continue.route 문자열을 named route로 해석 (경로 변경에도 깨지지 않게)
+ * 직전 · 현재 · 다음 소단원만 로드맵 노드로
+ * @returns {{ key: string|number, subChapterId: number|null, mainChapterId: number|null, order: number, title: string, role: 'prev'|'current'|'next', roleLabel: string, status: string }[]}
+ */
+const roadmapNodes = computed(() => {
+  const items = lessonItems.value
+  if (!items.length) return []
+
+  let currentIdx = items.findIndex((item) => item.status === 'IN_PROGRESS')
+  if (currentIdx < 0) {
+    currentIdx = items.findIndex((item) => item.status === 'NOT_STARTED')
+  }
+  if (currentIdx < 0) {
+    currentIdx = items.length - 1
+  }
+
+  /** @type {{ key: string|number, subChapterId: number|null, mainChapterId: number|null, order: number, title: string, role: 'prev'|'current'|'next', roleLabel: string, status: string }[]} */
+  const nodes = []
+
+  const toNode = (item, role, roleLabel) => ({
+    key: item.subChapterId ?? `${role}-${item.order}`,
+    subChapterId: item.subChapterId,
+    mainChapterId: item.mainChapterId,
+    order: item.order,
+    title: item.title,
+    role,
+    roleLabel,
+    status: item.status,
+  })
+
+  if (currentIdx > 0) {
+    nodes.push(toNode(items[currentIdx - 1], 'prev', '직전'))
+  }
+
+  nodes.push(toNode(items[currentIdx], 'current', '현재'))
+
+  if (currentIdx < items.length - 1) {
+    nodes.push(toNode(items[currentIdx + 1], 'next', '다음'))
+  }
+
+  return nodes
+})
+
+/** 복습 대상: 직전 완료 소단원 */
+const reviewLesson = computed(() => roadmapNodes.value.find((node) => node.role === 'prev') ?? null)
+
+/**
  * @param {string} routePath
  */
 const resolveContinueLocation = (routePath) => {
@@ -47,6 +93,19 @@ const onContinue = (event) => {
     return
   }
   router.push(resolveContinueLocation(continueRoute.value))
+}
+
+const goReviewLesson = (event) => {
+  event.stopPropagation()
+  const lesson = reviewLesson.value
+  if (!lesson?.subChapterId) {
+    router.push({ name: 'learning' })
+    return
+  }
+  router.push({
+    name: 'learning-lesson',
+    params: { subChapterId: lesson.subChapterId },
+  })
 }
 
 const goLearning = () => {
@@ -89,7 +148,7 @@ const goLearning = () => {
             :style="{ top: `${top}px` }"
           />
         </div>
-        <div class="relative flex min-h-[300px] flex-col gap-2 px-4 py-3">
+        <div class="relative flex min-h-[260px] flex-col gap-1 px-4 py-3">
           <BaseLoading
             v-if="isLoading"
             class="py-10 text-center"
@@ -105,63 +164,138 @@ const goLearning = () => {
           </div>
 
           <template v-else>
+            <p class="font-serif text-[10px] font-bold tracking-wide text-[var(--study-muted)]">
+              현재 학습 현황
+            </p>
             <header class="flex h-9 items-end gap-2">
               <h2 class="min-w-0 flex-1 font-pen text-[26px] leading-none text-[#212b5c]">
                 {{ chapterTitle || '학습 현황' }}
               </h2>
-              <button
-                v-if="continueRoute"
-                type="button"
-                class="study-continue-cta shrink-0 rounded px-1.5 py-0.5 font-serif text-[14px] font-bold whitespace-nowrap text-[var(--study-continue)]"
-                @click.stop="onContinue"
-              >
-                이어서 →
-              </button>
             </header>
 
-            <p class="font-serif text-[9px] text-[var(--study-muted)]">학습 진행 체크리스트</p>
-
-            <ul class="flex flex-col gap-1 py-0.5">
-              <li
-                v-for="item in learningItems"
-                :key="item.subChapterId"
-                class="flex items-center gap-2 py-0.5"
-              >
+            <!-- 복습 유도 -->
+            <button
+              v-if="reviewLesson"
+              type="button"
+              class="mt-1 w-full rounded-[4px] border border-[rgba(89,140,82,0.35)] bg-[#eef8ea] px-3 py-2.5 text-left transition-transform duration-150 hover:scale-[1.01]"
+              :aria-label="`${reviewLesson.title} 복습하기`"
+              @click="goReviewLesson"
+            >
+              <p class="font-pen text-[16px] leading-none text-[#3d6b38]">
+                다시 한 번 복습해볼까요?
+              </p>
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <p
+                    class="font-serif text-[9px] font-bold tracking-wide text-[rgba(89,140,82,0.85)]"
+                  >
+                    복습 · 직전 소단원
+                  </p>
+                  <p class="mt-0.5 truncate font-serif text-[13px] font-bold text-[#29211a]">
+                    {{ reviewLesson.order }}. {{ reviewLesson.title }}
+                  </p>
+                </div>
                 <span
-                  v-if="item.status === 'COMPLETED'"
-                  class="flex size-[14px] shrink-0 items-center justify-center rounded-[2px] bg-[var(--study-check)]"
-                  aria-hidden="true"
+                  class="shrink-0 rounded bg-[rgba(89,140,82,0.9)] px-2 py-1 font-serif text-[10px] font-bold text-white"
                 >
-                  <span class="font-pen text-[12px] leading-none text-white">✓</span>
+                  강좌 →
                 </span>
+              </div>
+            </button>
 
-                <img
-                  v-else-if="item.status === 'IN_PROGRESS'"
-                  :src="checkboxInProgress"
-                  alt=""
-                  class="size-[14px] shrink-0"
-                />
+            <p class="mt-2 font-serif text-[9px] text-[var(--study-muted)]">학습 진행 로드맵</p>
 
-                <span
-                  v-else
-                  class="size-[14px] shrink-0 rounded-[2px] border-[1.5px] border-[var(--study-check)]"
-                  aria-hidden="true"
-                />
+            <ol
+              v-if="roadmapNodes.length"
+              class="relative mt-1 flex flex-col py-1 pl-0"
+              aria-label="직전 · 현재 · 다음 소단원"
+            >
+              <!-- 경로 세로선 -->
+              <span
+                v-if="roadmapNodes.length > 1"
+                class="pointer-events-none absolute top-4 bottom-6 left-[15px] w-0.5 bg-[rgba(139,100,60,0.28)]"
+                aria-hidden="true"
+              />
 
-                <span
-                  class="min-w-0 flex-1 font-serif leading-normal"
+              <li
+                v-for="node in roadmapNodes"
+                :key="node.key"
+                class="relative z-[1] mb-2.5 flex items-stretch gap-3 last:mb-0"
+              >
+                <div class="flex w-8 shrink-0 items-start justify-center pt-1">
+                  <span
+                    class="flex size-8 items-center justify-center rounded-full border-[2px] font-pen text-[15px] leading-none"
+                    :class="{
+                      'border-[rgba(89,140,82,0.75)] bg-[#e8f5e4] text-[#598c52]':
+                        node.role === 'prev',
+                      'border-[#c17f24] bg-[#c17f24] text-[#fff8ec] shadow-[0_0_0_3px_rgba(193,127,36,0.22)]':
+                        node.role === 'current',
+                      'border-[rgba(33,43,92,0.3)] bg-[#fffdf7] text-[rgba(33,43,92,0.5)]':
+                        node.role === 'next',
+                    }"
+                  >
+                    {{ node.role === 'prev' ? '✓' : node.order }}
+                  </span>
+                </div>
+
+                <div
+                  class="min-w-0 flex-1 rounded-[4px] px-2.5 py-2"
                   :class="{
-                    'text-[11px] text-[var(--study-faint)] line-through':
-                      item.status === 'COMPLETED',
-                    'text-[12px] font-bold whitespace-pre-wrap text-[var(--study-ink)]':
-                      item.status === 'IN_PROGRESS',
-                    'text-[11px] text-[var(--study-todo)]': item.status === 'NOT_STARTED',
+                    'bg-[rgba(237,229,209,0.75)]': node.role === 'prev',
+                    'border-[1.5px] border-[rgba(193,127,36,0.65)] bg-[#fae8a8]':
+                      node.role === 'current',
+                    'bg-[rgba(240,232,214,0.6)]': node.role === 'next',
                   }"
                 >
-                  {{ checklistLabel(item) }}
-                </span>
+                  <div class="flex items-center justify-between gap-2">
+                    <span
+                      class="font-serif text-[9px] font-bold tracking-wide"
+                      :class="{
+                        'text-[rgba(89,140,82,0.9)]': node.role === 'prev',
+                        'text-[#c17f24]': node.role === 'current',
+                        'text-[rgba(33,43,92,0.55)]': node.role === 'next',
+                      }"
+                    >
+                      {{ node.roleLabel }}
+                    </span>
+                    <button
+                      v-if="node.role === 'current' && continueRoute"
+                      type="button"
+                      class="study-continue-cta shrink-0 rounded px-1.5 py-0.5 font-serif text-[12px] font-bold whitespace-nowrap text-[var(--study-continue)]"
+                      @click.stop="onContinue"
+                    >
+                      이어서 →
+                    </button>
+                    <span
+                      v-else-if="node.role === 'current' && node.status === 'IN_PROGRESS'"
+                      class="font-serif text-[9px] text-[#c17f24]"
+                    >
+                      진행 중
+                    </span>
+                    <span
+                      v-else-if="node.role === 'prev'"
+                      class="font-serif text-[9px] text-[rgba(89,140,82,0.9)]"
+                    >
+                      완료
+                    </span>
+                  </div>
+                  <p
+                    class="mt-0.5 font-serif text-[13px] leading-snug font-bold"
+                    :class="{
+                      'text-[rgba(41,33,26,0.5)] line-through': node.role === 'prev',
+                      'text-[#29211a]': node.role === 'current',
+                      'text-[rgba(41,33,26,0.72)]': node.role === 'next',
+                    }"
+                  >
+                    {{ node.order }}. {{ node.title }}
+                  </p>
+                </div>
               </li>
-            </ul>
+            </ol>
+
+            <p v-else class="py-8 text-center font-serif text-[11px] text-[var(--study-muted)]">
+              표시할 학습 구간이 없습니다
+            </p>
           </template>
         </div>
       </section>

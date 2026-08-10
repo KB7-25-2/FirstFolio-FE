@@ -83,7 +83,7 @@ watch(
         <section
           v-for="product in sortedProducts"
           :key="product.productId"
-          class="h-full w-full shrink-0 snap-center overflow-y-auto rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
+          class="nav-scroll-pad h-full w-full shrink-0 snap-center overflow-y-auto rounded-2xl border border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
         >
           <div class="flex items-center gap-1.5">
             <p class="font-bold text-[var(--pf-text)]">{{ product.displayName }}</p>

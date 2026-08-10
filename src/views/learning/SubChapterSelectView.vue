@@ -163,7 +163,7 @@ const startScenarioQuiz = () => {
 
     <div
       v-else-if="currentChapter"
-      class="flex min-h-0 w-full max-w-full flex-1 flex-col items-center overflow-x-hidden overflow-y-auto pb-2"
+      class="nav-scroll-pad flex min-h-0 w-full max-w-full flex-1 flex-col items-center overflow-x-hidden overflow-y-auto"
       @touchstart.passive="onTouchStart"
       @touchend.passive="onTouchEnd"
     >
