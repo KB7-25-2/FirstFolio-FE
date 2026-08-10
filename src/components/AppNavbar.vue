@@ -3,10 +3,9 @@ import { useNavTabs } from '@/composables/useNavTabs.js'
 
 const { leftTabs, rightTabs, centerTab, isActive, navigate } = useNavTabs()
 </script>
-
 <template>
   <nav
-    class="nav-bar relative flex w-full shrink-0 items-end border-t border-[var(--nav-border)] bg-[var(--nav-bg)] px-1 pt-[0.8dvh] pb-[0.35dvh]"
+    class="nav-bar relative z-30 flex w-full shrink-0 items-end overflow-visible border-t border-[var(--nav-border)] bg-[var(--nav-bg)] px-1 pt-[0.8dvh] pb-[1dvh]"
     aria-label="주요 메뉴"
   >
     <button
@@ -73,7 +72,7 @@ const { leftTabs, rightTabs, centerTab, isActive, navigate } = useNavTabs()
     <button
       v-if="centerTab"
       type="button"
-      class="nav-home-fab absolute bottom-[0.9dvh] left-1/2 z-10 flex flex-col items-center"
+      class="nav-home-fab absolute bottom-[0.9dvh] left-1/2 z-40 flex flex-col items-center"
       :aria-current="isActive(centerTab.name) ? 'page' : undefined"
       :aria-label="centerTab.label"
       @click="navigate(centerTab.path)"

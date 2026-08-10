@@ -9,7 +9,7 @@ const hideNavbar = computed(() => route.matched.some((record) => record.meta.hid
 
 <template>
   <div class="relative mx-auto flex mobile-frame flex-col overflow-hidden">
-    <main class="min-h-0 flex-1 overflow-y-auto">
+    <main class="relative z-0 min-h-0 flex-1 overflow-y-auto">
       <RouterView />
     </main>
     <AppNavbar v-if="!hideNavbar" />
