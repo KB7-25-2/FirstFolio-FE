@@ -23,7 +23,7 @@
 /**
  * 일일 퀘스트 섹션
  * @typedef {object} DashboardDailyQuest
- * @property {'ASSIGNED' | 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED'} status
+ * @property {'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED'} status
  * @property {number} answeredCount
  * @property {number} totalCount
  */

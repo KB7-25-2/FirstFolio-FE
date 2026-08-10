@@ -81,6 +81,16 @@ const router = createRouter({
           redirect: { name: 'daily-quest' },
         },
         {
+          path: 'daily-quest',
+          name: 'daily-quest',
+          component: () => import('@/views/DailyQuestView.vue'),
+          meta: { hideNavbar: true },
+        },
+        {
+          path: 'leaderboard',
+          redirect: { name: 'daily-quest' },
+        },
+        {
           path: 'learning',
           component: () => import('@/views/learning/LearningShellView.vue'),
           meta: { navTab: 'learning' },

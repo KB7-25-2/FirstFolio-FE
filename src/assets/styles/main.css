@@ -106,16 +106,35 @@
     @apply cursor-pointer transition-transform duration-200 ease-out hover:scale-[1.02];
   }
 
-  /* 버튼 공통 hover — 활성화된 버튼에만 클래스 부여 */
-  .btn-hover {
-    @apply cursor-pointer transition-[transform,opacity,color,background-color] duration-200 ease-out;
+  /* StudyNote 「이어서 / 이어하기」 텍스트 CTA — 메모지 전체 hover와 구분 */
+  .study-continue-cta {
+    @apply transition-[color,background-color,transform] duration-150 ease-out;
   }
 
-  .btn-hover:hover {
-    @apply scale-[1.02];
+  .study-continue-cta:hover {
+    color: #15803d;
+    background-color: rgba(34, 197, 94, 0.14);
   }
 
-  .btn-hover:active {
-    @apply scale-[0.99];
+  .study-continue-cta--quest:hover {
+    color: #9a3f18;
+    background-color: rgba(196, 92, 42, 0.14);
   }
+
+  .study-continue-cta:active {
+    transform: scale(0.97);
+  }
+}
+
+/* 버튼 공통 hover — 활성화된 버튼에만 클래스 부여 */
+.btn-hover {
+  @apply cursor-pointer transition-[transform,opacity,color,background-color] duration-200 ease-out;
+}
+
+.btn-hover:hover {
+  @apply scale-[1.02];
+}
+
+.btn-hover:active {
+  @apply scale-[0.99];
 }
