@@ -4,12 +4,18 @@ defineProps({
     type: String,
     default: '',
   },
+  /** true면 부모 높이를 채워 내부 스크롤 가능하게 함 */
+  fill: {
+    type: Boolean,
+    default: false,
+  },
 })
 </script>
 
 <template>
   <div
     class="relative w-full rounded-[14px] border-[0.8px] border-[#5a3820] shadow-[0_6px_28px_rgba(0,0,0,0.45)]"
+    :class="fill ? 'flex h-full min-h-0 flex-col' : ''"
     style="background-image: linear-gradient(150deg, #4a2e1a 8%, #3a2010 58%, #2e1a0c 92%)"
   >
     <!-- metal clip -->
@@ -26,15 +32,16 @@ defineProps({
       <div class="mt-0.5 h-[5px] w-5 rounded-b bg-[rgba(0,0,0,0.18)]" />
     </div>
 
-    <div class="p-[0.8px] pt-0">
-      <div class="px-2 pt-[22px] pb-2">
+    <div class="p-[0.8px] pt-0" :class="fill ? 'flex min-h-0 flex-1 flex-col' : ''">
+      <div class="px-2 pt-[22px] pb-2" :class="fill ? 'flex min-h-0 flex-1 flex-col' : ''">
         <div
           class="relative overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.8px] border-[#d4b896] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
+          :class="fill ? 'flex min-h-0 flex-1 flex-col' : ''"
           style="background-image: linear-gradient(180deg, #f2e8d0 0%, #f5edd8 30%, #f0e5cc 100%)"
         >
           <div
             v-if="paperTitle"
-            class="relative flex items-center justify-center border-b-[0.8px] border-[rgba(139,100,60,0.2)] px-4 pt-2.5 pb-2.5"
+            class="relative flex shrink-0 items-center justify-center border-b-[0.8px] border-[rgba(139,100,60,0.2)] px-4 pt-2.5 pb-2.5"
           >
             <span
               class="absolute top-4 left-3 size-2 rounded bg-[rgba(0,0,0,0.12)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
@@ -46,7 +53,10 @@ defineProps({
               {{ paperTitle }}
             </p>
           </div>
-          <div class="relative px-3 pt-1 pb-3">
+          <div
+            class="relative px-3 pt-1 pb-3"
+            :class="fill ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : ''"
+          >
             <slot />
           </div>
           <div
