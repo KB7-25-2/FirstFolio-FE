@@ -1,7 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
 import LearningLayout from '@/components/learning/LearningLayout.vue'
-import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
@@ -201,10 +200,6 @@ watch(
 
 <template>
   <LearningLayout content-class="!overflow-hidden">
-    <template #header>
-      <LearningPageHeader title="학습 목차" subtitle="나만의 금융 커리큘럼" />
-    </template>
-
     <BaseLoading v-if="isLoading" />
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
 
@@ -212,6 +207,9 @@ watch(
       <!-- 고정: 소개 + 전체 진행 -->
       <div class="shrink-0 space-y-3">
         <div>
+          <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
+            나만의 금융 커리큘럼
+          </p>
           <p class="mt-0.5 font-serif text-[11px] text-[var(--cork-ink-muted)]">
             대단원마다 소단원 진행을 확인하고 이어서 학습해요
           </p>

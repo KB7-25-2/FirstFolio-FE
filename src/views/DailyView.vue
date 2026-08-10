@@ -10,24 +10,19 @@ const todayLabel = computed(() => formatKoreanDate())
 
 <template>
   <div class="cork-board flex h-full flex-col overflow-hidden">
-    <header class="chalk-header shrink-0 px-5">
-      <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
-        {{ todayLabel }}
-      </p>
-      <h1
-        class="chalk-header__title mt-1 font-pen text-[28px] leading-none font-normal text-[var(--chalk-text)]"
-      >
-        데일리
-      </h1>
-      <p class="mt-1 font-serif text-[11px] leading-tight text-[var(--chalk-text-faint)]">
-        오늘의 퀘스트와 금융 뉴스
-      </p>
-    </header>
-
     <div
       data-scroll-reveal-root
-      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-4"
+      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-5"
     >
+      <div class="shrink-0">
+        <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
+          {{ todayLabel }}
+        </p>
+        <p class="mt-0.5 font-serif text-[12px] text-[var(--cork-ink-muted)]">
+          오늘의 퀘스트와 금융 뉴스
+        </p>
+      </div>
+
       <ScrollReveal class="flex justify-center">
         <DailyQuestNote />
       </ScrollReveal>

@@ -1,105 +1,41 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useAuthStore } from '@/store/authStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import { formatKoreanDate } from '@/utils/date.js'
 import PortfolioSummary from '@/components/PortfolioSummary.vue'
 import StudyNote from '@/components/StudyNote.vue'
 import PointShopNote from '@/components/PointShopNote.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
-import UserProfileModal from '@/components/UserProfileModal.vue'
-import BaseConfirmModal from '@/components/BaseConfirmModal.vue'
 
-const authStore = useAuthStore()
 const userStore = useUserStore()
 const { greeting } = storeToRefs(userStore)
 
-const isProfileOpen = ref(false)
-const isLogoutConfirmOpen = ref(false)
-const isLoggingOut = ref(false)
-
 const todayLabel = computed(() => formatKoreanDate())
-
-onMounted(() => {
-  if (!userStore.profile) {
-    userStore.fetchProfile()
-  }
-})
-
-const openProfile = () => {
-  isProfileOpen.value = true
-}
-
-const closeProfile = () => {
-  isProfileOpen.value = false
-}
-
-const openLogoutConfirm = () => {
-  isLogoutConfirmOpen.value = true
-}
-
-const closeLogoutConfirm = () => {
-  if (isLoggingOut.value) return
-  isLogoutConfirmOpen.value = false
-}
-
-const confirmLogout = async () => {
-  if (isLoggingOut.value) return
-  isLoggingOut.value = true
-  try {
-    await authStore.logout()
-  } finally {
-    isLoggingOut.value = false
-    isLogoutConfirmOpen.value = false
-  }
-}
 </script>
 
 <template>
   <div class="cork-board flex h-full flex-col overflow-hidden">
-    <header class="chalk-header shrink-0 px-5 pr-[50px]">
-      <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
-        {{ todayLabel }}
-      </p>
-      <div class="mt-1 flex items-center gap-1">
-        <h1
-          class="chalk-header__title min-w-0 font-pen text-[28px] leading-none font-normal text-[var(--chalk-text)]"
-        >
-          홈
-        </h1>
-        <button
-          type="button"
-          class="btn-hover flex size-8 shrink-0 items-center justify-center rounded-md text-[var(--chalk-text-muted)] hover:bg-white/5 hover:text-[var(--chalk-text)]"
-          aria-label="내 프로필"
-          @click="openProfile"
-        >
-          <font-awesome-icon icon="fa-solid fa-user" class="text-[14px]" />
-        </button>
-        <button
-          type="button"
-          class="btn-hover flex size-8 shrink-0 items-center justify-center rounded-md text-[var(--chalk-text-muted)] hover:bg-white/5 hover:text-[var(--chalk-text)]"
-          aria-label="로그아웃"
-          @click="openLogoutConfirm"
-        >
-          <font-awesome-icon icon="fa-solid fa-arrow-right-from-bracket" class="text-[14px]" />
-        </button>
-      </div>
-      <p class="mt-1 truncate font-serif text-[11px] leading-tight text-[var(--chalk-text-faint)]">
-        {{ greeting }}
-      </p>
-      <div
-        class="chalk-header__stamp absolute top-1/2 right-5 flex -translate-y-1/2 rotate-5 items-center justify-center rounded px-2 py-[3px]"
-        aria-hidden="true"
-      >
-        <span class="font-pen text-[13px] leading-none whitespace-nowrap">오늘 출석 완료</span>
-      </div>
-    </header>
-
     <div
       data-scroll-reveal-root
       class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-5"
     >
+      <div class="flex shrink-0 items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
+            {{ todayLabel }}
+          </p>
+          <p class="mt-0.5 truncate font-serif text-[12px] font-bold text-[var(--cork-ink-muted)]">
+            {{ greeting }}
+          </p>
+        </div>
+        <span
+          class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.4)] bg-[rgba(193,127,36,0.08)] px-2.5 py-1 font-pen text-[12px] whitespace-nowrap text-[var(--nav-active-primary)]"
+        >
+          오늘 출석 완료
+        </span>
+      </div>
+
       <ScrollReveal class="flex justify-center">
         <PortfolioSummary />
       </ScrollReveal>
@@ -112,19 +48,5 @@ const confirmLogout = async () => {
         <PointShopNote />
       </ScrollReveal>
     </div>
-
-    <UserProfileModal :open="isProfileOpen" @close="closeProfile" />
-
-    <BaseConfirmModal
-      v-if="isLogoutConfirmOpen"
-      title="로그아웃"
-      message="정말 로그아웃 하시겠습니까?"
-      confirm-label="로그아웃"
-      cancel-label="취소"
-      confirm-variant="danger"
-      :is-submitting="isLoggingOut"
-      @close="closeLogoutConfirm"
-      @confirm="confirmLogout"
-    />
   </div>
 </template>
