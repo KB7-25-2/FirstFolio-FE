@@ -14,13 +14,13 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.png', 'favicon.svg'],
+        includeAssets: ['icon.png', 'apple-touch-icon.png'],
         manifest: {
           name: 'FirstFolio',
           short_name: 'FirstFolio',
           description: '배우며 완성하는 나의 첫 자산 포트폴리오',
-          theme_color: '#F5C518',
-          background_color: '#F5C518',
+          theme_color: '#f7f1e4',
+          background_color: '#f7f1e4',
           display: 'standalone',
           orientation: 'portrait',
           scope: '/',
