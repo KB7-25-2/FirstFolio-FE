@@ -25,7 +25,7 @@ defineEmits(['select'])
   <button
     type="button"
     :disabled="disabled"
-    class="flex w-full items-start gap-2.5 rounded-[8px] border-[0.5px] px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
+    class="hover:bg-white/70 focus:bg-white/70 hover:cursor-pointer flex w-full items-start gap-2.5 rounded-[8px] border-[0.5px] px-3 py-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
     :class="
       selected
         ? 'border-[rgba(139,100,60,0.55)] bg-white/70'
