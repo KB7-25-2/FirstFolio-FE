@@ -15,13 +15,13 @@ const props = defineProps({
 defineEmits(['select'])
 
 // 브랜드별 포인트 텍스트 색상. 실제 API엔 브랜드 색상 필드가 없어서, 알려진 브랜드명 키워드로
-// 추정하는 프레젠테이션 전용 로직이다 — 못 알아본 브랜드는 기본 금색으로 떨어진다.
+// 추정하는 프레젠테이션 전용 로직이다 — 못 알아본 브랜드는 기본 골드로 떨어진다.
 const BRAND_ACCENT = [
-  { keywords: ['배달의민족', '배민'], color: '#2AC1BC' },
-  { keywords: ['CU'], color: '#8B5CF6' },
-  { keywords: ['GS25', 'GS'], color: '#4FC3F7' },
+  { keywords: ['배달의민족', '배민'], color: '#2f8f7a' },
+  { keywords: ['CU'], color: '#8a5fb5' },
+  { keywords: ['GS25', 'GS'], color: '#3f7fb0' },
 ]
-const DEFAULT_ACCENT = '#f5a647'
+const DEFAULT_ACCENT = '#c17f24'
 
 const accentColor = computed(() => {
   const match = BRAND_ACCENT.find(({ keywords }) =>
@@ -34,17 +34,13 @@ const accentColor = computed(() => {
 <template>
   <button
     type="button"
-    class="flex flex-col items-start gap-2 rounded-2xl border-[0.5px] p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-    :class="
-      isSelected
-        ? 'border-[#8B93A6] bg-white/[0.08]'
-        : 'border-white/10 bg-white/[0.04] hover:bg-white/[0.06]'
-    "
+    class="flex flex-col items-start gap-2 rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] p-3 text-left shadow-[0_4px_12px_rgba(44,24,16,0.1)] transition-shadow disabled:cursor-not-allowed disabled:opacity-50"
+    :class="isSelected ? 'ring-2 ring-[#c17f24]' : ''"
     :disabled="!gifticon.isRedeemable"
     @click="$emit('select', gifticon)"
   >
     <div
-      class="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-xl bg-[#f2f2f0]"
+      class="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-[2px] bg-[rgba(193,127,36,0.08)]"
     >
       <img
         v-if="gifticon.imageUrl"
@@ -55,30 +51,32 @@ const accentColor = computed(() => {
       />
       <span
         v-else
-        class="line-clamp-2 px-2 text-center text-xs font-black"
-        :class="gifticon.isRedeemable ? 'text-[#1a1a1a]' : 'text-[#9aa1b0]'"
+        class="line-clamp-2 px-2 text-center font-serif text-xs font-black"
+        :class="gifticon.isRedeemable ? 'text-[#2c1810]' : 'text-[rgba(41,33,26,0.4)]'"
       >
         {{ gifticon.displayName }}
       </span>
       <span
         v-if="isSelected"
-        class="absolute top-1.5 right-1.5 rounded-full bg-[#4B4468] px-1.5 py-0.5 text-[9px] font-bold text-white"
+        class="absolute top-1.5 right-1.5 rounded-full bg-[#c17f24] px-1.5 py-0.5 font-serif text-[9px] font-bold text-[#fff8ec]"
       >
         선택
       </span>
       <span
         v-else-if="!gifticon.isRedeemable"
-        class="absolute top-1.5 right-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[9px] font-bold text-[#6b6b6b]"
+        class="absolute top-1.5 right-1.5 rounded-full bg-[#fff8ec] px-1.5 py-0.5 font-serif text-[9px] font-bold text-[rgba(41,33,26,0.5)]"
       >
         {{ gifticon.statusLabel }}
       </span>
     </div>
 
     <div>
-      <p class="text-sm font-bold text-white">{{ gifticon.displayName }}</p>
+      <p class="font-serif text-sm font-bold text-[#2c1810]">{{ gifticon.displayName }}</p>
       <div class="mt-1 flex items-baseline gap-1.5">
-        <p class="text-xs text-[#9aa1b0]">{{ gifticon.pricePoints.toLocaleString('ko-KR') }}원</p>
-        <p class="text-sm font-bold" :style="{ color: accentColor }">
+        <p class="font-serif text-xs text-[rgba(41,33,26,0.45)]">
+          {{ gifticon.pricePoints.toLocaleString('ko-KR') }}원
+        </p>
+        <p class="font-serif text-sm font-bold" :style="{ color: accentColor }">
           {{ gifticon.pricePoints.toLocaleString('ko-KR') }}P
         </p>
       </div>

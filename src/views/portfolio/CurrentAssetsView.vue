@@ -6,6 +6,7 @@ import HoldingsList from '@/components/portfolio/HoldingsList.vue'
 import AiCoachCard from '@/components/portfolio/AiCoachCard.vue'
 import SellHoldingModal from '@/components/portfolio/SellHoldingModal.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
+import ScrollReveal from '@/components/ScrollReveal.vue'
 
 const store = usePortfolioStore()
 
@@ -50,14 +51,21 @@ const handleSellConfirm = async (quantity) => {
 
 <template>
   <div
+    data-scroll-reveal-root
     class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-2"
   >
     <p v-if="store.error" class="text-sm text-[var(--pf-negative)]">{{ store.error }}</p>
 
     <template v-if="store.summary">
-      <PortfolioSummaryCard :summary="store.summary" />
-      <HoldingsList :holdings="activeHoldings" @request-sell="openSellModal" />
-      <AiCoachCard v-if="store.summary.aiFeedback" :message="store.summary.aiFeedback" />
+      <ScrollReveal>
+        <PortfolioSummaryCard :summary="store.summary" />
+      </ScrollReveal>
+      <ScrollReveal>
+        <HoldingsList :holdings="activeHoldings" @request-sell="openSellModal" />
+      </ScrollReveal>
+      <ScrollReveal v-if="store.summary.aiFeedback">
+        <AiCoachCard :message="store.summary.aiFeedback" />
+      </ScrollReveal>
     </template>
 
     <BaseLoading v-else-if="store.isLoading" />

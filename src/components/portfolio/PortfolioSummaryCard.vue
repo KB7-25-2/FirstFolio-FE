@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import MemoPin from '@/components/MemoPin.vue'
 import AllocationDonutChart from '@/components/portfolio/AllocationDonutChart.vue'
 
 // summary: {
@@ -16,9 +17,9 @@ const props = defineProps({
 const formatCurrency = (value) => `${Number(value ?? 0).toLocaleString('ko-KR')}원`
 
 const profitLossClass = computed(() => {
-  if (props.summary.profitLossAmount > 0) return 'text-[var(--pf-positive)]'
-  if (props.summary.profitLossAmount < 0) return 'text-[var(--pf-negative)]'
-  return 'text-[var(--pf-text-muted)]'
+  if (props.summary.profitLossAmount > 0) return 'text-[#1D9E75]'
+  if (props.summary.profitLossAmount < 0) return 'text-[#c0433f]'
+  return 'text-[rgba(41,33,26,0.55)]'
 })
 
 const profitLossLabel = computed(() => {
@@ -42,47 +43,53 @@ const activeHoldingCount = computed(
 </script>
 
 <template>
-  <section
-    class="rounded-2xl border-[0.5px] border-[var(--pf-card-border)] bg-[var(--pf-card-bg)] p-4 backdrop-blur-md"
-  >
-    <span
-      class="mb-2 inline-block rounded-full bg-white/10 px-2 py-0.5 font-serif font-bold text-xs text-[var(--pf-highlight)]"
-    >
-      보유 자산 현황
-    </span>
+  <div class="relative w-full">
+    <MemoPin side="left" tone="portfolio" />
 
-    <div class="flex items-start justify-between gap-4">
-      <div class="flex flex-col gap-1">
-        <p class="text-xs text-[var(--pf-text-muted)]">보유 자산 요약</p>
-        <p class="text-xs text-[var(--pf-text-muted)]">총 자산</p>
-        <p class="text-2xl font-bold text-[var(--pf-text)]">
-          {{ formatCurrency(summary.totalAssetValue) }}
-        </p>
-        <p class="text-xs text-[var(--pf-text-muted)]">
-          현금 {{ formatCurrency(summary.cashBalance) }}
-        </p>
-        <p class="text-xs" :class="profitLossClass">평가손익 {{ profitLossLabel }}</p>
+    <section
+      class="relative w-full -rotate-[0.6deg] overflow-hidden rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.4)] bg-[#fff8ec] p-4 shadow-[0_4px_12px_rgba(0,0,0,0.18)]"
+    >
+      <div
+        class="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-[#c17f24]"
+        aria-hidden="true"
+      />
+
+      <div class="relative flex items-start justify-between gap-4 pt-1.5">
+        <div class="flex flex-col gap-1">
+          <p class="font-serif text-[10px] font-bold tracking-wide text-[rgba(193,127,36,0.85)]">
+            총 자산
+          </p>
+          <p class="font-pen text-[30px] leading-none text-[#2c1810]">
+            {{ formatCurrency(summary.totalAssetValue) }}
+          </p>
+          <p class="mt-1 font-serif text-[11px] text-[rgba(41,33,26,0.55)]">
+            현금 {{ formatCurrency(summary.cashBalance) }} · 평가손익
+            <span :class="profitLossClass">{{ profitLossLabel }}</span>
+          </p>
+        </div>
+
+        <AllocationDonutChart :segments="summary.allocations">
+          <template v-if="investedRatio !== null">
+            <span class="font-serif text-base font-bold text-[#2c1810]">{{ investedRatio }}%</span>
+            <span class="font-serif text-[8px] text-[rgba(41,33,26,0.45)]">투자 비중</span>
+          </template>
+        </AllocationDonutChart>
       </div>
 
-      <AllocationDonutChart :segments="summary.allocations">
-        <template v-if="investedRatio !== null">
-          <span class="text-lg font-bold text-[var(--pf-text)]">{{ investedRatio }}%</span>
-          <span class="text-[9px] text-[var(--pf-text-muted)]">투자 비중</span>
-        </template>
-      </AllocationDonutChart>
-    </div>
+      <p class="mt-3 font-serif text-[10px] font-bold tracking-wide text-[rgba(41,33,26,0.4)]">
+        보유 {{ activeHoldingCount }}개 상품
+      </p>
 
-    <p class="mt-4 text-xs text-[var(--pf-text-muted)]">보유 {{ activeHoldingCount }}개 상품</p>
-
-    <ul class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5">
-      <li
-        v-for="item in summary.allocations"
-        :key="item.label"
-        class="flex items-center gap-1.5 text-xs text-[var(--pf-text-muted)]"
-      >
-        <span class="size-1.5 rounded-full" :style="{ backgroundColor: item.color }" />
-        {{ item.label }} {{ item.ratio }}%
-      </li>
-    </ul>
-  </section>
+      <ul class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5">
+        <li
+          v-for="item in summary.allocations"
+          :key="item.label"
+          class="flex items-center gap-1.5 font-serif text-[10px] text-[rgba(41,33,26,0.55)]"
+        >
+          <span class="size-1.5 rounded-full" :style="{ backgroundColor: item.color }" />
+          {{ item.label }} {{ item.ratio }}%
+        </li>
+      </ul>
+    </section>
+  </div>
 </template>

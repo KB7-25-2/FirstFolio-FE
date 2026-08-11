@@ -9,7 +9,7 @@ import { useNavTabs } from '@/composables/useNavTabs.js'
 import { useUserStore } from '@/store/userStore.js'
 
 /** 상단 앱바를 쓰는 아이보리 대시보드 탭 (포트폴리오·상점은 자체 다크 헤더 사용) */
-const TOP_BAR_TABS = ['home', 'daily', 'learning']
+const TOP_BAR_TABS = ['home', 'daily', 'learning', 'portfolios', 'point-market']
 
 const route = useRoute()
 const hideNavbar = computed(() => route.matched.some((record) => record.meta.hideNavbar === true))

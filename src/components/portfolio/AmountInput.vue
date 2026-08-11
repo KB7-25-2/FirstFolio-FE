@@ -42,22 +42,20 @@ const setMax = () => {
 
 <template>
   <div class="flex items-center gap-2">
-    <div
-      class="flex flex-1 items-center gap-1 rounded-lg border-[0.5px] border-[var(--pf-card-border)] bg-white/5 px-3 py-2"
-    >
+    <div class="flex flex-1 items-center gap-1 rounded-lg bg-[rgba(245,237,217,0.06)] px-3 py-2">
       <input
         type="text"
         inputmode="numeric"
-        class="w-full min-w-0 bg-transparent text-right text-[var(--pf-text)] outline-none disabled:opacity-40"
+        class="w-full min-w-0 bg-transparent text-right font-serif text-[#f5edd9] outline-none disabled:opacity-40"
         :value="modelValue.toLocaleString('ko-KR')"
         :disabled="disabled"
         @input="handleInput"
       />
-      <span class="shrink-0 text-xs text-[var(--pf-text-muted)]">{{ unit }}</span>
+      <span class="shrink-0 font-serif text-xs text-[rgba(245,237,217,0.5)]">{{ unit }}</span>
     </div>
     <button
       type="button"
-      class="shrink-0 rounded-lg border-[0.5px] border-[var(--pf-card-border)] px-2 py-2 text-xs text-[var(--pf-text)] disabled:opacity-40"
+      class="shrink-0 rounded-lg bg-[#c17f24] px-2.5 py-2 font-serif text-xs font-bold text-[#1a1208] disabled:opacity-40"
       :disabled="disabled"
       @click="setMax"
     >
