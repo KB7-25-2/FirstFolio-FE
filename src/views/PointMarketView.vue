@@ -6,6 +6,7 @@ import PointBalanceCard from '@/components/pointMarket/PointBalanceCard.vue'
 import GifticonGridItem from '@/components/pointMarket/GifticonGridItem.vue'
 import SelectedGifticonBar from '@/components/pointMarket/SelectedGifticonBar.vue'
 import RedemptionHistoryItem from '@/components/pointMarket/RedemptionHistoryItem.vue'
+import ScrollReveal from '@/components/ScrollReveal.vue'
 
 const gifticonStore = useGifticonStore()
 const userStore = useUserStore()
@@ -82,75 +83,84 @@ const handleRedeem = async () => {
       </h1>
     </header>
 
-    <div class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pt-5">
-      <div class="flex items-center justify-between">
-        <p class="font-serif text-xs text-[rgba(41,33,26,0.55)]">
-          {{
-            currentView === 'catalog'
-              ? '모은 포인트를 작은 혜택으로 바꿔요'
-              : '신청한 기프티콘의 처리 상태를 확인해요'
-          }}
-        </p>
-        <button
-          type="button"
-          class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#fff8ec] px-3 py-1.5 font-serif text-xs font-bold text-[#c17f24]"
-          @click="currentView = currentView === 'catalog' ? 'history' : 'catalog'"
-        >
-          {{ currentView === 'catalog' ? '교환 내역 ›' : '‹ 스토어로' }}
-        </button>
-      </div>
+    <div
+      data-scroll-reveal-root
+      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pt-5"
+    >
+      <ScrollReveal>
+        <div class="flex items-center justify-between">
+          <p class="font-serif text-xs text-[rgba(41,33,26,0.55)]">
+            {{
+              currentView === 'catalog'
+                ? '모은 포인트를 작은 혜택으로 바꿔요'
+                : '신청한 기프티콘의 처리 상태를 확인해요'
+            }}
+          </p>
+          <button
+            type="button"
+            class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#fff8ec] px-3 py-1.5 font-serif text-xs font-bold text-[#c17f24]"
+            @click="currentView = currentView === 'catalog' ? 'history' : 'catalog'"
+          >
+            {{ currentView === 'catalog' ? '교환 내역 ›' : '‹ 스토어로' }}
+          </button>
+        </div>
+      </ScrollReveal>
 
-      <PointBalanceCard :point-balance="userStore.pointBalance" />
+      <ScrollReveal>
+        <PointBalanceCard :point-balance="userStore.pointBalance" />
+      </ScrollReveal>
 
       <template v-if="currentView === 'catalog'">
-        <div>
-          <div class="flex items-center justify-between">
-            <p class="font-serif font-bold text-[#2c1810]">기프티콘</p>
-            <p class="font-serif text-xs text-[rgba(41,33,26,0.45)]">
-              {{ filteredGifticons.length }}개 상품
+        <ScrollReveal>
+          <div>
+            <div class="flex items-center justify-between">
+              <p class="font-serif font-bold text-[#2c1810]">기프티콘</p>
+              <p class="font-serif text-xs text-[rgba(41,33,26,0.45)]">
+                {{ filteredGifticons.length }}개 상품
+              </p>
+            </div>
+
+            <div class="mt-3 flex gap-2 overflow-x-auto pb-1">
+              <button
+                v-for="filter in FILTERS"
+                :key="filter.value"
+                type="button"
+                class="shrink-0 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
+                :class="
+                  activeFilter === filter.value
+                    ? 'bg-[#c17f24] text-[#fff8ec]'
+                    : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)]'
+                "
+                @click="activeFilter = filter.value"
+              >
+                {{ filter.label }}
+              </button>
+            </div>
+
+            <p v-if="gifticonStore.error" class="mt-3 font-serif text-sm text-[#c0433f]">
+              {{ gifticonStore.error }}
+            </p>
+
+            <div v-if="filteredGifticons.length" class="mt-3 grid grid-cols-2 gap-3">
+              <GifticonGridItem
+                v-for="gifticon in filteredGifticons"
+                :key="gifticon.gifticonId"
+                :gifticon="gifticon"
+                :is-selected="gifticon.gifticonId === selectedGifticonId"
+                @select="selectGifticon"
+              />
+            </div>
+            <p
+              v-else-if="gifticonStore.isLoading"
+              class="mt-3 font-serif text-sm text-[rgba(41,33,26,0.45)]"
+            >
+              불러오는 중…
+            </p>
+            <p v-else class="mt-3 font-serif text-sm text-[rgba(41,33,26,0.45)]">
+              해당 카테고리 상품이 없어요.
             </p>
           </div>
-
-          <div class="mt-3 flex gap-2 overflow-x-auto pb-1">
-            <button
-              v-for="filter in FILTERS"
-              :key="filter.value"
-              type="button"
-              class="shrink-0 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
-              :class="
-                activeFilter === filter.value
-                  ? 'bg-[#c17f24] text-[#fff8ec]'
-                  : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)]'
-              "
-              @click="activeFilter = filter.value"
-            >
-              {{ filter.label }}
-            </button>
-          </div>
-
-          <p v-if="gifticonStore.error" class="mt-3 font-serif text-sm text-[#c0433f]">
-            {{ gifticonStore.error }}
-          </p>
-
-          <div v-if="filteredGifticons.length" class="mt-3 grid grid-cols-2 gap-3">
-            <GifticonGridItem
-              v-for="gifticon in filteredGifticons"
-              :key="gifticon.gifticonId"
-              :gifticon="gifticon"
-              :is-selected="gifticon.gifticonId === selectedGifticonId"
-              @select="selectGifticon"
-            />
-          </div>
-          <p
-            v-else-if="gifticonStore.isLoading"
-            class="mt-3 font-serif text-sm text-[rgba(41,33,26,0.45)]"
-          >
-            불러오는 중…
-          </p>
-          <p v-else class="mt-3 font-serif text-sm text-[rgba(41,33,26,0.45)]">
-            해당 카테고리 상품이 없어요.
-          </p>
-        </div>
+        </ScrollReveal>
 
         <!-- 하단 고정 바 자리 확보 (선택된 상품이 있을 때) -->
         <div v-if="selectedGifticon" class="h-20" aria-hidden="true" />
@@ -177,13 +187,15 @@ const handleRedeem = async () => {
       </template>
 
       <template v-else>
-        <ul v-if="gifticonStore.redemptionHistory.length" class="flex flex-col gap-2">
-          <RedemptionHistoryItem
-            v-for="order in gifticonStore.redemptionHistory"
-            :key="order.gifticonOrderId"
-            :order="order"
-          />
-        </ul>
+        <ScrollReveal v-if="gifticonStore.redemptionHistory.length">
+          <ul class="flex flex-col gap-2">
+            <RedemptionHistoryItem
+              v-for="order in gifticonStore.redemptionHistory"
+              :key="order.gifticonOrderId"
+              :order="order"
+            />
+          </ul>
+        </ScrollReveal>
         <p
           v-else-if="gifticonStore.isLoading"
           class="font-serif text-sm text-[rgba(41,33,26,0.45)]"

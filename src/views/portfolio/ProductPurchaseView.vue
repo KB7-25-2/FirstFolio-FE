@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import ProductListItem from '@/components/portfolio/ProductListItem.vue'
 import BuyProductModal from '@/components/portfolio/BuyProductModal.vue'
+import ScrollReveal from '@/components/ScrollReveal.vue'
 import { ASSET_TYPE_META } from '@/constants/assetType.js'
 
 const store = usePortfolioStore()
@@ -82,46 +83,51 @@ const handleBuyConfirm = async (amount) => {
 
 <template>
   <div class="flex flex-col gap-3">
-    <div class="flex gap-2 overflow-x-auto pb-1">
-      <button
-        v-for="filter in FILTERS"
-        :key="filter.value"
-        type="button"
-        class="shrink-0 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
-        :class="
-          activeFilter === filter.value
-            ? 'bg-[#c17f24] text-[#fff8ec]'
-            : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)]'
-        "
-        @click="activeFilter = filter.value"
-      >
-        {{ filter.label }}
-      </button>
-    </div>
+    <ScrollReveal>
+      <div class="flex gap-2 overflow-x-auto pb-1">
+        <button
+          v-for="filter in FILTERS"
+          :key="filter.value"
+          type="button"
+          class="shrink-0 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
+          :class="
+            activeFilter === filter.value
+              ? 'bg-[#c17f24] text-[#fff8ec]'
+              : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)]'
+          "
+          @click="activeFilter = filter.value"
+        >
+          {{ filter.label }}
+        </button>
+      </div>
+    </ScrollReveal>
 
-    <p v-if="store.summary" class="font-serif text-xs text-[rgba(41,33,26,0.55)]">
-      구매 가능 현금
-      <span class="font-bold text-[#2c1810]"
-        >{{ store.summary.cashBalance.toLocaleString('ko-KR') }}원</span
-      >
-    </p>
+    <ScrollReveal v-if="store.summary">
+      <p class="font-serif text-xs text-[rgba(41,33,26,0.55)]">
+        구매 가능 현금
+        <span class="font-bold text-[#2c1810]"
+          >{{ store.summary.cashBalance.toLocaleString('ko-KR') }}원</span
+        >
+      </p>
+    </ScrollReveal>
 
     <p v-if="store.error" class="font-serif text-sm text-[#c0433f]">{{ store.error }}</p>
 
-    <div
-      v-if="filteredProducts.length"
-      class="rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] shadow-[0_4px_12px_rgba(44,24,16,0.1)]"
-    >
-      <ul class="divide-y divide-[rgba(193,127,36,0.15)]">
-        <ProductListItem
-          v-for="product in filteredProducts"
-          :key="product.productId"
-          :product="product"
-          :is-held="heldProductIds.has(product.productId)"
-          @buy="openBuyModal"
-        />
-      </ul>
-    </div>
+    <ScrollReveal v-if="filteredProducts.length">
+      <div
+        class="rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] shadow-[0_4px_12px_rgba(44,24,16,0.1)]"
+      >
+        <ul class="divide-y divide-[rgba(193,127,36,0.15)]">
+          <ProductListItem
+            v-for="product in filteredProducts"
+            :key="product.productId"
+            :product="product"
+            :is-held="heldProductIds.has(product.productId)"
+            @buy="openBuyModal"
+          />
+        </ul>
+      </div>
+    </ScrollReveal>
 
     <p v-else-if="store.isLoading" class="font-serif text-sm text-[rgba(41,33,26,0.45)]">
       불러오는 중…

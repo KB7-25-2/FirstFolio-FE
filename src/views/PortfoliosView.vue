@@ -43,7 +43,7 @@ const handleResetConfirm = async () => {
 
 <template>
   <div class="cork-board flex h-full flex-col overflow-hidden">
-    <header class="chalk-header shrink-0 px-5">
+    <header class="chalk-header shrink-0 px-5 pt-5">
       <div class="flex w-full items-center justify-between gap-2">
         <div class="min-w-0">
           <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
@@ -68,7 +68,10 @@ const handleResetConfirm = async () => {
       </div>
     </header>
 
-    <div class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pt-5">
+    <div
+      data-scroll-reveal-root
+      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pt-5"
+    >
       <PortfolioTabs />
       <RouterView />
     </div>
