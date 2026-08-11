@@ -12,17 +12,15 @@ const isActive = (name) => route.name === name
 </script>
 
 <template>
-  <nav class="flex gap-1 rounded-full bg-[var(--pf-tab-bg)] p-1">
+  <nav
+    class="flex gap-1.5 rounded-full border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] p-1.5 shadow-[0_4px_10px_rgba(44,24,16,0.08)]"
+  >
     <RouterLink
       v-for="tab in TABS"
       :key="tab.name"
       :to="{ name: tab.name }"
-      class="flex-1 rounded-full py-2 text-center text-sm font-bold transition-colors"
-      :class="
-        isActive(tab.name)
-          ? 'bg-[var(--pf-tab-active-bg)] text-[var(--pf-tab-active-text)]'
-          : 'text-[var(--pf-tab-text)]'
-      "
+      class="flex-1 rounded-full py-2 text-center font-serif text-[11px] font-bold transition-colors"
+      :class="isActive(tab.name) ? 'bg-[#c17f24] text-[#fff8ec]' : 'text-[rgba(44,24,16,0.55)]'"
     >
       {{ tab.label }}
     </RouterLink>
