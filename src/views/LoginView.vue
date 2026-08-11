@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import AuthPageHeader from '@/components/auth/AuthPageHeader.vue'
 import AuthDocTabs from '@/components/auth/AuthDocTabs.vue'
 import AuthClipboardBoard from '@/components/auth/AuthClipboardBoard.vue'
@@ -79,6 +79,26 @@ const {
 } = useLoginView()
 
 const stageClass = computed(() => (loginReady.value ? 'auth-stage--ready' : ''))
+
+/** 서류 교체 방향: next = 앞으로(로그인→가입), prev = 뒤로(가입→로그인) */
+const docDir = ref('next')
+const docPaneKey = computed(() =>
+  activeTab.value === 'login' ? 'login' : `signup-${signupStep.value}`,
+)
+const docTransition = computed(() =>
+  docDir.value === 'next' ? 'auth-paper-next' : 'auth-paper-prev',
+)
+
+const handleDocTab = (tab) => {
+  if (tab === activeTab.value || isLoading.value || showSplash.value) return
+  docDir.value = tab === 'signup' ? 'next' : 'prev'
+  switchTab(tab)
+}
+
+watch(signupStep, (step, prev) => {
+  if (activeTab.value !== 'signup' || !prev || step === prev) return
+  docDir.value = step === 'form' ? 'next' : 'prev'
+})
 </script>
 
 <template>
@@ -90,13 +110,20 @@ const stageClass = computed(() => (loginReady.value ? 'auth-stage--ready' : ''))
       class="mobile-frame relative flex flex-col items-center overflow-hidden px-3 pt-10 pb-6"
       :class="stageClass"
     >
+      <!-- 구글 팝업 등 인증 진행 중: 화면 전체 입력 차단 -->
+      <div
+        v-if="isLoading"
+        class="absolute inset-0 z-30 cursor-wait bg-[rgba(44,24,16,0.06)]"
+        aria-hidden="true"
+      />
+
       <AuthPageHeader class="auth-enter shrink-0" style="--auth-i: 0" />
 
       <div class="auth-enter mt-3 shrink-0" style="--auth-i: 1">
         <AuthDocTabs
           :model-value="activeTab"
           :disabled="isLoading || showSplash"
-          @update:model-value="switchTab"
+          @update:model-value="handleDocTab"
         />
       </div>
 
@@ -106,7 +133,11 @@ const stageClass = computed(() => (loginReady.value ? 'auth-stage--ready' : ''))
           :aria-disabled="isLoading || showSplash"
           @submit.prevent="handleSubmit"
         >
-          <AuthClipboardBoard :header-title="clipboardHeader">
+          <AuthClipboardBoard
+            :paper-key="docPaneKey"
+            :paper-transition="docTransition"
+            :header-title="clipboardHeader"
+          >
             <!-- 로그인 -->
             <template v-if="isLogin">
               <div class="flex flex-col gap-1.5">
@@ -156,7 +187,7 @@ const stageClass = computed(() => (loginReady.value ? 'auth-stage--ready' : ''))
                   <AuthRememberCheck v-model="rememberMe" :disabled="isLoading || showSplash" />
                   <button
                     type="button"
-                    class="hover:bg-white/70 focus:bg-white/70 hover:cursor-pointer font-serif text-[9px] text-[var(--auth-doc-link)] underline disabled:cursor-not-allowed disabled:opacity-50"
+                    class="cursor-pointer font-serif text-[9px] text-[var(--auth-doc-link)] underline hover:bg-white/70 focus:bg-white/70 disabled:cursor-not-allowed disabled:opacity-50"
                     :disabled="isLoading || showSplash"
                     @click="handleForgotPassword"
                   >

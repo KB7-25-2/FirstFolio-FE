@@ -425,6 +425,30 @@
     }
   }
 
+  /* 클립보드 고정 · 종이만 페이드 교체 */
+  .auth-paper-stage {
+    transform-origin: 50% 0%;
+    min-height: 546px; /* paper 520 + pt 20 + pb 6 */
+  }
+
+  .auth-paper-next-enter-active,
+  .auth-paper-next-leave-active,
+  .auth-paper-prev-enter-active,
+  .auth-paper-prev-leave-active {
+    transition:
+      opacity 0.21s ease,
+      transform 0.21s ease;
+    transform-origin: 50% 40%;
+  }
+
+  .auth-paper-next-leave-to,
+  .auth-paper-next-enter-from,
+  .auth-paper-prev-leave-to,
+  .auth-paper-prev-enter-from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .auth-splash__eyebrow,
     .auth-splash__brand,
@@ -439,6 +463,20 @@
 
     .auth-splash-leave-active {
       transition: opacity 0.2s ease;
+    }
+
+    .auth-paper-next-enter-active,
+    .auth-paper-next-leave-active,
+    .auth-paper-prev-enter-active,
+    .auth-paper-prev-leave-active {
+      transition: opacity 0.15s ease;
+    }
+
+    .auth-paper-next-leave-to,
+    .auth-paper-next-enter-from,
+    .auth-paper-prev-leave-to,
+    .auth-paper-prev-enter-from {
+      transform: none;
     }
   }
 

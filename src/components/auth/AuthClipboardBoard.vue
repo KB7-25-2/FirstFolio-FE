@@ -6,6 +6,16 @@ defineProps({
     type: String,
     required: true,
   },
+  /** 종이 교체용 키 (로그인/회원가입 등) */
+  paperKey: {
+    type: String,
+    required: true,
+  },
+  /** Vue Transition name — auth-paper-next | auth-paper-prev */
+  paperTransition: {
+    type: String,
+    default: 'auth-paper-next',
+  },
 })
 </script>
 
@@ -37,40 +47,43 @@ defineProps({
       <div class="mt-0.5 h-[4px] w-4 rounded-b bg-black/18" />
     </div>
 
-    <div class="relative px-1.5 pt-[20px] pb-1.5">
-      <div
-        class="auth-paper relative overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.5px] border-[var(--auth-paper-border)] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
-      >
-        <img
-          :src="paperTexture"
-          alt=""
-          class="pointer-events-none absolute top-0 left-0 h-[33%] w-[57%] max-w-none opacity-80"
-        />
-
+    <div class="auth-paper-stage relative overflow-hidden px-1.5 pt-[20px] pb-1.5">
+      <Transition :name="paperTransition" mode="out-in">
         <div
-          class="relative flex items-center justify-center border-b-[0.8px] border-[rgba(139,100,60,0.2)] px-3 pt-2 pb-2.5"
+          :key="paperKey"
+          class="auth-paper relative flex h-[520px] flex-col overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.5px] border-[var(--auth-paper-border)] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
         >
-          <span
-            class="absolute top-3.5 left-2.5 size-1.5 rounded bg-black/12 shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
+          <img
+            :src="paperTexture"
+            alt=""
+            class="pointer-events-none absolute top-0 left-0 h-[33%] w-[57%] max-w-none opacity-80"
           />
-          <span
-            class="absolute top-3.5 right-2.5 size-1.5 rounded bg-black/12 shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
-          />
-          <p
-            class="font-serif text-[13px] leading-5 font-bold tracking-[0.7px] text-[var(--auth-doc-ink)]"
+
+          <div
+            class="relative flex shrink-0 items-center justify-center border-b-[0.8px] border-[rgba(139,100,60,0.2)] px-3 pt-2 pb-2.5"
           >
-            {{ headerTitle }}
-          </p>
-        </div>
+            <span
+              class="absolute top-3.5 left-2.5 size-1.5 rounded bg-black/12 shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
+            />
+            <span
+              class="absolute top-3.5 right-2.5 size-1.5 rounded bg-black/12 shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
+            />
+            <p
+              class="font-serif text-[13px] leading-5 font-bold tracking-[0.7px] text-[var(--auth-doc-ink)]"
+            >
+              {{ headerTitle }}
+            </p>
+          </div>
 
-        <div class="relative px-3.5 pt-4 pb-3.5">
-          <slot />
-        </div>
+          <div class="relative min-h-0 flex-1 overflow-y-auto px-3.5 pt-4 pb-3.5">
+            <slot />
+          </div>
 
-        <div
-          class="pointer-events-none absolute inset-0 shadow-[inset_0_2px_8px_rgba(0,0,0,0.1)]"
-        />
-      </div>
+          <div
+            class="pointer-events-none absolute inset-0 shadow-[inset_0_2px_8px_rgba(0,0,0,0.1)]"
+          />
+        </div>
+      </Transition>
     </div>
 
     <div
