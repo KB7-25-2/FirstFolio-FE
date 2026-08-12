@@ -1,6 +1,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/authStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
 
 const OPTION_TONES = ['green', 'blue', 'pink', 'yellow']
@@ -18,6 +19,7 @@ const ASSET_LABELS = {
  */
 export const useLevelTestQuiz = () => {
   const router = useRouter()
+  const authStore = useAuthStore()
   const levelTestStore = useLevelTestStore()
 
   const {
@@ -78,7 +80,7 @@ export const useLevelTestQuiz = () => {
 
   const primaryEnabled = computed(() => {
     if (isSaving.value || isSubmitting.value) return false
-    if (isLastQuestion.value) return allAnswersReady.value || !!currentSelectedKey.value
+    if (isLastQuestion.value) return allAnswersReady.value
     return quizUiStatus.value === 'SELECTED'
   })
 
@@ -97,9 +99,15 @@ export const useLevelTestQuiz = () => {
     if (!currentSelectedKey.value) return
 
     try {
-      await levelTestStore.saveAnswers()
+      await levelTestStore.saveAnswers([
+        {
+          questionId: currentQuestion.value.questionId,
+          selectedChoiceIds: [currentSelectedKey.value],
+        },
+      ])
       if (isLastQuestion.value) {
         await levelTestStore.submit()
+        authStore.setOnboardingStep('CURRICULUM')
         await router.push({ name: 'onboarding-result' })
         return 'submitted'
       }

@@ -6,6 +6,7 @@ import {
   signupWithEmail as signupWithEmailApi,
   loginWithGoogle as loginWithGoogleApi,
   loginWithEmail as loginWithEmailApi,
+  refreshLoginSession,
 } from '@/services/authService.js'
 import { setToken, removeToken, hasToken } from '@/utils/token.js'
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/utils/onboardingStep.js'
 import { useUserStore } from '@/store/userStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
+import { useCurriculumStore } from '@/store/curriculumStore.js'
 import router from '@/router/index.js'
 
 const REMEMBER_KEY = 'auth_remember_email'
@@ -44,6 +46,13 @@ export const useAuthStore = defineStore('auth', () => {
   const setOnboardingStep = (step) => {
     onboardingStep.value = step
     setStoredOnboardingStep(step)
+  }
+
+  const ensureOnboardingStep = async () => {
+    if (onboardingStep.value || !hasToken()) return onboardingStep.value
+    const data = await refreshLoginSession()
+    setOnboardingStep(data.onboardingStep)
+    return onboardingStep.value
   }
 
   /**
@@ -91,7 +100,8 @@ export const useAuthStore = defineStore('auth', () => {
       onboardingStep.value = null
       clearStoredOnboardingStep()
       useUserStore().clearProfile()
-      useLevelTestStore().clearSession()
+      useLevelTestStore().clear()
+      useCurriculumStore().clear()
       await router.push({ path: '/login' })
     }
   }
@@ -101,6 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
     rememberedEmail,
     onboardingStep,
     setOnboardingStep,
+    ensureOnboardingStep,
     loginWithEmail,
     signupWithGoogle,
     signupWithEmail,
