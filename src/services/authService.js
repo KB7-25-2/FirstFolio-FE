@@ -188,6 +188,13 @@ export const loginWithEmail = async ({ email, password }) => {
   }
 }
 
+/** 저장된 인증 토큰으로 로그인 상태와 최신 온보딩 단계를 다시 조회한다. */
+export const refreshLoginSession = async () => {
+  const idToken = getToken() || (await getIdToken())
+  const { data } = await loginApi(idToken)
+  return mapLoginResponse(data.data)
+}
+
 export class AuthApiError extends Error {
   /**
    * @param {string} code

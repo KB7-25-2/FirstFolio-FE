@@ -10,17 +10,18 @@ import {
   LevelTestApiError,
 } from '@/services/levelTestService.js'
 export const useLevelTestStore = defineStore('levelTest', () => {
+  const storedSession = getStoredLevelTestSession()
   /** @type {import('vue').Ref<boolean | null>} null = 아직 조회 전 */
-  const completed = ref(null)
+  const completed = ref(storedSession.completed ? true : null)
   /** @type {import('vue').Ref<import('@/types/levelTest.js').LevelTestAttempt | null>} */
-  const attempt = ref(null)
+  const attempt = ref(storedSession.attempt)
   /**
    * 로컬 작성 중 답안 — questionId → selectedChoiceIds
    * @type {import('vue').Ref<Record<number, string[]>>}
    */
-  const answers = ref({})
+  const answers = ref(storedSession.answers)
   /** @type {import('vue').Ref<import('@/types/levelTest.js').LevelTestSubmitResult | null>} */
-  const submitResult = ref(null)
+  const submitResult = ref(storedSession.submitResult)
   /** 0-based 현재 문항 인덱스 */
   const currentQuestionIndex = ref(0)
 
@@ -124,6 +125,7 @@ export const useLevelTestStore = defineStore('levelTest', () => {
       completed.value = data.completed
       const session = getStoredLevelTestSession()
       if (session.attempt) attempt.value = session.attempt
+      answers.value = session.answers
       if (session.submitResult) submitResult.value = session.submitResult
       return data.completed
     } catch (err) {
@@ -151,11 +153,18 @@ export const useLevelTestStore = defineStore('levelTest', () => {
       attempt.value = data
       completed.value = false
       submitResult.value = null
-      answers.value = {}
-      currentQuestionIndex.value = 0
+      answers.value = Object.fromEntries(
+        (data.savedAnswers ?? [])
+          .filter((item) => item.selectedChoiceIds?.length)
+          .map((item) => [item.questionId, item.selectedChoiceIds]),
+      )
+      const firstUnansweredIndex = data.questions.findIndex(
+        (question) => !answers.value[question.questionId]?.length,
+      )
+      currentQuestionIndex.value = firstUnansweredIndex >= 0 ? firstUnansweredIndex : 0
       return data
     } catch (err) {
-      if (err instanceof LevelTestApiError && err.code === 'LEVEL_TEST_ALREADY_COMPLETED') {
+      if (err?.code === 'LEVEL_TEST_ALREADY_COMPLETED') {
         completed.value = true
         attempt.value = null
       }
@@ -168,12 +177,12 @@ export const useLevelTestStore = defineStore('levelTest', () => {
 
   /**
    * 현재 문항 선택 (SINGLE_CHOICE)
-   * @param {string} choiceKey optionsJson.key / selected_choice_ids 항목
+   * @param {string} choiceKey optionsJson.key / API answer.key
    */
   const selectChoice = (choiceKey) => {
     const qid = currentQuestion.value?.questionId
     if (qid == null || !choiceKey) return
-    if (attempt.value?.status === 'COMPLETED' || submitResult.value) return
+    if (attempt.value?.status === 'GRADED' || submitResult.value) return
     answers.value = {
       ...answers.value,
       [qid]: [choiceKey],
@@ -234,14 +243,11 @@ export const useLevelTestStore = defineStore('levelTest', () => {
     isSubmitting.value = true
     error.value = null
     try {
-      if (answeredCount.value > 0) {
-        await saveAnswers()
-      }
       const { data } = await submitLevelTest(attempt.value.attemptId)
       submitResult.value = data
       completed.value = true
       if (attempt.value) {
-        attempt.value = { ...attempt.value, status: 'COMPLETED' }
+        attempt.value = { ...attempt.value, status: 'GRADED' }
       }
       return data
     } catch (err) {
