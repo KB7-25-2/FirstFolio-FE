@@ -14,29 +14,21 @@ const upcoming = [
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl">
-    <p class="text-[12px] tracking-wide text-[#6b7280]">ADMIN CONSOLE</p>
-    <h2 class="mt-1 text-[22px] font-semibold tracking-tight text-[#111827]">
-      안녕하세요{{ nickname ? `, ${nickname}` : '' }}
-    </h2>
-    <p class="mt-2 text-[14px] leading-relaxed text-[#4b5563]">
-      관리자 라우트와 인가 가드가 분리된 상태입니다. 역할 코드
-      <code class="rounded bg-[#eef0f4] px-1.5 py-0.5 text-[12px] font-medium text-[#111827]">{{
-        roleCode || '—'
-      }}</code
-      >로 접근 중입니다.
+  <div class="admin-page">
+    <p class="admin-page__kicker">Overview</p>
+    <h2 class="admin-page__title">안녕하세요{{ nickname ? `, ${nickname}` : '' }}</h2>
+    <p class="admin-page__desc">
+      관리자 콘솔은 유저앱과 별도 디자인·레이아웃으로 구성합니다. 현재 역할
+      <span class="admin-code">{{ roleCode || '—' }}</span
+      >으로 접근 중이며, 아래 모듈부터 순차 연결합니다.
     </p>
 
-    <section class="mt-8 rounded-lg border border-[#e2e5eb] bg-white p-5">
-      <h3 class="text-[13px] font-semibold text-[#111827]">다음 단계</h3>
-      <ul class="mt-3 flex flex-col gap-2">
-        <li
-          v-for="item in upcoming"
-          :key="item.phase"
-          class="flex items-center justify-between rounded-md bg-[#f8f9fb] px-3 py-2.5 text-[13px]"
-        >
-          <span class="text-[#374151]">{{ item.label }}</span>
-          <span class="font-mono text-[11px] text-[#9ca3af]">{{ item.phase }}</span>
+    <section class="admin-card">
+      <h3 class="admin-card__title">Roadmap</h3>
+      <ul class="admin-list">
+        <li v-for="item in upcoming" :key="item.phase" class="admin-list__item">
+          <span class="admin-list__label">{{ item.label }}</span>
+          <span class="admin-list__meta">{{ item.phase }}</span>
         </li>
       </ul>
     </section>
