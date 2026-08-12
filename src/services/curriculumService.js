@@ -14,12 +14,12 @@
 
 import { LevelTestApiError } from '@/services/levelTestService.js'
 import { CURRICULUM_STORAGE_KEY } from '@/utils/curriculumConfirm.js'
-import { ApiError } from '@/api/errorHandler.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 import {
   confirmCurriculum as confirmCurriculumApi,
   getCurriculumDraft as getCurriculumDraftApi,
   saveCurriculumDraft as saveCurriculumDraftApi,
-} from '@/api/curriculumApi.js'
+} from '@/api/user/curriculumApi.js'
 import { pickField, unwrapData } from '@/utils/apiMapper.js'
 
 const LEVEL_TEST_STORAGE_KEY = 'level_test_state'

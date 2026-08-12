@@ -1,5 +1,5 @@
 import { ALLOW_DUPLICATE_POINT_GRANT, POINTS_PER_CORRECT } from '@/constants/quizPolicy.js'
-import { ApiError } from '@/api/errorHandler.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 import {
   getChapterGame as getChapterGameApi,
   getContinuePosition as getContinuePositionApi,
@@ -9,12 +9,12 @@ import {
   getSubChapterLesson as getSubChapterLessonApi,
   saveLessonProgress as saveLessonProgressApi,
   submitScenarioAttempt as submitScenarioAttemptApi,
-} from '@/api/studyApi.js'
+} from '@/api/user/studyApi.js'
 import {
   getQuizQuestions as getQuizQuestionsApi,
   gradeQuizAnswer as gradeQuizAnswerApi,
   submitQuizAttempt as submitQuizAttemptApi,
-} from '@/api/quizApi.js'
+} from '@/api/user/quizApi.js'
 import { pickField, unwrapData } from '@/utils/apiMapper.js'
 
 /**

@@ -185,6 +185,12 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminDashboardView.vue'),
           meta: { title: '대시보드' },
         },
+        {
+          path: 'curriculum',
+          name: 'admin-curriculum',
+          component: () => import('@/views/admin/AdminCurriculumView.vue'),
+          meta: { title: '커리큘럼' },
+        },
       ],
     },
     {

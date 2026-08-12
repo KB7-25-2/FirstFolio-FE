@@ -21,8 +21,8 @@ import {
   getToday as getTodayApi,
   saveAnswer as saveAnswerApi,
   submitToday as submitTodayApi,
-} from '@/api/dailyQuestApi.js'
-import { ApiError } from '@/api/errorHandler.js'
+} from '@/api/user/dailyQuestApi.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 
 const STORAGE_KEY = 'daily_quest_state'
 const TOTAL_COUNT = 5
