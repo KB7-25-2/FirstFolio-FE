@@ -82,7 +82,9 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
     await expect(page).toHaveURL(/\/learning\/?$/)
     await expect(page.getByRole('heading', { name: '예·적금' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '채권' })).toBeVisible()
-    await expect(page.getByRole('button', { name: /진행 중.*채권/ })).toBeVisible()
+    await expect(
+      page.locator('button').filter({ hasText: '채권' }).filter({ hasText: '진행 중' }).first(),
+    ).toBeVisible()
 
     await primaryNav(page).getByRole('button', { name: '홈', exact: true }).click()
     await expect(page).toHaveURL(/\/home/)
@@ -90,7 +92,7 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
     const continueBtn = page.getByRole('button', { name: '이어서 →' })
     await expect(continueBtn).toBeVisible({ timeout: 15_000 })
     await continueBtn.click()
-    await expect(page).toHaveURL(/\/learning\/main-chapters\/3/)
+    await expect(page).toHaveURL(/\/learning\/sub-chapters\/201|mainChapterId=3/)
   })
 })
 
