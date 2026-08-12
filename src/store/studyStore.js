@@ -9,6 +9,7 @@ import {
   getQuizQuestions,
   getScenario,
   getSubChapterContent,
+  gradeQuizAnswer,
   saveLessonProgress,
   submitQuizAttempt,
   submitScenarioAttempt,
@@ -295,7 +296,7 @@ export const useStudyStore = defineStore('study', () => {
     quizUiStatus.value = 'SELECTED'
   }
 
-  const submitCurrentQuizQuestion = () => {
+  const submitCurrentQuizQuestion = async () => {
     const question = quizCurrentQuestion.value
     if (!question || quizUiStatus.value !== 'SELECTED' || !quizSelectedKey.value) return false
 
@@ -303,8 +304,21 @@ export const useStudyStore = defineStore('study', () => {
       ...quizAnswers.value,
       [question.questionId]: quizSelectedKey.value,
     }
-    const correctKey = question.correctAnswerJson?.key
-    quizUiStatus.value = quizSelectedKey.value === correctKey ? 'CORRECT' : 'WRONG'
+
+    const localKey = question.correctAnswerJson?.key
+    if (localKey) {
+      quizUiStatus.value = quizSelectedKey.value === localKey ? 'CORRECT' : 'WRONG'
+      return true
+    }
+
+    const { data } = await gradeQuizAnswer({
+      subChapterId: quizSubChapterId.value,
+      questionId: question.questionId,
+      selectedKey: quizSelectedKey.value,
+    })
+    question.correctAnswerJson = data.correctAnswer
+    question.explanation = data.explanation
+    quizUiStatus.value = data.isCorrect ? 'CORRECT' : 'WRONG'
     return true
   }
 

@@ -1,9 +1,9 @@
 /**
- * 커리큘럼 초안 mock 서비스
+ * 커리큘럼 초안 서비스
  * - GET  /curriculums/draft
  * - PUT  /curriculums/draft  body: { main_chapter_ids }
  * - POST /curriculums/confirm
- * TODO: API 연동 시 curriculumApi로 교체
+ * — 실 API 우선, DEV에서 실패 시 로컬 mock 폴백
  */
 
 /**
@@ -14,6 +14,13 @@
 
 import { LevelTestApiError } from '@/services/levelTestService.js'
 import { CURRICULUM_STORAGE_KEY } from '@/utils/curriculumConfirm.js'
+import { ApiError } from '@/api/errorHandler.js'
+import {
+  confirmCurriculum as confirmCurriculumApi,
+  getCurriculumDraft as getCurriculumDraftApi,
+  saveCurriculumDraft as saveCurriculumDraftApi,
+} from '@/api/curriculumApi.js'
+import { pickField, unwrapData } from '@/utils/apiMapper.js'
 
 const LEVEL_TEST_STORAGE_KEY = 'level_test_state'
 const FOUNDATION_CHAPTER_ID = 1
@@ -77,23 +84,98 @@ const requireLevelTestCompleted = () => {
 }
 
 const mapDraft = (raw) => ({
-  items: (raw.items || []).map((item) => ({
-    mainChapterId: item.main_chapter_id,
-    title: item.title ?? chapterTitle(item.main_chapter_id),
-    sourceType: item.source_type,
-    displayOrder: item.display_order,
-    removable: item.source_type !== 'REQUIRED',
-  })),
-  cartCandidates: (raw.cart_candidates || []).map((c) => ({
-    mainChapterId: c.main_chapter_id,
-    title: c.title ?? chapterTitle(c.main_chapter_id),
-  })),
-  recommendationCandidates: (raw.recommendation_candidates || []).map((c) => ({
-    mainChapterId: c.main_chapter_id,
-    title: c.title ?? chapterTitle(c.main_chapter_id),
-    sourceType: 'LEVEL_TEST_WRONG',
-    removable: true,
-  })),
+  items: (raw.items || []).map((item) => {
+    const mainChapterId = Number(pickField(item, 'mainChapterId', 'main_chapter_id'))
+    const sourceType = pickField(item, 'sourceType', 'source_type')
+    return {
+      mainChapterId,
+      title: item.title ?? chapterTitle(mainChapterId),
+      sourceType,
+      displayOrder: Number(pickField(item, 'displayOrder', 'display_order') ?? 0),
+      removable: pickField(item, 'removable') ?? sourceType !== 'REQUIRED',
+    }
+  }),
+  cartCandidates: (raw.cartCandidates || raw.cart_candidates || []).map((c) => {
+    const mainChapterId = Number(pickField(c, 'mainChapterId', 'main_chapter_id'))
+    return {
+      mainChapterId,
+      title: c.title ?? chapterTitle(mainChapterId),
+    }
+  }),
+  recommendationCandidates: (
+    raw.recommendationCandidates ||
+    raw.recommendation_candidates ||
+    []
+  ).map((c) => {
+    const mainChapterId = Number(pickField(c, 'mainChapterId', 'main_chapter_id'))
+    return {
+      mainChapterId,
+      title: c.title ?? chapterTitle(mainChapterId),
+      sourceType: 'LEVEL_TEST_WRONG',
+      removable: true,
+    }
+  }),
+})
+
+/** DEV에서도 mock으로 가리지 않는 비즈니스 오류 */
+const CURRICULUM_BUSINESS_ERROR_CODES = new Set([
+  'UNAUTHORIZED',
+  'LEVEL_TEST_REQUIRED',
+  'INVALID_CURRICULUM_ITEMS',
+  'VALIDATION_ERROR',
+])
+
+/**
+ * @param {unknown} error
+ * @param {string} fallbackCode
+ * @param {string} fallbackMessage
+ * @returns {LevelTestApiError}
+ */
+const mapCurriculumError = (error, fallbackCode, fallbackMessage) => {
+  if (error instanceof LevelTestApiError) return error
+
+  if (error instanceof ApiError) {
+    const mapped = new LevelTestApiError(
+      error.code || fallbackCode,
+      error.message ?? fallbackMessage,
+      error.status,
+    )
+    mapped.unmapped = !error.code
+    return mapped
+  }
+
+  if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+    const err = /** @type {{ code: string, message: string, status?: number }} */ (error)
+    return new LevelTestApiError(err.code, err.message, err.status ?? 400)
+  }
+
+  const mapped = new LevelTestApiError(fallbackCode, fallbackMessage, 500)
+  mapped.unmapped = true
+  return mapped
+}
+
+/**
+ * @param {LevelTestApiError} error
+ * @returns {boolean}
+ */
+const shouldFallbackToMock = (error) => {
+  if (CURRICULUM_BUSINESS_ERROR_CODES.has(error.code)) return false
+  if (import.meta.env.DEV) return true
+  return Boolean(error.unmapped) && (error.status === 404 || error.status === 0)
+}
+
+const mapConfirmResult = (raw) => ({
+  status: raw.status ?? 'CONFIRMED',
+  confirmedAt: pickField(raw, 'confirmedAt', 'confirmed_at'),
+  items: (raw.items || []).map((item) => {
+    const mainChapterId = Number(pickField(item, 'mainChapterId', 'main_chapter_id'))
+    return {
+      mainChapterId,
+      title: item.title ?? chapterTitle(mainChapterId),
+      sourceType: pickField(item, 'sourceType', 'source_type'),
+      displayOrder: Number(pickField(item, 'displayOrder', 'display_order') ?? 0),
+    }
+  }),
 })
 
 /** @returns {{ wrongIds: Set<number>, cartIds: Set<number> }} */
@@ -164,7 +246,7 @@ const resolveSourceType = (mainChapterId, wrongIds, cartIds) => {
  * GET /curriculums/draft
  * @returns {Promise<{ data: CurriculumDraft }>}
  */
-export const getCurriculumDraft = async () => {
+const getCurriculumDraftMock = async () => {
   await delay()
   const state = requireLevelTestCompleted()
   const submitResult = state.attempt.submit_result
@@ -208,11 +290,31 @@ export const getCurriculumDraft = async () => {
 }
 
 /**
+ * GET /curriculums/draft — 실 API 우선
+ * @returns {Promise<{ data: CurriculumDraft }>}
+ */
+export const getCurriculumDraft = async () => {
+  try {
+    const raw = unwrapData(await getCurriculumDraftApi())
+    return { data: mapDraft(raw ?? {}) }
+  } catch (error) {
+    const mapped = mapCurriculumError(
+      error,
+      'DRAFT_FETCH_FAILED',
+      '커리큘럼 초안을 불러오지 못했다.',
+    )
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[curriculumService] getCurriculumDraft API 실패 — mock 사용', mapped)
+    return getCurriculumDraftMock()
+  }
+}
+
+/**
  * PUT /curriculums/draft
  * body: { main_chapter_ids } — FOUNDATION 제외 선택 ID 순서
  * @param {{ mainChapterIds?: number[], main_chapter_ids?: number[] }} payload
  */
-export const saveCurriculumDraft = async (payload) => {
+const saveCurriculumDraftMock = async (payload) => {
   await delay()
   const state = requireLevelTestCompleted()
   const { wrongIds, cartIds } = classifyFromSubmit(state.attempt.submit_result)
@@ -281,16 +383,49 @@ export const saveCurriculumDraft = async (payload) => {
 }
 
 /**
+ * PUT /curriculums/draft — 실 API 우선
+ * @param {{ mainChapterIds?: number[], main_chapter_ids?: number[] }} payload
+ */
+export const saveCurriculumDraft = async (payload) => {
+  const ids = payload?.mainChapterIds ?? payload?.main_chapter_ids
+  try {
+    const raw = unwrapData(
+      await saveCurriculumDraftApi({
+        main_chapter_ids: Array.isArray(ids) ? ids.map(Number) : ids,
+      }),
+    )
+    return {
+      data: {
+        items: (raw?.items ?? []).map((item) => ({
+          mainChapterId: Number(pickField(item, 'mainChapterId', 'main_chapter_id')),
+          sourceType: pickField(item, 'sourceType', 'source_type'),
+          displayOrder: Number(pickField(item, 'displayOrder', 'display_order') ?? 0),
+        })),
+      },
+    }
+  } catch (error) {
+    const mapped = mapCurriculumError(
+      error,
+      'INVALID_CURRICULUM_ITEMS',
+      '대단원 목록 또는 순서가 올바르지 않다.',
+    )
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[curriculumService] saveCurriculumDraft API 실패 — mock 사용', mapped)
+    return saveCurriculumDraftMock(payload)
+  }
+}
+
+/**
  * POST /curriculums/confirm
  * @param {{ mainChapterIds?: number[], main_chapter_ids?: number[] }} [payload]
  */
-export const confirmCurriculum = async (payload = {}) => {
+const confirmCurriculumMock = async (payload = {}) => {
   await delay()
   requireLevelTestCompleted()
 
   const rawIds = payload?.mainChapterIds ?? payload?.main_chapter_ids
   if (Array.isArray(rawIds)) {
-    await saveCurriculumDraft({ main_chapter_ids: rawIds })
+    await saveCurriculumDraftMock({ main_chapter_ids: rawIds })
   }
 
   const saved = readCurriculumState()
@@ -316,6 +451,29 @@ export const confirmCurriculum = async (payload = {}) => {
         displayOrder: item.display_order,
       })),
     },
+  }
+}
+
+/**
+ * POST /curriculums/confirm — 실 API 우선
+ * @param {{ mainChapterIds?: number[], main_chapter_ids?: number[] }} [payload]
+ */
+export const confirmCurriculum = async (payload = {}) => {
+  const ids = payload?.mainChapterIds ?? payload?.main_chapter_ids
+  try {
+    const raw = unwrapData(
+      await confirmCurriculumApi(Array.isArray(ids) ? { main_chapter_ids: ids.map(Number) } : {}),
+    )
+    return { data: mapConfirmResult(raw ?? {}) }
+  } catch (error) {
+    const mapped = mapCurriculumError(
+      error,
+      'INVALID_CURRICULUM_ITEMS',
+      '커리큘럼 확정에 실패했다.',
+    )
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[curriculumService] confirmCurriculum API 실패 — mock 사용', mapped)
+    return confirmCurriculumMock(payload)
   }
 }
 

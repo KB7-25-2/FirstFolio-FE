@@ -1,4 +1,21 @@
 import { ALLOW_DUPLICATE_POINT_GRANT, POINTS_PER_CORRECT } from '@/constants/quizPolicy.js'
+import { ApiError } from '@/api/errorHandler.js'
+import {
+  getChapterGame as getChapterGameApi,
+  getContinuePosition as getContinuePositionApi,
+  getCurriculum as getCurriculumApi,
+  getLearningProgress as getLearningProgressApi,
+  getScenario as getScenarioApi,
+  getSubChapterLesson as getSubChapterLessonApi,
+  saveLessonProgress as saveLessonProgressApi,
+  submitScenarioAttempt as submitScenarioAttemptApi,
+} from '@/api/studyApi.js'
+import {
+  getQuizQuestions as getQuizQuestionsApi,
+  gradeQuizAnswer as gradeQuizAnswerApi,
+  submitQuizAttempt as submitQuizAttemptApi,
+} from '@/api/quizApi.js'
+import { pickField, unwrapData } from '@/utils/apiMapper.js'
 
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
@@ -16,6 +33,7 @@ import { ALLOW_DUPLICATE_POINT_GRANT, POINTS_PER_CORRECT } from '@/constants/qui
  * @typedef {import('@/types/study.js').ScenarioDetail} ScenarioDetail
  * @typedef {import('@/types/study.js').ScenarioAnswerItem} ScenarioAnswerItem
  * @typedef {import('@/types/study.js').ScenarioAttemptResult} ScenarioAttemptResult
+ * @typedef {import('@/types/quiz.js').QuizGradeResult} QuizGradeResult
  */
 
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -33,6 +51,213 @@ export class StudyApiError extends Error {
     this.requestId = `req-mock-${Date.now()}`
   }
 }
+
+/** @type {Record<string, string>} */
+const STUDY_ERROR_MESSAGES = {
+  UNAUTHORIZED: '인증이 필요합니다. 다시 로그인해 주세요.',
+  CURRICULUM_NOT_FOUND: '확정된 커리큘럼이 없다.',
+  SUB_CHAPTER_NOT_FOUND: '공개 소단원을 찾을 수 없다.',
+  CONTENT_NOT_FOUND: '학습 페이지를 찾을 수 없다.',
+  PREREQUISITE_REQUIRED: '선행 학습이 필요하다.',
+  QUESTIONS_NOT_FOUND: '퀴즈 문항을 찾을 수 없다.',
+  CONTINUE_POSITION_NOT_FOUND: '이어갈 미완료 학습이 없다.',
+  CHAPTER_GAME_NOT_FOUND: '챕터 게임을 찾을 수 없다.',
+  CHAPTER_GAME_LOCKED: '아직 잠긴 챕터 게임이다.',
+  SCENARIO_NOT_FOUND: '시나리오를 찾을 수 없다.',
+  INVALID_ATTEMPT: '제출 데이터가 올바르지 않다.',
+}
+
+/** DEV에서도 mock으로 가리지 않는 비즈니스 오류 (NOT_FOUND 는 시드 전이라 DEV 폴백 허용) */
+const BUSINESS_ERROR_CODES = new Set([
+  'UNAUTHORIZED',
+  'PREREQUISITE_REQUIRED',
+  'CHAPTER_GAME_LOCKED',
+  'INVALID_ATTEMPT',
+  'INVALID_ANSWER',
+  'VALIDATION_ERROR',
+])
+
+/**
+ * @param {unknown} error
+ * @param {string} fallbackCode
+ * @param {string} fallbackMessage
+ * @returns {StudyApiError}
+ */
+const mapStudyError = (error, fallbackCode, fallbackMessage) => {
+  if (error instanceof StudyApiError) return error
+
+  if (error instanceof ApiError) {
+    const code = error.code || fallbackCode
+    const message = STUDY_ERROR_MESSAGES[error.code] ?? error.message ?? fallbackMessage
+    const mapped = new StudyApiError(code, message, error.status)
+    mapped.unmapped = !error.code
+    return mapped
+  }
+
+  if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+    const err = /** @type {{ code: string, message: string, status?: number }} */ (error)
+    return new StudyApiError(
+      err.code,
+      STUDY_ERROR_MESSAGES[err.code] ?? err.message,
+      err.status ?? 400,
+    )
+  }
+
+  const mapped = new StudyApiError(fallbackCode, fallbackMessage, 500)
+  mapped.unmapped = true
+  return mapped
+}
+
+/**
+ * @param {StudyApiError} error
+ * @returns {boolean}
+ */
+const shouldFallbackToMock = (error) => {
+  if (BUSINESS_ERROR_CODES.has(error.code)) return false
+  if (import.meta.env.DEV) return true
+  return Boolean(error.unmapped) && (error.status === 404 || error.status === 0)
+}
+
+/** @type {Map<string, SubChapterLessonJson>} */
+const LESSON_JSON_CACHE = new Map()
+
+const lessonCacheKey = (subChapterId) => `api:sub-chapter:${subChapterId}`
+
+/**
+ * @param {object | null | undefined} lesson
+ * @returns {SubChapterLessonJson}
+ */
+const mapLessonJson = (lesson) => {
+  if (!lesson || typeof lesson !== 'object') {
+    return { schemaVersion: '1.0', pages: [], subChapterQuiz: { questionIds: [] } }
+  }
+  const quiz = lesson.subChapterQuiz ?? lesson.sub_chapter_quiz ?? {}
+  return {
+    schemaVersion: String(pickField(lesson, 'schemaVersion', 'schema_version') ?? '1.0'),
+    pages: Array.isArray(lesson.pages) ? lesson.pages : [],
+    subChapterQuiz: {
+      questionIds: quiz.questionIds ?? quiz.question_ids ?? [],
+    },
+  }
+}
+
+/**
+ * @param {object} raw LessonContentResponse
+ * @param {SubChapterLessonJson} lessonJson
+ * @returns {SubChapterContent}
+ */
+const mapLessonContentResponse = (raw, lessonJson) => {
+  const subChapterId = Number(pickField(raw, 'subChapterId', 'sub_chapter_id'))
+  const progress = raw.progress ?? {}
+  return {
+    subChapterId,
+    mainChapterId: Number(pickField(raw, 'mainChapterId', 'main_chapter_id') ?? 0),
+    title: raw.title ?? '',
+    contentVersionId: Number(pickField(raw, 'contentVersionId', 'content_version_id') ?? 0),
+    schemaVersion: String(
+      pickField(raw, 'schemaVersion', 'schema_version') ?? lessonJson.schemaVersion,
+    ),
+    contentUrl: pickField(raw, 'contentUrl', 'content_url') ?? lessonCacheKey(subChapterId),
+    expiresAt:
+      pickField(raw, 'expiresAt', 'expires_at') ??
+      new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    progress: {
+      status: progress.status ?? 'NOT_STARTED',
+      lastPageId: pickField(progress, 'lastPageId', 'last_page_id') ?? null,
+      completedAt: pickField(progress, 'completedAt', 'completed_at') ?? null,
+    },
+  }
+}
+
+/**
+ * @param {object} raw
+ * @returns {LearningProgressItem}
+ */
+const mapLearningProgressItem = (raw) => ({
+  progressId: Number(pickField(raw, 'progressId', 'progress_id') ?? 0),
+  userId: Number(pickField(raw, 'userId', 'user_id') ?? 0),
+  mainChapterId: Number(pickField(raw, 'mainChapterId', 'main_chapter_id')),
+  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id') ?? null,
+  contentVersionId: pickField(raw, 'contentVersionId', 'content_version_id') ?? null,
+  lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? null,
+  status: raw.status ?? 'NOT_STARTED',
+  startedAt: pickField(raw, 'startedAt', 'started_at') ?? null,
+  completedAt: pickField(raw, 'completedAt', 'completed_at') ?? null,
+  updatedAt: pickField(raw, 'updatedAt', 'updated_at') ?? new Date().toISOString(),
+  order: Number(pickField(raw, 'order', 'displayOrder', 'display_order') ?? 0),
+  title: raw.title ?? '',
+  shortLabel: pickField(raw, 'shortLabel', 'short_label') ?? '',
+  periodSubtitle: pickField(raw, 'periodSubtitle', 'period_subtitle'),
+  entryType: pickField(raw, 'entryType', 'entry_type') ?? 'LESSON',
+  quizScore: pickField(raw, 'quizScore', 'quiz_score') ?? null,
+})
+
+/**
+ * @param {object} raw
+ * @returns {QuizQuestion}
+ */
+const mapQuizQuestion = (raw) => ({
+  questionId: Number(pickField(raw, 'questionId', 'question_id')),
+  questionKey: pickField(raw, 'questionKey', 'question_key') ?? '',
+  versionNo: Number(pickField(raw, 'versionNo', 'version_no') ?? 1),
+  usageType: pickField(raw, 'usageType', 'usage_type') ?? 'SUB_CHAPTER',
+  mainChapterId: pickField(raw, 'mainChapterId', 'main_chapter_id') ?? null,
+  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id') ?? null,
+  displayOrder: pickField(raw, 'displayOrder', 'display_order') ?? null,
+  questionType: pickField(raw, 'questionType', 'question_type'),
+  difficulty: raw.difficulty ?? null,
+  prompt: raw.prompt ?? '',
+  scenarioJson: pickField(raw, 'scenarioJson', 'scenario_json', 'scenario') ?? null,
+  optionsJson: pickField(raw, 'optionsJson', 'options_json', 'options') ?? [],
+  correctAnswerJson:
+    pickField(raw, 'correctAnswerJson', 'correct_answer_json', 'correctAnswer') ?? null,
+  explanation: raw.explanation ?? '',
+  generationType: pickField(raw, 'generationType', 'generation_type') ?? 'HUMAN',
+  sourceRefsJson: pickField(raw, 'sourceRefsJson', 'source_refs_json') ?? null,
+  status: raw.status ?? 'PUBLISHED',
+})
+
+/**
+ * @param {object} raw
+ * @returns {QuizGradeResult}
+ */
+const mapQuizGradeResult = (raw) => ({
+  quizAnswerId: Number(pickField(raw, 'quizAnswerId', 'quiz_answer_id') ?? 0),
+  questionId: Number(pickField(raw, 'questionId', 'question_id')),
+  generationType: pickField(raw, 'generationType', 'generation_type') ?? 'HUMAN',
+  selectedKey: pickField(raw, 'selectedKey', 'selected_key') ?? '',
+  isCorrect: Boolean(pickField(raw, 'isCorrect', 'is_correct')),
+  correctAnswer: pickField(raw, 'correctAnswer', 'correct_answer', 'correctAnswerJson') ?? {
+    key: '',
+  },
+  explanation: raw.explanation ?? '',
+  answeredCount: Number(pickField(raw, 'answeredCount', 'answered_count') ?? 0),
+  totalCount: Number(pickField(raw, 'totalCount', 'total_count') ?? 0),
+  attemptCompleted: Boolean(pickField(raw, 'attemptCompleted', 'attempt_completed')),
+  result: pickField(raw, 'result') ?? undefined,
+})
+
+/**
+ * @param {object} raw
+ * @returns {QuizAttemptResult}
+ */
+const mapQuizAttemptResult = (raw) => ({
+  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id'),
+  totalCount: Number(pickField(raw, 'totalCount', 'total_count') ?? 0),
+  correctCount: Number(pickField(raw, 'correctCount', 'correct_count') ?? 0),
+  quizScore: Number(pickField(raw, 'quizScore', 'quiz_score', 'score') ?? 0),
+  pointsGranted: Number(pickField(raw, 'pointsGranted', 'points_granted') ?? 0),
+  wrongAnswers: (pickField(raw, 'wrongAnswers', 'wrong_answers') ?? []).map((item) => ({
+    questionId: Number(pickField(item, 'questionId', 'question_id')),
+    selectedKey: pickField(item, 'selectedKey', 'selected_key') ?? '',
+    correctKey: pickField(item, 'correctKey', 'correct_key') ?? '',
+  })),
+  gradedAnswers: (pickField(raw, 'gradedAnswers', 'graded_answers') ?? []).map((item) => ({
+    questionId: Number(pickField(item, 'questionId', 'question_id')),
+    selectedKey: pickField(item, 'selectedKey', 'selected_key') ?? '',
+    isCorrect: Boolean(pickField(item, 'isCorrect', 'is_correct')),
+  })),
+})
 
 /** 개인 커리큘럼 조회 API 목업 — 기초 수료 후 예·적금 진행 중 유저 */
 const MOCK_CURRICULUM_RESPONSE = {
@@ -1034,14 +1259,14 @@ const recomputeContinuePosition = () => {
  * @returns {CurriculumItem}
  */
 const mapCurriculumItem = (item) => ({
-  curriculumItemId: item.curriculum_item_id,
-  mainChapterId: item.main_chapter_id,
+  curriculumItemId: Number(pickField(item, 'curriculumItemId', 'curriculum_item_id')),
+  mainChapterId: Number(pickField(item, 'mainChapterId', 'main_chapter_id')),
   title: item.title,
-  chapterType: item.chapter_type,
-  displayOrder: item.display_order,
+  chapterType: pickField(item, 'chapterType', 'chapter_type'),
+  displayOrder: Number(pickField(item, 'displayOrder', 'display_order')),
   status: item.status,
-  completedAt: item.completed_at,
-  progressPercent: item.progress_percent,
+  completedAt: pickField(item, 'completedAt', 'completed_at') ?? null,
+  progressPercent: Number(pickField(item, 'progressPercent', 'progress_percent') ?? 0),
 })
 
 /**
@@ -1049,17 +1274,17 @@ const mapCurriculumItem = (item) => ({
  * @returns {SubChapterContent}
  */
 const mapSubChapterContent = (raw) => ({
-  subChapterId: raw.sub_chapter_id,
-  mainChapterId: raw.main_chapter_id,
+  subChapterId: Number(pickField(raw, 'subChapterId', 'sub_chapter_id')),
+  mainChapterId: Number(pickField(raw, 'mainChapterId', 'main_chapter_id')),
   title: raw.title,
-  contentVersionId: raw.content_version_id,
-  schemaVersion: raw.schema_version,
-  contentUrl: raw.content_url,
-  expiresAt: raw.expires_at,
+  contentVersionId: Number(pickField(raw, 'contentVersionId', 'content_version_id')),
+  schemaVersion: pickField(raw, 'schemaVersion', 'schema_version'),
+  contentUrl: pickField(raw, 'contentUrl', 'content_url'),
+  expiresAt: pickField(raw, 'expiresAt', 'expires_at'),
   progress: {
     status: raw.progress.status,
-    lastPageId: raw.progress.last_page_id,
-    completedAt: raw.progress.completed_at,
+    lastPageId: pickField(raw.progress, 'lastPageId', 'last_page_id'),
+    completedAt: pickField(raw.progress, 'completedAt', 'completed_at'),
   },
 })
 
@@ -1068,12 +1293,12 @@ const mapSubChapterContent = (raw) => ({
  * @returns {ContinuePosition}
  */
 const mapContinuePosition = (raw) => ({
-  curriculumItemId: raw.curriculum_item_id,
-  mainChapterId: raw.main_chapter_id,
-  subChapterId: raw.sub_chapter_id,
-  contentVersionId: raw.content_version_id,
-  lastPageId: raw.last_page_id,
-  progressPercent: raw.progress_percent,
+  curriculumItemId: Number(pickField(raw, 'curriculumItemId', 'curriculum_item_id')),
+  mainChapterId: Number(pickField(raw, 'mainChapterId', 'main_chapter_id')),
+  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id') ?? null,
+  contentVersionId: pickField(raw, 'contentVersionId', 'content_version_id') ?? null,
+  lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? null,
+  progressPercent: Number(pickField(raw, 'progressPercent', 'progress_percent') ?? 0),
   route: raw.route,
 })
 
@@ -1082,7 +1307,7 @@ const mapContinuePosition = (raw) => ({
  * @returns {Promise<{ data: { items: CurriculumItem[] } }>}
  * @throws {StudyApiError} CURRICULUM_NOT_FOUND
  */
-export const getCurriculum = async () => {
+const getCurriculumMock = async () => {
   await delay()
   const raw = structuredClone(MOCK_CURRICULUM_RESPONSE)
   const items = raw.data?.items ?? []
@@ -1097,14 +1322,53 @@ export const getCurriculum = async () => {
 }
 
 /**
+ * GET /curriculums — 실 API 우선, DEV에서 미구현·시드 전 404 시 mock
+ * @returns {Promise<{ data: { items: CurriculumItem[] } }>}
+ * @throws {StudyApiError} CURRICULUM_NOT_FOUND
+ */
+export const getCurriculum = async () => {
+  try {
+    const raw = unwrapData(await getCurriculumApi())
+    const items = (raw?.items ?? []).map(mapCurriculumItem)
+    if (!items.length) {
+      throw new StudyApiError('CURRICULUM_NOT_FOUND', '확정된 커리큘럼이 없다.', 404)
+    }
+    return { data: { items } }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'CURRICULUM_FETCH_FAILED', '커리큘럼을 불러오지 못했다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] getCurriculum API 실패 — mock 사용', mapped)
+    return getCurriculumMock()
+  }
+}
+
+/**
  * 대단원 소단원 학습 진행 목록 (목업 — 목록 API 확정 전)
  * @param {number} mainChapterId
  * @returns {Promise<{ data: { items: LearningProgressItem[] } }>}
  */
-export const getLearningProgress = async (mainChapterId) => {
+const getLearningProgressMock = async (mainChapterId) => {
   await delay()
   const items = MOCK_LEARNING_PROGRESS.filter((item) => item.mainChapterId === mainChapterId)
   return { data: { items: structuredClone(items) } }
+}
+
+/**
+ * GET /learning/main-chapters/{id}/progress
+ * @param {number} mainChapterId
+ * @returns {Promise<{ data: { items: LearningProgressItem[] } }>}
+ */
+export const getLearningProgress = async (mainChapterId) => {
+  try {
+    const raw = unwrapData(await getLearningProgressApi(mainChapterId))
+    const items = (raw?.items ?? (Array.isArray(raw) ? raw : [])).map(mapLearningProgressItem)
+    return { data: { items } }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'PROGRESS_FETCH_FAILED', '학습 진행을 불러오지 못했다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] getLearningProgress API 실패 — mock 사용', mapped)
+    return getLearningProgressMock(mainChapterId)
+  }
 }
 
 /**
@@ -1129,7 +1393,7 @@ const isPrerequisiteBlocked = (subChapterId) => {
  * @returns {Promise<{ data: SubChapterContent }>}
  * @throws {StudyApiError} SUB_CHAPTER_NOT_FOUND | PREREQUISITE_REQUIRED
  */
-export const getSubChapterContent = async (subChapterId) => {
+const getSubChapterContentMock = async (subChapterId) => {
   await delay()
   if (isPrerequisiteBlocked(subChapterId)) {
     throw new StudyApiError('PREREQUISITE_REQUIRED', '선행 학습이 필요하다.', 403)
@@ -1142,12 +1406,34 @@ export const getSubChapterContent = async (subChapterId) => {
 }
 
 /**
+ * GET /learning/sub-chapters/{id} — lesson JSON 인라인
+ * @param {number} subChapterId
+ * @returns {Promise<{ data: SubChapterContent }>}
+ * @throws {StudyApiError} SUB_CHAPTER_NOT_FOUND | PREREQUISITE_REQUIRED
+ */
+export const getSubChapterContent = async (subChapterId) => {
+  try {
+    const raw = unwrapData(await getSubChapterLessonApi(subChapterId))
+    const lessonJson = mapLessonJson(raw?.lesson)
+    const meta = mapLessonContentResponse(raw, lessonJson)
+    LESSON_JSON_CACHE.set(meta.contentUrl, lessonJson)
+    LESSON_JSON_CACHE.set(lessonCacheKey(meta.subChapterId), lessonJson)
+    return { data: meta }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'SUB_CHAPTER_NOT_FOUND', '공개 소단원을 찾을 수 없다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] getSubChapterContent API 실패 — mock 사용', mapped)
+    return getSubChapterContentMock(subChapterId)
+  }
+}
+
+/**
  * 백엔드가 발급한 contentUrl로 소단원 강좌 JSON 로드 (목업)
  * @param {string} contentUrl
  * @returns {Promise<{ data: SubChapterLessonJson }>}
  * @throws {StudyApiError} CONTENT_NOT_FOUND
  */
-export const getLessonPages = async (contentUrl) => {
+const getLessonPagesMock = async (contentUrl) => {
   await delay()
   const payload = MOCK_LESSON_JSON_BY_URL[contentUrl]
   if (!payload) {
@@ -1157,13 +1443,56 @@ export const getLessonPages = async (contentUrl) => {
 }
 
 /**
+ * 인라인 캐시 → 서명 URL fetch → mock
+ * @param {string} contentUrl
+ * @returns {Promise<{ data: SubChapterLessonJson }>}
+ * @throws {StudyApiError} CONTENT_NOT_FOUND
+ */
+export const getLessonPages = async (contentUrl) => {
+  const cached = LESSON_JSON_CACHE.get(contentUrl)
+  if (cached) return { data: structuredClone(cached) }
+
+  const sentinelId = /^api:sub-chapter:(\d+)$/.exec(contentUrl)?.[1]
+  if (sentinelId) {
+    try {
+      const raw = unwrapData(await getSubChapterLessonApi(Number(sentinelId)))
+      const lessonJson = mapLessonJson(raw?.lesson)
+      LESSON_JSON_CACHE.set(contentUrl, lessonJson)
+      return { data: structuredClone(lessonJson) }
+    } catch (error) {
+      const mapped = mapStudyError(error, 'CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.')
+      if (!shouldFallbackToMock(mapped)) throw mapped
+      console.warn('[studyService] getLessonPages API 재조회 실패 — mock 사용', mapped)
+    }
+  }
+
+  if (/^https?:\/\//.test(contentUrl)) {
+    try {
+      const response = await fetch(contentUrl)
+      if (!response.ok) {
+        throw new StudyApiError('CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.', response.status)
+      }
+      const lessonJson = mapLessonJson(await response.json())
+      LESSON_JSON_CACHE.set(contentUrl, lessonJson)
+      return { data: structuredClone(lessonJson) }
+    } catch (error) {
+      const mapped = mapStudyError(error, 'CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.')
+      if (!shouldFallbackToMock(mapped)) throw mapped
+      console.warn('[studyService] getLessonPages URL fetch 실패 — mock 사용', mapped)
+    }
+  }
+
+  return getLessonPagesMock(contentUrl)
+}
+
+/**
  * 소단원 강좌 진도 저장 (목업) — lastPageId / status
  * @param {number} subChapterId
  * @param {{ lastPageId: string, status?: LearningProgressStatus }} payload
  * @returns {Promise<{ data: { lastPageId: string, status: LearningProgressStatus } }>}
  * @throws {StudyApiError} SUB_CHAPTER_NOT_FOUND
  */
-export const saveLessonProgress = async (subChapterId, payload) => {
+const saveLessonProgressMock = async (subChapterId, payload) => {
   await delay(80)
   const raw = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
   if (!raw) {
@@ -1203,6 +1532,34 @@ export const saveLessonProgress = async (subChapterId, payload) => {
       lastPageId,
       status,
     },
+  }
+}
+
+/**
+ * PATCH /learning/sub-chapters/{id}/progress
+ * @param {number} subChapterId
+ * @param {{ lastPageId: string, status?: LearningProgressStatus }} payload
+ * @returns {Promise<{ data: { lastPageId: string, status: LearningProgressStatus } }>}
+ */
+export const saveLessonProgress = async (subChapterId, payload) => {
+  try {
+    const raw = unwrapData(
+      await saveLessonProgressApi(subChapterId, {
+        last_page_id: payload.lastPageId,
+        status: payload.status,
+      }),
+    )
+    return {
+      data: {
+        lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? payload.lastPageId,
+        status: raw?.status ?? payload.status ?? 'IN_PROGRESS',
+      },
+    }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'PROGRESS_SAVE_FAILED', '학습 진도를 저장하지 못했다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] saveLessonProgress API 실패 — mock 사용', mapped)
+    return saveLessonProgressMock(subChapterId, payload)
   }
 }
 
@@ -1437,7 +1794,7 @@ const MOCK_QUIZ_QUESTIONS = {
  * @returns {Promise<{ data: { items: QuizQuestion[] } }>}
  * @throws {StudyApiError} QUESTIONS_NOT_FOUND
  */
-export const getQuizQuestions = async (questionIds) => {
+const getQuizQuestionsMock = async (questionIds) => {
   await delay()
   if (!questionIds?.length) {
     throw new StudyApiError('QUESTIONS_NOT_FOUND', '퀴즈 문항 ID가 없다.', 404)
@@ -1454,11 +1811,56 @@ export const getQuizQuestions = async (questionIds) => {
 }
 
 /**
+ * GET /quiz/questions?question_ids=
+ * @param {number[]} questionIds
+ * @returns {Promise<{ data: { items: QuizQuestion[] } }>}
+ * @throws {StudyApiError} QUESTIONS_NOT_FOUND
+ */
+export const getQuizQuestions = async (questionIds) => {
+  if (!questionIds?.length) {
+    throw new StudyApiError('QUESTIONS_NOT_FOUND', '퀴즈 문항 ID가 없다.', 404)
+  }
+  try {
+    const raw = unwrapData(await getQuizQuestionsApi(questionIds))
+    const items = (raw?.items ?? (Array.isArray(raw) ? raw : [])).map(mapQuizQuestion)
+    if (!items.length) {
+      throw new StudyApiError('QUESTIONS_NOT_FOUND', '퀴즈 문항을 찾을 수 없다.', 404)
+    }
+    return { data: { items } }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'QUESTIONS_NOT_FOUND', '퀴즈 문항을 찾을 수 없다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] getQuizQuestions API 실패 — mock 사용', mapped)
+    return getQuizQuestionsMock(questionIds)
+  }
+}
+
+/**
+ * 문항 단위 채점 — 서버 정답 미포함 문항용
+ * @param {{ subChapterId: number, questionId: number, selectedKey: string }} payload
+ * @returns {Promise<{ data: QuizGradeResult }>}
+ */
+export const gradeQuizAnswer = async (payload) => {
+  const { subChapterId, questionId, selectedKey } = payload
+  try {
+    const raw = unwrapData(
+      await gradeQuizAnswerApi(subChapterId, {
+        question_id: questionId,
+        selected_key: selectedKey,
+      }),
+    )
+    return { data: mapQuizGradeResult(raw) }
+  } catch (error) {
+    throw mapStudyError(error, 'INVALID_ANSWER', '채점에 실패했다.')
+  }
+}
+
+/**
  * 소단원 퀴즈 제출·채점 (목업)
  * @param {{ subChapterId: number, answers: QuizAnswerItem[] }} payload
  * @returns {Promise<{ data: QuizAttemptResult }>}
  */
-export const submitQuizAttempt = async (payload) => {
+const submitQuizAttemptMock = async (payload) => {
   await delay(120)
   const { subChapterId, answers } = payload
   if (!subChapterId || !answers?.length) {
@@ -1547,6 +1949,32 @@ export const submitQuizAttempt = async (payload) => {
       wrongAnswers,
       gradedAnswers,
     },
+  }
+}
+
+/**
+ * POST /quiz/attempts
+ * @param {{ subChapterId: number, answers: QuizAnswerItem[] }} payload
+ * @returns {Promise<{ data: QuizAttemptResult }>}
+ */
+export const submitQuizAttempt = async (payload) => {
+  try {
+    const raw = unwrapData(
+      await submitQuizAttemptApi({
+        quiz_type: 'SUB_CHAPTER',
+        sub_chapter_id: payload.subChapterId,
+        answers: (payload.answers ?? []).map((answer) => ({
+          question_id: answer.questionId,
+          selected_key: answer.selectedKey,
+        })),
+      }),
+    )
+    return { data: mapQuizAttemptResult(raw) }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'INVALID_ATTEMPT', '퀴즈 제출에 실패했다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] submitQuizAttempt API 실패 — mock 사용', mapped)
+    return submitQuizAttemptMock(payload)
   }
 }
 
@@ -1724,7 +2152,7 @@ const MOCK_SCENARIO_POINT_GRANTED = new Set()
  * @param {number} mainChapterId
  * @returns {Promise<{ data: ChapterGame }>}
  */
-export const getChapterGame = async (mainChapterId) => {
+const getChapterGameMock = async (mainChapterId) => {
   await delay()
   const game = MOCK_CHAPTER_GAMES.get(Number(mainChapterId))
   if (!game) {
@@ -1739,11 +2167,28 @@ export const getChapterGame = async (mainChapterId) => {
 }
 
 /**
+ * GET /learning/main-chapters/{id}/game
+ * @param {number} mainChapterId
+ * @returns {Promise<{ data: ChapterGame }>}
+ */
+export const getChapterGame = async (mainChapterId) => {
+  try {
+    const raw = unwrapData(await getChapterGameApi(mainChapterId))
+    return { data: raw }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'CHAPTER_GAME_NOT_FOUND', '챕터 게임을 찾을 수 없다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] getChapterGame API 실패 — mock 사용', mapped)
+    return getChapterGameMock(mainChapterId)
+  }
+}
+
+/**
  * 시나리오 상세 조회 (목업)
  * @param {number} scenarioId
  * @returns {Promise<{ data: ScenarioDetail }>}
  */
-export const getScenario = async (scenarioId) => {
+const getScenarioMock = async (scenarioId) => {
   await delay()
   const row = MOCK_SCENARIOS[Number(scenarioId)]
   if (!row) {
@@ -1753,11 +2198,28 @@ export const getScenario = async (scenarioId) => {
 }
 
 /**
+ * GET /scenarios/{id}
+ * @param {number} scenarioId
+ * @returns {Promise<{ data: ScenarioDetail }>}
+ */
+export const getScenario = async (scenarioId) => {
+  try {
+    const raw = unwrapData(await getScenarioApi(scenarioId))
+    return { data: raw }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'SCENARIO_NOT_FOUND', '시나리오를 찾을 수 없다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] getScenario API 실패 — mock 사용', mapped)
+    return getScenarioMock(scenarioId)
+  }
+}
+
+/**
  * 시나리오 응시 제출·채점 (목업)
  * @param {{ scenarioId: number, mainChapterId: number, answers: ScenarioAnswerItem[] }} payload
  * @returns {Promise<{ data: ScenarioAttemptResult }>}
  */
-export const submitScenarioAttempt = async (payload) => {
+const submitScenarioAttemptMock = async (payload) => {
   await delay(120)
   const { scenarioId, mainChapterId, answers } = payload
   if (!scenarioId || !mainChapterId || !answers?.length) {
@@ -1839,14 +2301,58 @@ export const submitScenarioAttempt = async (payload) => {
 }
 
 /**
+ * POST /scenarios/{id}/attempts
+ * @param {{ scenarioId: number, mainChapterId: number, answers: ScenarioAnswerItem[] }} payload
+ * @returns {Promise<{ data: ScenarioAttemptResult }>}
+ */
+export const submitScenarioAttempt = async (payload) => {
+  try {
+    const raw = unwrapData(
+      await submitScenarioAttemptApi(payload.scenarioId, {
+        main_chapter_id: payload.mainChapterId,
+        answers: (payload.answers ?? []).map((answer) => ({
+          step_id: answer.stepId,
+          selected_key: answer.selectedKey,
+        })),
+      }),
+    )
+    return { data: raw }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'INVALID_ATTEMPT', '시나리오 제출에 실패했다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] submitScenarioAttempt API 실패 — mock 사용', mapped)
+    return submitScenarioAttemptMock(payload)
+  }
+}
+
+/**
  * 마지막 미완료 학습 위치 조회 (목업) — StudyNote「이어서 →」
  * @returns {Promise<{ data: ContinuePosition }>}
  */
-export const getContinuePosition = async () => {
+const getContinuePositionMock = async () => {
   await delay()
   recomputeContinuePosition()
   if (!MOCK_CONTINUE_POSITION?.data) {
     throw new StudyApiError('CONTINUE_POSITION_NOT_FOUND', '이어갈 미완료 학습이 없다.', 404)
   }
   return { data: mapContinuePosition(structuredClone(MOCK_CONTINUE_POSITION.data)) }
+}
+
+/**
+ * GET /learning/continue
+ * @returns {Promise<{ data: ContinuePosition }>}
+ */
+export const getContinuePosition = async () => {
+  try {
+    const raw = unwrapData(await getContinuePositionApi())
+    if (!raw) {
+      throw new StudyApiError('CONTINUE_POSITION_NOT_FOUND', '이어갈 미완료 학습이 없다.', 404)
+    }
+    return { data: mapContinuePosition(raw) }
+  } catch (error) {
+    const mapped = mapStudyError(error, 'CONTINUE_POSITION_NOT_FOUND', '이어갈 미완료 학습이 없다.')
+    if (!shouldFallbackToMock(mapped)) throw mapped
+    console.warn('[studyService] getContinuePosition API 실패 — mock 사용', mapped)
+    return getContinuePositionMock()
+  }
 }
