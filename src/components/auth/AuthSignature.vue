@@ -14,7 +14,7 @@ defineProps({
 <template>
   <div class="flex w-full items-center justify-end gap-2">
     <span class="font-serif text-[9px] text-[var(--auth-doc-faint)]">신청인</span>
-    <span class="font-serif font-bold text-[22px] leading-none text-[var(--auth-hand)]">{{
+    <span class="font-serif font-bold text-[18px] leading-none text-[var(--auth-hand)]">{{
       name
     }}</span>
     <div class="flex h-[23px] w-[34px] items-center justify-center">
