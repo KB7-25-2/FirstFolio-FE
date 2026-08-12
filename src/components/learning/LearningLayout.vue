@@ -8,6 +8,14 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  /**
+   * 하단 Navbar 높이만큼 스크롤 끝 여백(`nav-scroll-pad`) 추가
+   * — 내부에서 별도 스크롤 패널을 쓰는 화면은 false로 두고 그 패널에 pad를 붙인다
+   */
+  padForNav: {
+    type: Boolean,
+    default: true,
+  },
   /** 스크롤 패널 추가 클래스 (snap 등) */
   contentClass: {
     type: String,
@@ -29,7 +37,7 @@ defineProps({
       class="flex min-h-0 w-full max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto"
       :class="[
         immersive ? 'pt-4 pb-2' : 'pt-4 px-5',
-        !immersive && !$slots.footer ? 'nav-scroll-pad' : '',
+        !immersive && padForNav && !$slots.footer ? 'nav-scroll-pad' : '',
         contentClass,
       ]"
     >

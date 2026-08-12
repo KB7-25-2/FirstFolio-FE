@@ -68,12 +68,13 @@ const handleResetConfirm = async () => {
       </div>
     </header>
 
-    <div
-      data-scroll-reveal-root
-      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 pt-5"
-    >
-      <PortfolioTabs />
-      <RouterView />
+    <div class="flex min-h-0 flex-1 flex-col gap-4 px-5 pt-5">
+      <div class="shrink-0">
+        <PortfolioTabs />
+      </div>
+      <div class="min-h-0 flex-1 overflow-hidden">
+        <RouterView />
+      </div>
     </div>
 
     <BankruptcyConfirmModal
