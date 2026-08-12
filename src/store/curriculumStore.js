@@ -5,10 +5,8 @@ import {
   saveCurriculumDraft,
   confirmCurriculum,
   resetCurriculumState,
-  FOUNDATION_CHAPTER_ID,
   chapterTitle,
 } from '@/services/curriculumService.js'
-import { LevelTestApiError } from '@/services/levelTestService.js'
 
 export const useCurriculumStore = defineStore('curriculum', () => {
   /** @type {import('vue').Ref<import('@/types/curriculum.js').CurriculumDraft | null>} */
@@ -56,16 +54,13 @@ export const useCurriculumStore = defineStore('curriculum', () => {
   const selectedCourseCount = computed(() => orderedItems.value.length)
 
   const selectedAssetIds = computed(() =>
-    orderedItems.value
-      .filter((i) => i.mainChapterId !== FOUNDATION_CHAPTER_ID)
-      .map((i) => i.mainChapterId),
+    orderedItems.value.filter((i) => i.sourceType !== 'REQUIRED').map((i) => i.mainChapterId),
   )
 
   const isSelected = (mainChapterId) =>
     orderedItems.value.some((i) => i.mainChapterId === mainChapterId)
 
   const sourceTypeFor = (mainChapterId) => {
-    if (mainChapterId === FOUNDATION_CHAPTER_ID) return 'REQUIRED'
     if (recommendationPool.value.some((i) => i.mainChapterId === mainChapterId)) {
       return 'LEVEL_TEST_WRONG'
     }
@@ -73,19 +68,13 @@ export const useCurriculumStore = defineStore('curriculum', () => {
   }
 
   const ensureFoundation = (list) => {
-    const withoutFoundation = list.filter((i) => i.mainChapterId !== FOUNDATION_CHAPTER_ID)
-    return [
-      {
-        mainChapterId: FOUNDATION_CHAPTER_ID,
-        title: chapterTitle(FOUNDATION_CHAPTER_ID),
-        sourceType: 'REQUIRED',
-        displayOrder: 1,
-      },
-      ...withoutFoundation.map((item, index) => ({
-        ...item,
-        displayOrder: index + 2,
-      })),
-    ]
+    const required =
+      list.find((item) => item.sourceType === 'REQUIRED') ??
+      orderedItems.value.find((item) => item.sourceType === 'REQUIRED') ??
+      draft.value?.items.find((item) => item.sourceType === 'REQUIRED')
+    const optional = list.filter((item) => item.sourceType !== 'REQUIRED')
+    const normalized = required ? [required, ...optional] : optional
+    return normalized.map((item, index) => ({ ...item, displayOrder: index + 1 }))
   }
 
   const setOrderedFromDraftItems = (draftItems) => {
@@ -100,18 +89,27 @@ export const useCurriculumStore = defineStore('curriculum', () => {
   }
 
   const toggleChapter = (mainChapterId) => {
-    if (mainChapterId === FOUNDATION_CHAPTER_ID) return
+    if (
+      orderedItems.value.some(
+        (item) => item.mainChapterId === mainChapterId && item.sourceType === 'REQUIRED',
+      )
+    ) {
+      return
+    }
     if (isSelected(mainChapterId)) {
       orderedItems.value = ensureFoundation(
         orderedItems.value.filter((i) => i.mainChapterId !== mainChapterId),
       )
       return
     }
+    const candidate = [...recommendationPool.value, ...cartCandidates.value].find(
+      (item) => item.mainChapterId === mainChapterId,
+    )
     orderedItems.value = ensureFoundation([
       ...orderedItems.value,
       {
         mainChapterId,
-        title: chapterTitle(mainChapterId),
+        title: candidate?.title ?? chapterTitle(mainChapterId),
         sourceType: sourceTypeFor(mainChapterId),
         displayOrder: orderedItems.value.length + 1,
       },
@@ -152,7 +150,7 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     } catch (err) {
       draft.value = null
       orderedItems.value = []
-      if (err instanceof LevelTestApiError && err.code === 'LEVEL_TEST_REQUIRED') {
+      if (err?.code === 'LEVEL_TEST_REQUIRED') {
         error.value = '레벨 테스트를 먼저 완료해 주세요.'
       } else {
         error.value = err?.message || '커리큘럼 초안을 불러오지 못했습니다.'

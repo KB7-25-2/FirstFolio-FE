@@ -30,6 +30,130 @@ export const mockUserProfileApi = async (page) => {
   })
 }
 
+/** 온보딩 화면이 사용하는 레벨 테스트·커리큘럼 API 기본 응답 */
+export const mockOnboardingApis = async (page) => {
+  const foundation = {
+    main_chapter_id: 1,
+    title: '포트폴리오 기초',
+    source_type: 'FOUNDATION',
+    display_order: 1,
+    removable: false,
+  }
+  const recommended = {
+    main_chapter_id: 2,
+    title: '예·적금',
+    source_type: 'LEVEL_TEST_WRONG',
+    display_order: 2,
+    removable: true,
+  }
+
+  await page.route('**/level-tests/attempts', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue()
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          attempt_id: 2001,
+          status: 'IN_PROGRESS',
+          question_count: 1,
+          questions: [
+            {
+              question_id: 1001,
+              display_order: 1,
+              main_chapter: { main_chapter_id: 2, asset_type: 'DEPOSIT_SAVINGS' },
+              question_type: 'SINGLE_CHOICE',
+              generation_type: 'HUMAN',
+              prompt: '금리가 오르면 예금 이자는?',
+              scenario: null,
+              choices: [
+                { id: 'A', text: '대체로 늘어난다' },
+                { id: 'B', text: '대체로 줄어든다' },
+              ],
+            },
+          ],
+          answers: [],
+        },
+      }),
+    })
+  })
+
+  await page.route('**/level-tests/attempts/2001/answers', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          attempt_id: 2001,
+          saved_answer_count: 1,
+          answered_count: 1,
+          total_count: 1,
+          status: 'IN_PROGRESS',
+          updated_at: '2026-08-12T05:00:00Z',
+        },
+      }),
+    })
+  })
+
+  await page.route('**/level-tests/attempts/2001/submit', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          attempt_id: 2001,
+          status: 'GRADED',
+          question_results: [
+            {
+              question_id: 1001,
+              main_chapter_id: 2,
+              asset_type: 'DEPOSIT_SAVINGS',
+              is_correct: false,
+            },
+          ],
+          chapter_results: [
+            {
+              main_chapter_id: 2,
+              asset_type: 'DEPOSIT_SAVINGS',
+              total_count: 1,
+              correct_count: 0,
+              all_correct: false,
+            },
+          ],
+          recommendations: [{ main_chapter_id: 2, source_type: 'LEVEL_TEST_WRONG' }],
+          cart_candidates: [],
+        },
+      }),
+    })
+  })
+
+  await page.route('**/curriculum/draft', async (route) => {
+    const items = [foundation, recommended]
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data:
+          route.request().method() === 'GET'
+            ? {
+                items,
+                recommendation_candidates: [{ main_chapter_id: 2, title: '예·적금' }],
+                cart_candidates: [],
+              }
+            : { items },
+      }),
+    })
+  })
+
+  await page.route('**/curriculum/confirm', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: { items: [foundation, recommended] } }),
+    })
+  })
+}
+
 /**
  * @param {import('@playwright/test').Page} page
  * @param {OnboardingStep} onboardingStep
@@ -39,6 +163,7 @@ export const seedOnboardingSession = async (page, onboardingStep, options = {}) 
   const { levelTestCompleted = false, curriculumConfirmed = false, token = E2E_TOKEN } = options
 
   await mockUserProfileApi(page)
+  await mockOnboardingApis(page)
   await page.addInitScript(
     ({ token, step, levelTestCompleted, curriculumConfirmed }) => {
       localStorage.clear()

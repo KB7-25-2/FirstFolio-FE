@@ -38,6 +38,13 @@ const CHAPTER_META = {
 export const chapterTitle = (mainChapterId) =>
   CHAPTER_META[mainChapterId]?.title ?? `대단원 ${mainChapterId}`
 
+/** BE source_type → 온보딩 UI sourceType */
+const normalizeSourceType = (sourceType) => {
+  if (sourceType === 'FOUNDATION') return 'REQUIRED'
+  if (sourceType === 'USER_ADDED') return 'CART'
+  return sourceType
+}
+
 const readLevelTestState = () => {
   try {
     const raw = localStorage.getItem(LEVEL_TEST_STORAGE_KEY)
@@ -86,7 +93,7 @@ const requireLevelTestCompleted = () => {
 const mapDraft = (raw) => ({
   items: (raw.items || []).map((item) => {
     const mainChapterId = Number(pickField(item, 'mainChapterId', 'main_chapter_id'))
-    const sourceType = pickField(item, 'sourceType', 'source_type')
+    const sourceType = normalizeSourceType(pickField(item, 'sourceType', 'source_type'))
     return {
       mainChapterId,
       title: item.title ?? chapterTitle(mainChapterId),
@@ -169,10 +176,11 @@ const mapConfirmResult = (raw) => ({
   confirmedAt: pickField(raw, 'confirmedAt', 'confirmed_at'),
   items: (raw.items || []).map((item) => {
     const mainChapterId = Number(pickField(item, 'mainChapterId', 'main_chapter_id'))
+    const sourceType = normalizeSourceType(pickField(item, 'sourceType', 'source_type'))
     return {
       mainChapterId,
       title: item.title ?? chapterTitle(mainChapterId),
-      sourceType: pickField(item, 'sourceType', 'source_type'),
+      sourceType,
       displayOrder: Number(pickField(item, 'displayOrder', 'display_order') ?? 0),
     }
   }),
@@ -396,11 +404,15 @@ export const saveCurriculumDraft = async (payload) => {
     )
     return {
       data: {
-        items: (raw?.items ?? []).map((item) => ({
-          mainChapterId: Number(pickField(item, 'mainChapterId', 'main_chapter_id')),
-          sourceType: pickField(item, 'sourceType', 'source_type'),
-          displayOrder: Number(pickField(item, 'displayOrder', 'display_order') ?? 0),
-        })),
+        items: (raw?.items ?? []).map((item) => {
+          const mainChapterId = Number(pickField(item, 'mainChapterId', 'main_chapter_id'))
+          const sourceType = normalizeSourceType(pickField(item, 'sourceType', 'source_type'))
+          return {
+            mainChapterId,
+            sourceType,
+            displayOrder: Number(pickField(item, 'displayOrder', 'display_order') ?? 0),
+          }
+        }),
       },
     }
   } catch (error) {
