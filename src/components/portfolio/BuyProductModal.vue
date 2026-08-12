@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import PortfolioModal from '@/components/portfolio/PortfolioModal.vue'
 import AmountInput from '@/components/portfolio/AmountInput.vue'
-import { getAssetTypeMeta } from '@/constants/assetType.js'
+import { getAssetTypeMeta, MARKET_BUY_FEE_RATE } from '@/constants/assetType.js'
 
 const props = defineProps({
   product: {
@@ -37,6 +37,16 @@ const cycleSummaryText = computed(() => props.product.cycleSummary ?? '실시간
 const hasPriceInfo = computed(() => props.product.unitPrice != null)
 const amount = ref(0)
 
+// 2026-08-12(#75): 매수 수수료(주식·펀드만 0.015%)는 체결액 밖에서 추가로 나간다
+// (현금 차감 = 체결액 + 수수료). "전액" 버튼이 잔액을 그대로 채우면 수수료분만큼 모자라
+// 422 INSUFFICIENT_SIMULATION_CASH가 날 수 있어, 입력 가능한 최대 금액을 수수료만큼 낮춰둔다.
+// 예·적금·채권은 수수료가 붙지 않아(가입형) 잔액 전부를 그대로 최대값으로 쓴다.
+const maxBuyAmount = computed(() =>
+  isSubscription.value
+    ? props.cashBalance
+    : Math.floor(props.cashBalance / (1 + MARKET_BUY_FEE_RATE)),
+)
+
 // 매수형(주식·펀드)은 서버가 수량=내림(금액÷현재가)으로 환산 — 미리보기로 예상 체결 수량/금액을 보여준다.
 const estimatedQuantity = computed(() =>
   hasPriceInfo.value && !isSubscription.value
@@ -50,7 +60,7 @@ const hasRoundingLeftover = computed(
   () => !isSubscription.value && amount.value > 0 && estimatedFillAmount.value < amount.value,
 )
 
-const isInsufficient = computed(() => amount.value > props.cashBalance)
+const isInsufficient = computed(() => amount.value > maxBuyAmount.value)
 const isTooSmall = computed(
   () => !isSubscription.value && amount.value > 0 && estimatedQuantity.value <= 0,
 )
@@ -82,7 +92,7 @@ const handleClose = () => {
 
     <div class="mt-4">
       <p class="mb-1.5 font-serif text-xs text-[rgba(245,237,217,0.6)]">{{ actionLabel }} 금액</p>
-      <AmountInput v-model="amount" :min="0" :max="cashBalance" :disabled="isSubmitting" />
+      <AmountInput v-model="amount" :min="0" :max="maxBuyAmount" :disabled="isSubmitting" />
     </div>
 
     <div v-if="!isSubscription" class="mt-3 flex items-center justify-between font-serif text-sm">
@@ -107,6 +117,13 @@ const handleClose = () => {
         >{{ cashBalance.toLocaleString('ko-KR') }}원</span
       >
     </div>
+    <p
+      v-if="!isSubscription"
+      class="mt-1 text-right font-serif text-[11px] text-[rgba(245,237,217,0.4)]"
+    >
+      매수 수수료 0.015%가 별도로 나가 최대 {{ maxBuyAmount.toLocaleString('ko-KR') }}원까지 입력할
+      수 있어요.
+    </p>
 
     <p v-if="isInsufficient" class="mt-2 font-serif text-xs text-[#f0b4b4]">
       보유 현금이 부족해요. 금액을 줄여주세요.
