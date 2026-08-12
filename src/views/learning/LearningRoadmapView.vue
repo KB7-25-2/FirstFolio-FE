@@ -213,7 +213,7 @@ watch(
 </script>
 
 <template>
-  <LearningLayout content-class="!overflow-hidden">
+  <LearningLayout :pad-for-nav="false" content-class="!overflow-hidden">
     <BaseLoading v-if="isLoading" />
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
 
@@ -276,11 +276,11 @@ watch(
         </LearningNotePaper>
       </div>
 
-      <!-- 스크롤: 대단원 × 소단원 목차 -->
+      <!-- 스크롤: 대단원 × 소단원 목차 (Navbar 오버레이 여백은 여기만) -->
       <div
         ref="listRef"
         data-scroll-reveal-root
-        class="hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pb-1"
+        class="nav-scroll-pad hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain"
         @scroll.passive="updateFocusFromScroll"
       >
         <div
