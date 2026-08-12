@@ -62,7 +62,7 @@ const confirmLogout = async () => {
   <div
     class="fixed inset-0 z-40 transition-opacity duration-300"
     :class="open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'"
-    aria-hidden="!open"
+    :aria-hidden="!open"
   >
     <div class="absolute inset-0 bg-black/45" @click="close" />
 
@@ -97,7 +97,7 @@ const confirmLogout = async () => {
 
       <div class="app-drawer__divider mx-4 mt-4" />
 
-      <nav class="mt-2 flex flex-1 flex-col gap-1 overflow-y-auto px-3" aria-label="주요 메뉴">
+      <nav class="mt-2 flex flex-1 flex-col gap-1 overflow-y-auto px-3" aria-label="전체 메뉴">
         <button
           v-for="tab in tabs"
           :key="tab.name"

@@ -81,3 +81,6 @@ export const seedHomeSession = async (page) => {
 export const skipUnlessChromium = (testInfo, reason = '세션 시드 — chromium만') => {
   testInfo.skip(testInfo.project.name !== 'chromium', reason)
 }
+
+/** 하단 Navbar (닫힌 Drawer의 메뉴 landmark와 구분) */
+export const primaryNav = (page) => page.getByRole('navigation', { name: '주요 메뉴' })
