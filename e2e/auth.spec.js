@@ -7,7 +7,12 @@ import { test, expect } from '@playwright/test'
 
 const clearAuthAndOpenLogin = async (page) => {
   await page.goto('/login')
-  await page.evaluate(() => localStorage.clear())
+  await page.evaluate(() => {
+    localStorage.clear()
+    sessionStorage.clear()
+    // 스플래시 대기(2.1s) 없이 폼 제출 가능하도록
+    sessionStorage.setItem('ff-login-splash-seen', '1')
+  })
   await page.goto('/login')
   await expect(page.locator('#login-email')).toBeVisible()
 }
@@ -19,19 +24,24 @@ const clearAuthAndOpenLogin = async (page) => {
  */
 const mockGoogleLoginOnStore = async (page, scenario) => {
   await page.evaluate((scenarioName) => {
+    const seedMockAuthSession = (store, token, step) => {
+      localStorage.setItem('access_token', token)
+      if (typeof store.setOnboardingStep === 'function') {
+        store.setOnboardingStep(step)
+      } else {
+        store.onboardingStep = step
+        sessionStorage.setItem('onboarding_step', step)
+      }
+    }
+
     const app = document.querySelector('#app')?.__vue_app__
     const pinia = app?.config?.globalProperties?.$pinia
     const store = pinia?._s?.get('auth')
-
-    if (!store) {
-      throw new Error('auth store를 찾을 수 없습니다.')
-    }
-
-    const tokenKey = 'access_token'
+    if (!store) throw new Error('auth store를 찾을 수 없습니다.')
 
     if (scenarioName === 'success-level-test') {
       store.loginWithGoogle = async () => {
-        localStorage.setItem(tokenKey, 'e2e-google-id-token')
+        seedMockAuthSession(store, 'e2e-google-id-token', 'LEVEL_TEST')
         return {
           user: { userId: 1, nickname: '테스트', roleCode: 'USER' },
           onboardingStep: 'LEVEL_TEST',
@@ -42,7 +52,7 @@ const mockGoogleLoginOnStore = async (page, scenario) => {
 
     if (scenarioName === 'success-curriculum') {
       store.loginWithGoogle = async () => {
-        localStorage.setItem(tokenKey, 'e2e-google-id-token')
+        seedMockAuthSession(store, 'e2e-google-id-token', 'CURRICULUM')
         return {
           user: { userId: 1, nickname: '테스트', roleCode: 'USER' },
           onboardingStep: 'CURRICULUM',
@@ -60,6 +70,62 @@ const mockGoogleLoginOnStore = async (page, scenario) => {
       }
     }
   }, scenario)
+}
+
+const mockEmailLoginSuccess = async (page) => {
+  await page.evaluate(() => {
+    const seedMockAuthSession = (store, token, step) => {
+      localStorage.setItem('access_token', token)
+      if (typeof store.setOnboardingStep === 'function') {
+        store.setOnboardingStep(step)
+      } else {
+        store.onboardingStep = step
+        sessionStorage.setItem('onboarding_step', step)
+      }
+    }
+
+    const app = document.querySelector('#app')?.__vue_app__
+    const pinia = app?.config?.globalProperties?.$pinia
+    const store = pinia?._s?.get('auth')
+    if (!store) throw new Error('auth store를 찾을 수 없습니다.')
+
+    store.loginWithEmail = async () => {
+      seedMockAuthSession(store, 'e2e-email-login-token', 'LEVEL_TEST')
+      return {
+        user: { userId: 1, nickname: '김투자', roleCode: 'USER' },
+        onboardingStep: 'LEVEL_TEST',
+      }
+    }
+  })
+}
+
+const mockEmailSignupSuccess = async (page) => {
+  await page.evaluate(() => {
+    const seedMockAuthSession = (store, token, step) => {
+      localStorage.setItem('access_token', token)
+      if (typeof store.setOnboardingStep === 'function') {
+        store.setOnboardingStep(step)
+      } else {
+        store.onboardingStep = step
+        sessionStorage.setItem('onboarding_step', step)
+      }
+    }
+
+    const app = document.querySelector('#app')?.__vue_app__
+    const pinia = app?.config?.globalProperties?.$pinia
+    const store = pinia?._s?.get('auth')
+    if (!store) throw new Error('auth store를 찾을 수 없습니다.')
+
+    store.signupWithEmail = async () => {
+      seedMockAuthSession(store, 'e2e-email-id-token', 'LEVEL_TEST')
+      return {
+        userId: 102,
+        nickname: '새싹투자자',
+        roleCode: 'USER',
+        onboardingStep: 'LEVEL_TEST',
+      }
+    }
+  })
 }
 
 test.describe('인증 · 로그인/회원가입 (UI)', () => {
@@ -117,20 +183,7 @@ test.describe('이메일 로그인', () => {
   test('성공 시 onboarding_step에 따라 이동한다', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium', 'Pinia 스토어 패치 — chromium만')
 
-    await page.evaluate(() => {
-      const app = document.querySelector('#app')?.__vue_app__
-      const pinia = app?.config?.globalProperties?.$pinia
-      const store = pinia?._s?.get('auth')
-      if (!store) throw new Error('auth store를 찾을 수 없습니다.')
-
-      store.loginWithEmail = async () => {
-        localStorage.setItem('access_token', 'e2e-email-login-token')
-        return {
-          user: { userId: 1, nickname: '김투자', roleCode: 'USER' },
-          onboardingStep: 'LEVEL_TEST',
-        }
-      }
-    })
+    await mockEmailLoginSuccess(page)
 
     await page.locator('#login-email').fill('student@example.com')
     await page.locator('#login-password').fill('password123')
@@ -252,22 +305,7 @@ test.describe('이메일 회원가입', () => {
     test.skip(testInfo.project.name !== 'chromium', 'Pinia 스토어 패치 — chromium만')
     await openEmailSignupForm(page)
 
-    await page.evaluate(() => {
-      const app = document.querySelector('#app')?.__vue_app__
-      const pinia = app?.config?.globalProperties?.$pinia
-      const store = pinia?._s?.get('auth')
-      if (!store) throw new Error('auth store를 찾을 수 없습니다.')
-
-      store.signupWithEmail = async () => {
-        localStorage.setItem('access_token', 'e2e-email-id-token')
-        return {
-          userId: 102,
-          nickname: '새싹투자자',
-          roleCode: 'USER',
-          onboardingStep: 'LEVEL_TEST',
-        }
-      }
-    })
+    await mockEmailSignupSuccess(page)
 
     await page.locator('#signup-nickname').fill('새싹투자자')
     await page.locator('#signup-email').fill('newbie@example.com')
