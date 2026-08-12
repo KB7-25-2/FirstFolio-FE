@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiError } from '@/api/errorHandler.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 
-vi.mock('@/api/dashboardApi.js', () => ({
+vi.mock('@/api/user/dashboardApi.js', () => ({
   getDashboard: vi.fn(() => Promise.reject(new ApiError('unavailable', 500))),
 }))
 
@@ -23,7 +23,7 @@ vi.mock('@/services/portfolioService.js', () => ({
   ),
 }))
 
-import { getDashboard as getDashboardApi } from '@/api/dashboardApi.js'
+import { getDashboard as getDashboardApi } from '@/api/user/dashboardApi.js'
 import { getTodayDailyQuest } from '@/services/dailyQuestService.js'
 import {
   getDashboard,

@@ -5,12 +5,12 @@ const { getUserProfileApiMock, updateUserProfileApiMock } = vi.hoisted(() => ({
   updateUserProfileApiMock: vi.fn(),
 }))
 
-vi.mock('@/api/userApi.js', () => ({
+vi.mock('@/api/user/userApi.js', () => ({
   getUserProfile: getUserProfileApiMock,
   updateUserProfile: updateUserProfileApiMock,
 }))
 
-import { ApiError } from '@/api/errorHandler.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 import {
   __resetUserProfileCache,
   applyPointBalanceDelta,

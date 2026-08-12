@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { ApiError } from '@/api/errorHandler.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 
-vi.mock('@/api/dailyQuestApi.js', () => ({
+vi.mock('@/api/user/dailyQuestApi.js', () => ({
   getToday: vi.fn(() => Promise.reject(new ApiError('unavailable', 500))),
   saveAnswer: vi.fn(() => Promise.reject(new ApiError('unavailable', 500))),
   submitToday: vi.fn(() => Promise.reject(new ApiError('unavailable', 500))),
@@ -18,7 +18,7 @@ import {
   getToday as getTodayApi,
   saveAnswer as saveAnswerApi,
   submitToday as submitTodayApi,
-} from '@/api/dailyQuestApi.js'
+} from '@/api/user/dailyQuestApi.js'
 import {
   __POINTS_PER_CORRECT,
   __QUESTION_SEED_COUNT,
