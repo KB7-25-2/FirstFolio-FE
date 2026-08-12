@@ -1,5 +1,6 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { getLearningNavLocation } from '@/utils/learningRoadmapFocus.js'
 
 export const NAV_TABS = [
   {
@@ -54,7 +55,13 @@ export const useNavTabs = () => {
     return tabMeta ?? route.name
   })
   const isActive = (name) => activeTab.value === name
-  const navigate = (path) => router.push(path)
+  const navigate = (path) => {
+    if (path === '/learning') {
+      router.push(getLearningNavLocation())
+      return
+    }
+    router.push(path)
+  }
 
   const leftTabs = computed(() => NAV_TABS.filter((tab) => !tab.isCenter).slice(0, 2))
   const rightTabs = computed(() => NAV_TABS.filter((tab) => !tab.isCenter).slice(2))

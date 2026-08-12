@@ -1,4 +1,6 @@
 <script setup>
+defineOptions({ name: 'HomeView' })
+
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/store/userStore.js'

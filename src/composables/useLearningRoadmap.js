@@ -1,10 +1,11 @@
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useStudyStore } from '@/store/studyStore.js'
 import { getLearningProgress } from '@/services/studyService.js'
 import { getMainChapterDisplay } from '@/constants/mainChapterDisplay.js'
 import { withScheduleStatus } from '@/utils/scheduleStatus.js'
+import { getPersistedMainChapterId, persistRoadmapFocus } from '@/utils/learningRoadmapFocus.js'
 
 /**
  * 대단원 × 소단원 목차(체크리스트) 로드맵
@@ -14,6 +15,11 @@ export const useLearningRoadmap = () => {
   const router = useRouter()
   const route = useRoute()
   const { curriculumItems } = storeToRefs(studyStore)
+
+  /** 학습 로드맵 화면이 활성일 때만 라우트 쿼리와 동기화 (다른 탭에서도 route watch가 돌음) */
+  const isRoadmapRouteActive = computed(
+    () => route.name === 'learning' || route.path === '/learning',
+  )
 
   const isLoading = ref(false)
   const error = ref(null)
@@ -118,7 +124,8 @@ export const useLearningRoadmap = () => {
   }
 
   onMounted(() => {
-    loadStages()
+    // KeepAlive 재활성화 시 재요청하지 않음 (포커스·스크롤 유지)
+    if (!stages.value.length) loadStages()
   })
 
   const statusLabel = (status) => {
@@ -189,14 +196,22 @@ export const useLearningRoadmap = () => {
   const activeStage = computed(() => stages.value[activeStageIndex.value] ?? null)
 
   const syncActiveFromQuery = () => {
-    const id = focusMainChapterId.value
-    if (!id || !stages.value.length) {
+    if (!isRoadmapRouteActive.value) return
+    if (!stages.value.length) return
+
+    // 스크롤/탭으로 갱신된 persist가 우선 (쿼리는 이전 select 값이 남아 있을 수 있음)
+    const id = getPersistedMainChapterId() ?? focusMainChapterId.value
+    if (!id) {
       const activeIdx = stages.value.findIndex((stage) => stage.status === 'ACTIVE')
       activeStageIndex.value = activeIdx >= 0 ? activeIdx : 0
+      const fallback = stages.value[activeStageIndex.value]
+      if (fallback) persistRoadmapFocus(activeStageIndex.value, fallback.mainChapterId)
       return
     }
     const index = stages.value.findIndex((stage) => stage.mainChapterId === id)
     activeStageIndex.value = index >= 0 ? index : 0
+    const stage = stages.value[activeStageIndex.value]
+    if (stage) persistRoadmapFocus(activeStageIndex.value, stage.mainChapterId)
   }
 
   const selectStage = (index) => {
@@ -204,17 +219,37 @@ export const useLearningRoadmap = () => {
     activeStageIndex.value = index
     const stage = stages.value[index]
     if (!stage) return
-    router.replace({
-      name: 'learning',
-      query: { mainChapterId: String(stage.mainChapterId) },
-    })
+    persistRoadmapFocus(index, stage.mainChapterId)
+    if (isRoadmapRouteActive.value) {
+      router.replace({
+        name: 'learning',
+        query: { mainChapterId: String(stage.mainChapterId) },
+      })
+    }
   }
 
-  watch([stages, focusMainChapterId, isLoading], async ([, , loading]) => {
-    if (loading) return
-    if (!stages.value.length) return
+  watch(
+    [stages, focusMainChapterId, isLoading, isRoadmapRouteActive],
+    async ([, , loading, active]) => {
+      if (!active || loading) return
+      if (!stages.value.length) return
+      syncActiveFromQuery()
+      await nextTick()
+    },
+  )
+
+  onActivated(() => {
+    if (!isRoadmapRouteActive.value) return
+    const persisted = getPersistedMainChapterId()
+    // 탭 복귀 시 URL 쿼리가 비었거나 스크롤 persist와 어긋나면 persist 기준으로 맞춤
+    if (persisted != null && focusMainChapterId.value !== persisted) {
+      router.replace({
+        name: 'learning',
+        query: { mainChapterId: String(persisted) },
+      })
+      return
+    }
     syncActiveFromQuery()
-    await nextTick()
   })
 
   const hasRoadmap = computed(() => stages.value.length > 0)

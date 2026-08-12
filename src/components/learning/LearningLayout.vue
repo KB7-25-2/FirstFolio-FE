@@ -16,6 +16,14 @@ defineProps({
     type: Boolean,
     default: true,
   },
+  /**
+   * true면 셸은 스크롤하지 않음 (내부 패널이 스크롤)
+   * overflow-y-auto 와 !overflow-hidden 충돌을 피하기 위해 클래스를 분기한다
+   */
+  lockShellScroll: {
+    type: Boolean,
+    default: false,
+  },
   /** 스크롤 패널 추가 클래스 (snap 등) */
   contentClass: {
     type: String,
@@ -33,9 +41,10 @@ defineProps({
       <slot name="header" />
     </div>
     <div
-      data-scroll-reveal-root
-      class="flex min-h-0 w-full max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto"
+      :data-scroll-reveal-root="lockShellScroll ? undefined : true"
+      class="flex min-h-0 w-full max-w-full flex-1 flex-col overflow-x-hidden"
       :class="[
+        lockShellScroll ? 'overflow-hidden' : 'overflow-y-auto',
         immersive ? 'pt-4 pb-2' : 'pt-4 px-5',
         !immersive && padForNav && !$slots.footer ? 'nav-scroll-pad' : '',
         contentClass,
