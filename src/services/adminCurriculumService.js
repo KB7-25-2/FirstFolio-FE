@@ -161,16 +161,16 @@ export const fetchAdminMainChapters = async (filters = {}) => {
  */
 export const createMainChapter = async (payload) => {
   try {
-    /** OpenAPI MainChapterCreateRequest — camelCase + is_required */
+    /** POST /admin/main-chapters — body snake_case */
     const body = {
-      chapterType: payload.chapterType,
+      chapter_type: payload.chapterType,
       title: payload.title,
-      description: payload.description || undefined,
-      displayOrder: payload.displayOrder,
+      display_order: payload.displayOrder,
       is_required: Boolean(payload.isRequired),
     }
+    if (payload.description?.trim()) body.description = payload.description.trim()
     if (payload.chapterType === 'ASSET' && payload.assetType) {
-      body.assetType = payload.assetType
+      body.asset_type = payload.assetType
     }
     const raw = unwrapData(await createAdminMainChapter(body))
     const chapter = mapMainChapter({
@@ -297,6 +297,8 @@ export const assetTypeLabel = (assetType) =>
 
 /** 관리자 API 비즈니스 오류 — UI 메시지 */
 export const ADMIN_CURRICULUM_ERROR_MESSAGES = {
+  FOUNDATION_CONFLICT: '활성 기초 과정(FOUNDATION)이 이미 존재합니다.',
+  INVALID_MAIN_CHAPTER: '대단원 유형 또는 자산군이 올바르지 않습니다.',
   SUB_CHAPTER_ORDER_CONFLICT:
     '같은 순서의 소단원이 이미 있습니다. 다른 display_order를 입력해 주세요.',
   MAIN_CHAPTER_NOT_FOUND: '대단원을 찾을 수 없습니다.',

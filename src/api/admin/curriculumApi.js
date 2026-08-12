@@ -9,7 +9,7 @@ export const getAdminMainChapters = (params = {}) =>
 
 /**
  * POST /admin/main-chapters
- * @param {object} body
+ * @param {{ chapter_type: string, asset_type?: string, title: string, description?: string, display_order: number, is_required: boolean }} body
  */
 export const createAdminMainChapter = (body) => adminApiClient.post('/admin/main-chapters', body)
 
