@@ -152,12 +152,10 @@ export const useSubChapterQuiz = () => {
     const mainChapterId = currentContent.value?.mainChapterId
     studyStore.clearQuizSession()
     if (mainChapterId) {
-      try {
-        await studyStore.fetchLearningProgress(mainChapterId)
-      } catch {
-        /* 시간표 진입 후 loadChapter가 재시도 */
-      }
-      router.push({ name: 'learning-main-chapter', params: { mainChapterId } })
+      router.push({
+        name: 'learning',
+        query: { mainChapterId: String(mainChapterId) },
+      })
       return
     }
     router.back()

@@ -68,12 +68,12 @@ const displayValue = computed(() => {
         :autocomplete="autocomplete"
         :disabled="disabled"
         required
-        class="absolute inset-0 z-10 w-full bg-transparent font-pen text-[20px] leading-none text-transparent caret-[var(--auth-hand)] outline-none disabled:cursor-not-allowed"
+        class="absolute inset-0 z-10 w-full bg-transparent font-serif font-bold text-[20px] leading-none text-transparent caret-[var(--auth-hand)] outline-none disabled:cursor-not-allowed"
         :class="maskPassword ? 'tracking-[0.2em]' : ''"
         @input="$emit('update:modelValue', $event.target.value)"
       />
       <span
-        class="pointer-events-none font-pen text-[20px] leading-none text-[var(--auth-hand)]"
+        class="pointer-events-none font-serif font-bold text-[20px] leading-none text-[var(--auth-hand)]"
         :class="displayValue ? '' : 'opacity-35'"
       >
         {{ displayValue || placeholder }}

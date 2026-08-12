@@ -44,10 +44,10 @@ const defaultHint = computed(() =>
 
 <template>
   <div class="mt-6">
-    <p class="font-pen text-[15px] text-[rgba(33,43,92,0.75)]">
+    <p class="font-serif text-[15px] text-[rgba(33,43,92,0.75)]">
       {{ hint || defaultHint }}
     </p>
-    <div class="mt-3 overflow-hidden rounded border px-3 py-3" :class="boxClass">
+    <div class="mt-3 overflow-hidden rounded border-[0.5px] px-3 py-3" :class="boxClass">
       <p class="font-serif text-[12px] font-black" :class="titleClass">{{ title }}</p>
       <p
         v-if="explanation"

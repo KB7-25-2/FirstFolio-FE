@@ -3,7 +3,7 @@ import { RouterView } from 'vue-router'
 </script>
 
 <template>
-  <div class="h-full min-h-0">
+  <div class="cork-board h-full min-h-0">
     <RouterView />
   </div>
 </template>

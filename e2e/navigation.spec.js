@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { seedHomeSession, skipUnlessChromium } from './helpers/authSession.js'
+import { primaryNav, seedHomeSession, skipUnlessChromium } from './helpers/authSession.js'
 
 test.describe('로그인 · 홈 네비게이션 (UI)', () => {
   test('로그인 화면에 firstfolio 브랜딩이 보인다', async ({ page }) => {
@@ -12,9 +12,10 @@ test.describe('로그인 · 홈 네비게이션 (UI)', () => {
     await seedHomeSession(page)
     await page.goto('/home')
 
-    const nav = page.getByRole('navigation')
-    await expect(nav.getByRole('button', { name: '홈', exact: true })).toBeVisible()
+    const nav = primaryNav(page)
+    await expect(nav.getByRole('button', { name: '데일리', exact: true })).toBeVisible()
     await expect(nav.getByRole('button', { name: '학습', exact: true })).toBeVisible()
+    await expect(nav.getByRole('button', { name: '홈', exact: true })).toBeVisible()
     await expect(nav.getByRole('button', { name: '포트폴리오', exact: true })).toBeVisible()
     await expect(nav.getByRole('button', { name: '상점', exact: true })).toBeVisible()
   })
@@ -23,7 +24,7 @@ test.describe('로그인 · 홈 네비게이션 (UI)', () => {
     skipUnlessChromium(testInfo)
     await seedHomeSession(page)
     await page.goto('/home')
-    await page.getByRole('navigation').getByRole('button', { name: '학습', exact: true }).click()
+    await primaryNav(page).getByRole('button', { name: '학습', exact: true }).click()
     await expect(page).toHaveURL(/\/learning/)
   })
 

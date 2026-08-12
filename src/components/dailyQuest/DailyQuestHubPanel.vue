@@ -84,7 +84,7 @@ const submitLabel = computed(() => {
         <span
           v-for="row in questionTypeSummary"
           :key="row.questionType"
-          class="rounded-[4px] border border-[rgba(193,127,36,0.45)] bg-[rgba(193,127,36,0.12)] px-2 py-1 font-serif text-[11px] font-bold text-[#8b5014]"
+          class="rounded-[4px] border-[0.5px] border-[rgba(193,127,36,0.45)] bg-[rgba(193,127,36,0.12)] px-2 py-1 font-serif text-[11px] font-bold text-[#8b5014]"
         >
           {{ row.label }} {{ row.count }}
         </span>
@@ -94,7 +94,7 @@ const submitLabel = computed(() => {
         <li v-for="(item, index) in items" :key="item.dailyQuestItemId">
           <button
             type="button"
-            class="flex w-full flex-col gap-1.5 rounded-[10px] border px-3 py-2.5 text-left transition-colors"
+            class="flex w-full flex-col gap-1.5 rounded-[10px] border-[0.5px] px-3 py-2.5 text-left transition-colors"
             :class="
               item.userAnswer
                 ? 'border-[rgba(61,122,74,0.45)] bg-[rgba(61,122,74,0.08)]'
@@ -107,7 +107,7 @@ const submitLabel = computed(() => {
                 {{ item.displayOrder }}번
               </span>
               <span
-                class="rounded border border-[rgba(139,100,60,0.3)] px-1.5 py-0.5 font-serif text-[10px] font-bold text-[#8b5014]"
+                class="rounded border-[0.5px] border-[rgba(139,100,60,0.3)] px-1.5 py-0.5 font-serif text-[10px] font-bold text-[#8b5014]"
               >
                 {{ typeLabel(item) }}
               </span>

@@ -17,7 +17,7 @@ defineEmits(['open'])
   <div class="flex flex-col items-end gap-1">
     <button
       type="button"
-      class="btn-hover flex items-start gap-1.5 rounded-[20px] border-[1.5px] border-[#c17f24] bg-white px-3.5 py-2.5 text-[#1f2e59] shadow-[0_4px_10px_rgba(0,0,0,0.25)]"
+      class="btn-hover flex items-start gap-1.5 rounded-[20px] border-[0.5px] border-[#c17f24] bg-white px-3.5 py-2.5 text-[#1f2e59] shadow-[0_4px_10px_rgba(0,0,0,0.25)]"
       @click="$emit('open')"
     >
       <span class="text-[13px]" aria-hidden="true">💡</span>

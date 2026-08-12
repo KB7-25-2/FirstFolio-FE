@@ -11,7 +11,6 @@ import BaseLoading from '@/components/BaseLoading.vue'
 import { useSubChapterQuiz } from '@/composables/useSubChapterQuiz.js'
 
 const {
-  subChapterId,
   isLoading,
   error,
   examTitle,
@@ -41,12 +40,15 @@ const {
 <template>
   <LearningLayout immersive>
     <template #header>
-      <LearningPageHeader title="시험지" :eyebrow="`소단원 #${subChapterId} · 퀴즈`">
+      <LearningPageHeader
+        variant="quiz"
+        title="시험지"
+        :subtitle="subject"
+        :progress-current="quizQuestionNumber"
+        :progress-total="quizQuestionTotal"
+      >
         <template #badge>
-          <span
-            class="rotate-3 rounded border-[1.5px] px-2 py-0.5 font-serif text-[10px] font-black"
-            :class="statusBadge.class"
-          >
+          <span class="learning-header__badge font-serif text-[11px]" :class="statusBadge.class">
             {{ statusBadge.label }}
           </span>
         </template>
@@ -54,9 +56,14 @@ const {
     </template>
 
     <BaseLoading v-if="isLoading" />
-    <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
+    <p v-else-if="error" class="font-serif text-sm text-[var(--study-total)]">{{ error }}</p>
 
-    <LearningNotePaper v-else-if="quizCurrentQuestion" ruled surface-class="bg-[#faf5eb]">
+    <LearningNotePaper
+      v-else-if="quizCurrentQuestion"
+      ruled
+      pin-tone="red"
+      surface-class="bg-[#faf5eb]"
+    >
       <QuizExamPaper
         :exam-title="examTitle"
         :subject="subject"
@@ -113,7 +120,7 @@ const {
           :explanation="quizCurrentQuestion.explanation"
           :hint="feedbackHint"
         />
-        <p v-else class="mt-8 font-pen text-[15px] text-[rgba(33,43,92,0.75)]">
+        <p v-else class="mt-8 font-serif text-[15px] text-[rgba(33,43,92,0.75)]">
           보기 번호를 골라 답을 쓰세요
         </p>
       </QuizExamPaper>
@@ -131,21 +138,13 @@ const {
     />
 
     <template v-if="!quizFinished" #footer>
-      <div class="mt-4 flex gap-4">
-        <button
-          type="button"
-          class="btn-hover flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
-          @click="giveUp"
-        >
+      <div class="mt-4 flex gap-3">
+        <button type="button" class="cork-btn cork-btn--danger flex-1" @click="giveUp">
           시험 포기
         </button>
         <button
           type="button"
-          class="flex h-12 flex-1 items-center justify-center rounded font-serif text-[15px] font-bold text-[#f5edd9] disabled:cursor-not-allowed disabled:opacity-70"
-          :class="[
-            primaryEnabled ? 'bg-[#c17f24]' : 'bg-[#c3b097]',
-            { 'btn-hover': primaryEnabled && !error },
-          ]"
+          class="cork-btn cork-btn--primary flex-1"
           :disabled="!primaryEnabled || !!error"
           @click="onPrimaryAction"
         >

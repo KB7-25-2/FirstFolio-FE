@@ -1,24 +1,24 @@
 <script setup>
 import { useNavTabs } from '@/composables/useNavTabs.js'
 
-const { tabs, isActive, navigate } = useNavTabs()
+const { leftTabs, rightTabs, centerTab, isActive, navigate } = useNavTabs()
 </script>
-
 <template>
   <nav
-    class="nav-bar flex w-full shrink-0 items-start border-t border-[var(--nav-border)] bg-[var(--nav-bg)] pt-[1dvh]"
+    class="nav-bar relative z-30 flex w-full shrink-0 items-end overflow-visible border-t border-[var(--nav-border)] px-1 pt-[0.8dvh] pb-[1dvh]"
+    aria-label="주요 메뉴"
   >
     <button
-      v-for="tab in tabs"
+      v-for="tab in leftTabs"
       :key="tab.name"
       type="button"
-      class="relative flex flex-1 flex-col items-center justify-start"
+      class="relative flex min-w-0 flex-1 flex-col items-center justify-end pb-[0.2dvh]"
+      :aria-current="isActive(tab.name) ? 'page' : undefined"
       @click="navigate(tab.path)"
     >
-      <!-- IconWrap -->
       <span
         class="nav-icon-wrap flex items-center justify-center transition-all"
-        :class="isActive(tab.name) ? '-translate-y-[2px]' : ''"
+        :class="isActive(tab.name) ? '-translate-y-[1px]' : ''"
       >
         <font-awesome-icon
           :icon="tab.icon"
@@ -29,21 +29,74 @@ const { tabs, isActive, navigate } = useNavTabs()
           ]"
         />
       </span>
-
-      <!-- 레이블 -->
       <span
-        class="nav-label mt-[0.3dvh] font-bold transition-colors"
+        class="nav-label mt-[0.25dvh] font-bold transition-colors"
         :class="isActive(tab.name) ? tab.activeClass : 'text-[var(--nav-text-muted)]'"
       >
         {{ tab.label }}
       </span>
+    </button>
 
-      <!-- 활성 dot -->
-      <!--      <span
-        v-if="isActive(tab.name)"
-        class="nav-dot absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full"
-        :class="tab.activeDotClass"
-      /> -->
+    <!-- 가운데 홈 자리 -->
+    <div class="w-[20%] shrink-0" aria-hidden="true" />
+
+    <button
+      v-for="tab in rightTabs"
+      :key="tab.name"
+      type="button"
+      class="relative flex min-w-0 flex-1 flex-col items-center justify-end pb-[0.2dvh]"
+      :aria-current="isActive(tab.name) ? 'page' : undefined"
+      @click="navigate(tab.path)"
+    >
+      <span
+        class="nav-icon-wrap flex items-center justify-center transition-all"
+        :class="isActive(tab.name) ? '-translate-y-[1px]' : ''"
+      >
+        <font-awesome-icon
+          :icon="tab.icon"
+          class="transition-all"
+          :class="[
+            isActive(tab.name) ? tab.activeClass : 'text-[var(--nav-text-muted)]',
+            isActive(tab.name) ? 'nav-icon-active' : 'nav-icon',
+          ]"
+        />
+      </span>
+      <span
+        class="nav-label mt-[0.25dvh] font-bold transition-colors"
+        :class="isActive(tab.name) ? tab.activeClass : 'text-[var(--nav-text-muted)]'"
+      >
+        {{ tab.label }}
+      </span>
+    </button>
+
+    <button
+      v-if="centerTab"
+      type="button"
+      class="nav-home-fab absolute bottom-[0.9dvh] left-1/2 z-40 flex flex-col items-center"
+      :aria-current="isActive(centerTab.name) ? 'page' : undefined"
+      :aria-label="centerTab.label"
+      @click="navigate(centerTab.path)"
+    >
+      <span
+        class="nav-home-fab__btn flex items-center justify-center rounded-full border-[3px] border-[var(--nav-bg)] shadow-[0_3px_10px_rgba(44,24,16,0.18)] transition-transform active:scale-95"
+        :class="
+          isActive(centerTab.name)
+            ? 'bg-[var(--nav-active-primary)] text-[#fff8ec]'
+            : 'bg-[var(--nav-fab)] text-[var(--nav-text-muted)]'
+        "
+      >
+        <font-awesome-icon :icon="centerTab.icon" class="nav-home-fab__icon" />
+      </span>
+      <span
+        class="nav-label mt-[0.35dvh] font-bold transition-colors"
+        :class="
+          isActive(centerTab.name)
+            ? 'text-[var(--nav-active-primary)]'
+            : 'text-[var(--nav-text-muted)]'
+        "
+      >
+        {{ centerTab.label }}
+      </span>
     </button>
   </nav>
 </template>

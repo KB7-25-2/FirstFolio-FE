@@ -100,7 +100,7 @@ const evalSummary = computed(
       <!-- 지표 카드 -->
       <div class="flex flex-col gap-2">
         <div
-          class="dq-result__card relative flex items-start gap-2.5 rounded-[10px] border border-[rgba(193,127,36,0.35)] bg-[rgba(193,127,36,0.12)] px-3 py-2.5"
+          class="dq-result__card relative flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[rgba(193,127,36,0.12)] px-3 py-2.5"
         >
           <span
             class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#c17f24] text-[11px] font-bold text-white"
@@ -124,11 +124,11 @@ const evalSummary = computed(
         </div>
 
         <div
-          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
+          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
           style="animation-delay: 0.06s"
         >
           <span
-            class="mt-0.5 size-6 shrink-0 rounded-full border-[1.5px] border-[rgba(139,100,60,0.4)]"
+            class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
             aria-hidden="true"
           />
           <div class="min-w-0 flex-1">
@@ -140,11 +140,11 @@ const evalSummary = computed(
         </div>
 
         <div
-          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
+          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
           style="animation-delay: 0.12s"
         >
           <span
-            class="mt-0.5 size-6 shrink-0 rounded-full border-[1.5px] border-[rgba(139,100,60,0.4)]"
+            class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
             aria-hidden="true"
           />
           <div class="min-w-0 flex-1">
@@ -156,11 +156,11 @@ const evalSummary = computed(
         </div>
 
         <div
-          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
+          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
           style="animation-delay: 0.18s"
         >
           <span
-            class="mt-0.5 size-6 shrink-0 rounded-full border-[1.5px] border-[rgba(139,100,60,0.4)]"
+            class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
             aria-hidden="true"
           />
           <div class="min-w-0 flex-1">
@@ -174,7 +174,7 @@ const evalSummary = computed(
 
       <!-- 종합 평가 -->
       <div
-        class="dq-result__eval overflow-hidden rounded-[10px] border border-dashed border-[rgba(139,100,60,0.35)] px-3 py-2"
+        class="dq-result__eval overflow-hidden rounded-[10px] border-[0.5px] border-dashed border-[rgba(139,100,60,0.35)] px-3 py-2"
       >
         <div class="flex items-center gap-2 py-1">
           <div class="h-px flex-1 bg-[rgba(139,100,60,0.25)]" />
@@ -193,7 +193,7 @@ const evalSummary = computed(
             ★
           </span>
           <span
-            class="dq-result__stamp absolute -right-0.5 top-0 rounded border-2 border-[rgba(139,69,19,0.6)] bg-[rgba(245,237,217,0.35)] px-2.5 py-1 font-serif text-[13px] font-black tracking-wide text-[rgba(139,69,19,0.75)]"
+            class="dq-result__stamp absolute -right-0.5 top-0 rounded border-[0.5px] border-[rgba(139,69,19,0.6)] bg-[rgba(245,237,217,0.35)] px-2.5 py-1 font-serif text-[13px] font-black tracking-wide text-[rgba(139,69,19,0.75)]"
             aria-hidden="true"
           >
             {{ stampLabel }}
@@ -229,7 +229,7 @@ const evalSummary = computed(
 
     <button
       type="button"
-      class="mt-2 flex h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-[rgba(139,100,60,0.35)] bg-[rgba(255,248,236,0.9)] font-serif text-[14px] font-bold text-[#3d1f08]"
+      class="mt-2 flex h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.35)] bg-[rgba(255,248,236,0.9)] font-serif text-[14px] font-bold text-[#3d1f08]"
       @click="$emit('dashboard')"
     >
       돌아가기

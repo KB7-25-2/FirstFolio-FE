@@ -73,20 +73,22 @@ const onHandlePointerUp = (event) => {
 </script>
 
 <template>
-  <LearningNotePaper ruled :show-tape="false" surface-class="bg-[#fffaed]">
+  <LearningNotePaper ruled :show-pin="false" surface-class="bg-[#fffaed]">
     <div class="px-4 pt-5 pb-4">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">
           <p class="font-serif text-[10px] tracking-wide text-[rgba(139,100,60,0.55)]">
             학습 순서 편집
           </p>
-          <h2 class="mt-1 font-pen text-[28px] leading-none text-[#212b5c]">나의 커리큘럼</h2>
+          <h2 class="mt-1 font-serif font-bold text-[28px] leading-none text-[#212b5c]">
+            나의 커리큘럼
+          </h2>
           <p class="mt-2 font-serif text-[11px] text-[rgba(139,100,60,0.7)]">
             {{ summaryLine }}
           </p>
         </div>
         <div
-          class="shrink-0 -rotate-3 rounded border-[1.5px] border-[rgba(209,46,41,0.75)] px-2 py-1"
+          class="shrink-0 -rotate-3 rounded border-[0.5px] border-[rgba(209,46,41,0.75)] px-2 py-1"
         >
           <p class="font-serif text-[11px] font-black whitespace-nowrap text-[#c12e24]">
             {{ courseCount }}과정
@@ -112,7 +114,7 @@ const onHandlePointerUp = (event) => {
               v-for="(item, index) in orderedItems"
               :key="`cart-${item.mainChapterId}`"
               :data-order-index="index"
-              class="flex items-center gap-2.5 rounded-[4px] border px-2.5 py-2.5 transition-[opacity,box-shadow,border-color,background-color]"
+              class="flex items-center gap-2.5 rounded-[4px] border-[0.5px] px-2.5 py-2.5 transition-[opacity,box-shadow,border-color,background-color]"
               :class="[
                 item.sourceType === 'REQUIRED'
                   ? 'border-[rgba(193,127,36,0.4)] bg-[#faf2db]'
@@ -126,14 +128,14 @@ const onHandlePointerUp = (event) => {
               <!-- 필수: 필 / 선택: 드래그 핸들 -->
               <span
                 v-if="!canDrag(item)"
-                class="flex size-7 shrink-0 items-center justify-center rounded-[3px] border-[1.5px] border-[#c17f24] bg-[#fff8ec] font-serif text-[12px] font-black text-[#c17f24]"
+                class="flex size-7 shrink-0 items-center justify-center rounded-[3px] border-[0.5px] border-[#c17f24] bg-[#fff8ec] font-serif text-[12px] font-black text-[#c17f24]"
               >
                 필
               </span>
               <button
                 v-else
                 type="button"
-                class="flex size-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-[3px] border border-[rgba(61,122,74,0.35)] bg-[#f3faf4] font-serif text-[14px] leading-none text-[#3d7a4a] active:cursor-grabbing"
+                class="flex size-7 shrink-0 cursor-grab touch-none items-center justify-center rounded-[3px] border-[0.5px] border-[rgba(61,122,74,0.35)] bg-[#f3faf4] font-serif text-[14px] leading-none text-[#3d7a4a] active:cursor-grabbing"
                 aria-label="끌어서 순서 변경"
                 @pointerdown="onHandlePointerDown(index, item, $event)"
                 @pointermove="onHandlePointerMove"
@@ -152,14 +154,14 @@ const onHandlePointerUp = (event) => {
 
               <span
                 v-if="!canDrag(item)"
-                class="shrink-0 rounded border border-[rgba(193,127,36,0.65)] bg-[#fff8ec] px-2 py-0.5 font-serif text-[10px] font-bold text-[#c17f24]"
+                class="shrink-0 rounded border-[0.5px] border-[rgba(193,127,36,0.65)] bg-[#fff8ec] px-2 py-0.5 font-serif text-[10px] font-bold text-[#c17f24]"
               >
                 고정
               </span>
               <button
                 v-else
                 type="button"
-                class="btn-hover shrink-0 rounded border border-[rgba(61,122,74,0.55)] bg-[#f3faf4] px-2 py-0.5 font-serif text-[10px] font-bold text-[#3d7a4a]"
+                class="btn-hover shrink-0 rounded border-[0.5px] border-[rgba(61,122,74,0.55)] bg-[#f3faf4] px-2 py-0.5 font-serif text-[10px] font-bold text-[#3d7a4a]"
                 @click="$emit('toggle', item.mainChapterId)"
               >
                 담김
@@ -182,11 +184,11 @@ const onHandlePointerUp = (event) => {
             <li v-for="item in availableItems" :key="`avail-${item.mainChapterId}`">
               <button
                 type="button"
-                class="btn-hover flex w-full items-center gap-2.5 rounded-[4px] border border-[rgba(184,173,148,0.45)] bg-[#fffdf8] px-2.5 py-2.5 text-left"
+                class="btn-hover flex w-full items-center gap-2.5 rounded-[4px] border-[0.5px] border-[rgba(184,173,148,0.45)] bg-[#fffdf8] px-2.5 py-2.5 text-left"
                 @click="$emit('toggle', item.mainChapterId)"
               >
                 <span
-                  class="flex size-7 shrink-0 items-center justify-center rounded-[3px] border-[1.5px] border-[rgba(139,100,60,0.35)] bg-white font-serif text-[14px] font-black text-[rgba(139,100,60,0.55)]"
+                  class="flex size-7 shrink-0 items-center justify-center rounded-[3px] border-[0.5px] border-[rgba(139,100,60,0.35)] bg-white font-serif text-[14px] font-black text-[rgba(139,100,60,0.55)]"
                 >
                   +
                 </span>
@@ -197,7 +199,7 @@ const onHandlePointerUp = (event) => {
                   </p>
                 </div>
                 <span
-                  class="shrink-0 rounded border border-[rgba(184,173,148,0.55)] bg-[#f5f0e6] px-2 py-0.5 font-serif text-[10px] font-bold text-[rgba(139,100,60,0.55)]"
+                  class="shrink-0 rounded border-[0.5px] border-[rgba(184,173,148,0.55)] bg-[#f5f0e6] px-2 py-0.5 font-serif text-[10px] font-bold text-[rgba(139,100,60,0.55)]"
                 >
                   미선택
                 </span>

@@ -3,30 +3,22 @@ import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
-import { useUserStore } from '@/store/userStore.js'
+import { resolveInvestmentStyle } from '@/utils/investmentStyle.js'
 import BaseLoading from '@/components/BaseLoading.vue'
+import MemoPin from '@/components/MemoPin.vue'
 
 const portfolioStore = usePortfolioStore()
-const userStore = useUserStore()
 const router = useRouter()
 const { portfolioSummary, allocationView, totalAssetsDisplay, isLoading, error } =
   storeToRefs(portfolioStore)
-const { pointBalanceDisplay } = storeToRefs(userStore)
 
-onMounted(async () => {
-  await Promise.all([
-    portfolioStore.fetchPortfolioSummary(),
-    userStore.profile ? Promise.resolve() : userStore.fetchProfile(),
-  ])
+onMounted(() => {
+  portfolioStore.fetchPortfolioSummary()
 })
 
 const ruledOffsets = computed(() => Array.from({ length: 8 }, (_, index) => 44 + index * 22))
 
-const pointDisplay = computed(() => pointBalanceDisplay.value)
-
-const goPointMarket = () => {
-  router.push({ name: 'point-market' })
-}
+const investmentStyle = computed(() => resolveInvestmentStyle(allocationView.value))
 
 const goPortfolios = () => {
   router.push({ name: 'portfolio-holdings' })
@@ -35,33 +27,10 @@ const goPortfolios = () => {
 
 <template>
   <div class="memo-selectable relative w-full max-w-[346px]">
-    <!-- 테이프 -->
-    <div
-      class="pointer-events-none absolute -top-2 left-1/2 z-20 h-4 w-[90px] -translate-x-1/2 rotate-3 border-[0.5px] border-white/25 bg-[var(--portfolio-tape)]"
-      aria-hidden="true"
-    />
-
-    <!-- 포인트 상점 보드 -->
-    <button
-      type="button"
-      class="memo-selectable absolute -top-3 -right-1 z-30 -rotate-3 rounded-[5px] bg-[var(--portfolio-shop)] p-1 shadow-[0_0_12px_rgba(193,127,36,0.35),1px_4px_10px_rgba(0,0,0,0.45)]"
-      aria-label="포인트 상점으로 이동"
-      @click.stop="goPointMarket"
-    >
-      <span
-        class="flex flex-col items-center gap-[3px] rounded-[3px] bg-[var(--portfolio-shop-paper)] px-3 py-2.5 text-center"
-      >
-        <span class="font-pen text-[10px] leading-none text-[var(--portfolio-shop)]">
-          {{ pointDisplay }} P
-        </span>
-        <span class="font-serif text-[12px] font-bold leading-none text-[#29211a]">
-          포인트 상점 →
-        </span>
-      </span>
-    </button>
+    <MemoPin side="center" tone="portfolio" />
 
     <section
-      class="relative min-h-[133px] w-full rotate-[0.8deg] overflow-hidden rounded border-[0.8px] border-[var(--portfolio-border)] bg-[var(--portfolio-surface)] shadow-[0_5px_14px_rgba(0,0,0,0.35)]"
+      class="relative min-h-[133px] w-full rotate-[0.8deg] overflow-hidden rounded border-[0.5px] border-[var(--portfolio-border)] bg-[var(--portfolio-surface)] shadow-[0_5px_14px_rgba(0,0,0,0.35)]"
       aria-label="현재 포트폴리오로 이동"
       role="button"
       tabindex="0"
@@ -104,10 +73,10 @@ const goPortfolios = () => {
           <p class="font-serif text-[10px] text-[var(--portfolio-muted)]">현재 포트폴리오</p>
 
           <div class="flex items-baseline gap-1.5">
-            <p class="font-pen text-[34px] leading-none text-[var(--portfolio-ink)]">
+            <p class="font-serif font-bold text-[22px] leading-none text-[var(--portfolio-ink)]">
               {{ totalAssetsDisplay }}
             </p>
-            <p class="font-serif text-[13px] text-[var(--portfolio-unit)]">원</p>
+            <p class="font-serif text-[11px] text-[var(--portfolio-unit)]">원</p>
           </div>
 
           <!-- 비중 바 -->
@@ -140,16 +109,18 @@ const goPortfolios = () => {
         </template>
       </div>
 
-      <!-- 보유 포인트 칩 -->
+      <!-- 투자 성향 칩 -->
       <div
-        class="pointer-events-none absolute top-11 right-3 z-10 flex items-center gap-1.5 rounded-[14px] border border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
+        class="pointer-events-none absolute top-11 right-3 z-10 flex max-w-[42%] items-center gap-1.5 rounded-[14px] border-[0.5px] border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
         aria-hidden="true"
       >
-        <span class="font-pen text-[12px] leading-none text-[var(--portfolio-chip-label)]"
-          >보유</span
+        <span class="font-serif text-[12px] leading-none text-[var(--portfolio-chip-label)]"
+          >성향</span
         >
-        <span class="text-[14px] leading-none font-black text-[var(--portfolio-chip-value)]">
-          {{ pointDisplay }} P
+        <span
+          class="truncate text-[13px] leading-none font-black text-[var(--portfolio-chip-value)]"
+        >
+          {{ investmentStyle }}
         </span>
       </div>
     </section>

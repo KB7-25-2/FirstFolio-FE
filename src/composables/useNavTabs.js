@@ -3,10 +3,10 @@ import { useRoute, useRouter } from 'vue-router'
 
 export const NAV_TABS = [
   {
-    name: 'home',
-    path: '/home',
-    label: '홈',
-    icon: 'fa-solid fa-house',
+    name: 'daily',
+    path: '/daily',
+    label: '데일리',
+    icon: 'fa-solid fa-calendar-day',
     activeClass: 'text-[var(--nav-active-primary)]',
     activeDotClass: 'bg-[var(--nav-active-primary)]',
   },
@@ -17,6 +17,15 @@ export const NAV_TABS = [
     icon: 'fa-solid fa-book-open',
     activeClass: 'text-[var(--nav-active-primary)]',
     activeDotClass: 'bg-[var(--nav-active-primary)]',
+  },
+  {
+    name: 'home',
+    path: '/home',
+    label: '홈',
+    icon: 'fa-solid fa-house',
+    activeClass: 'text-[var(--nav-active-primary)]',
+    activeDotClass: 'bg-[var(--nav-active-primary)]',
+    isCenter: true,
   },
   {
     name: 'portfolios',
@@ -47,5 +56,9 @@ export const useNavTabs = () => {
   const isActive = (name) => activeTab.value === name
   const navigate = (path) => router.push(path)
 
-  return { tabs: NAV_TABS, activeTab, isActive, navigate }
+  const leftTabs = computed(() => NAV_TABS.filter((tab) => !tab.isCenter).slice(0, 2))
+  const rightTabs = computed(() => NAV_TABS.filter((tab) => !tab.isCenter).slice(2))
+  const centerTab = computed(() => NAV_TABS.find((tab) => tab.isCenter) ?? null)
+
+  return { tabs: NAV_TABS, leftTabs, rightTabs, centerTab, activeTab, isActive, navigate }
 }

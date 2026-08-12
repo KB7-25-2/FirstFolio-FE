@@ -15,7 +15,7 @@ const props = defineProps({
 const variantClasses = {
   primary: 'bg-blue-600 hover:bg-blue-700 text-white',
   secondary: 'bg-gray-600 hover:bg-gray-700 text-white',
-  outline: 'border border-blue-600 text-blue-600 hover:bg-blue-50',
+  outline: 'border-[0.5px] border-blue-600 text-blue-600 hover:bg-blue-50',
 }
 
 const buttonClass = computed(() => variantClasses[props.variant] ?? variantClasses.primary)

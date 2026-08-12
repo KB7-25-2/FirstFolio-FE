@@ -52,7 +52,7 @@ const earnedScore = computed(() => props.correctCount * props.scorePerQuestion)
         <Transition name="quiz-result-pop" appear>
           <div
             v-if="open"
-            class="relative z-10 w-full max-w-[320px] overflow-hidden rounded-lg border border-[rgba(212,184,150,0.55)] bg-[#faf5eb] shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            class="relative z-10 w-full max-w-[320px] overflow-hidden rounded-lg border-[0.5px] border-[rgba(212,184,150,0.55)] bg-[#faf5eb] shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
           >
             <div
               class="pointer-events-none absolute top-3 left-1/2 h-3.5 w-[72px] -translate-x-1/2 rotate-[3deg] bg-[rgba(217,209,184,0.7)]"
@@ -64,7 +64,7 @@ const earnedScore = computed(() => props.correctCount * props.scorePerQuestion)
               </p>
               <p class="mt-1 font-serif text-[18px] font-black text-[#29211a]">시험 결과</p>
 
-              <p class="mt-5 font-pen text-[36px] leading-none text-[#212b5c]">
+              <p class="mt-5 font-serif font-bold text-[36px] leading-none text-[#212b5c]">
                 {{ correctCount }}
                 <span class="text-[22px] text-[rgba(33,43,92,0.45)]">/ {{ totalCount }}</span>
               </p>
@@ -75,7 +75,7 @@ const earnedScore = computed(() => props.correctCount * props.scorePerQuestion)
 
               <p
                 v-if="pointsGranted > 0"
-                class="mt-3 inline-block rounded border border-[rgba(193,127,36,0.45)] bg-[#fff7eb] px-3 py-1 font-serif text-[12px] font-bold text-[#c17f24]"
+                class="mt-3 inline-block rounded border-[0.5px] border-[rgba(193,127,36,0.45)] bg-[#fff7eb] px-3 py-1 font-serif text-[12px] font-bold text-[#c17f24]"
               >
                 포인트 +{{ pointsGranted }}
               </p>

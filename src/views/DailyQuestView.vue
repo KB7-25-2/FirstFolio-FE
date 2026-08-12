@@ -224,7 +224,7 @@ const onHubSubmit = async () => {
       <div class="flex items-center">
         <button
           type="button"
-          class="flex size-8 items-center justify-center rounded border-[1.25px] border-[rgba(245,237,217,0.45)] text-[#f5edd9]"
+          class="flex size-8 items-center justify-center rounded border-[0.5px] border-[rgba(245,237,217,0.45)] text-[#f5edd9]"
           aria-label="닫기"
           @click="goHome"
         >
@@ -232,10 +232,10 @@ const onHubSubmit = async () => {
         </button>
         <div class="min-w-0 flex-1 text-center">
           <p class="font-serif text-[17px] font-black text-[#f5edd9]">일일 퀘스트</p>
-          <p class="font-pen text-[13px] text-[rgba(245,237,217,0.55)]">{{ headerSubtitle }}</p>
+          <p class="font-serif text-[13px] text-[rgba(245,237,217,0.55)]">{{ headerSubtitle }}</p>
         </div>
         <span
-          class="rounded-[2px] border-[1.5px] border-[#c17f24] px-2 py-1 font-pen text-[12px] text-[#c17f24]"
+          class="rounded-[2px] border-[0.5px] border-[#c17f24] px-2 py-1 font-serif text-[12px] text-[#c17f24]"
         >
           {{ headerStamp }}
         </span>
@@ -260,7 +260,7 @@ const onHubSubmit = async () => {
         />
         <div class="absolute inset-x-0 top-0 flex justify-center">
           <span
-            class="rounded-full border-[0.8px] border-[rgba(255,214,0,0.3)] bg-[rgba(255,214,0,0.15)] px-2.5 py-1 text-[10px] font-bold text-[#ffd600]"
+            class="rounded-full border-[0.5px] border-[rgba(255,214,0,0.3)] bg-[rgba(255,214,0,0.15)] px-2.5 py-1 text-[10px] font-bold text-[#ffd600]"
           >
             금융 상담실 · 실전 게임
           </span>
@@ -357,7 +357,7 @@ const onHubSubmit = async () => {
               </button>
 
               <div
-                class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.28)]"
+                class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.28)]"
               >
                 <div class="min-h-0 flex-1 overflow-y-auto px-2.5 py-2">
                   <ol v-if="pagedRanks.length" class="flex flex-col gap-2.5">
@@ -433,7 +433,7 @@ const onHubSubmit = async () => {
                 </div>
 
                 <p
-                  class="rounded-[8px] border border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5 font-serif text-[11px] leading-[1.55] text-[rgba(61,31,8,0.75)]"
+                  class="rounded-[8px] border-[0.5px] border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5 font-serif text-[11px] leading-[1.55] text-[rgba(61,31,8,0.75)]"
                 >
                   실전 고객 상담 게임으로 포트폴리오 추천 역량을 검증하고, 점수를 쌓아 명예 상담사
                   랭킹에 도전하십시오.
@@ -448,7 +448,7 @@ const onHubSubmit = async () => {
 
                 <div
                   v-else-if="isSnapshotMissing"
-                  class="rounded-[8px] border border-dashed border-[rgba(139,100,60,0.35)] px-3 py-4 text-center"
+                  class="rounded-[8px] border-[0.5px] border-dashed border-[rgba(139,100,60,0.35)] px-3 py-4 text-center"
                 >
                   <p class="font-serif text-[12px] font-bold text-[#3d1f08]">집계 준비 중</p>
                   <p class="mt-1 font-serif text-[11px] text-[rgba(139,100,60,0.65)]">
@@ -458,7 +458,7 @@ const onHubSubmit = async () => {
 
                 <div
                   v-else-if="error"
-                  class="rounded-[8px] border border-[rgba(213,42,45,0.35)] bg-[rgba(213,42,45,0.08)] px-3 py-3 text-center"
+                  class="rounded-[8px] border-[0.5px] border-[rgba(213,42,45,0.35)] bg-[rgba(213,42,45,0.08)] px-3 py-3 text-center"
                 >
                   <p class="font-serif text-[11px] text-[#d52a2d]">{{ error }}</p>
                   <button
@@ -472,7 +472,7 @@ const onHubSubmit = async () => {
 
                 <template v-else>
                   <div
-                    class="grid grid-cols-2 gap-2 rounded-[10px] border border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.4)] px-3 py-3"
+                    class="grid grid-cols-2 gap-2 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.4)] px-3 py-3"
                   >
                     <div>
                       <p class="font-serif text-[10px] text-[rgba(139,100,60,0.65)]">내 점수</p>
@@ -502,7 +502,7 @@ const onHubSubmit = async () => {
                     <div class="h-px flex-1 bg-[rgba(61,31,8,0.2)]" />
                   </button>
                   <div
-                    class="overflow-y-auto rounded-[10px] border border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.28)] p-2.5"
+                    class="overflow-y-auto rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.18)] bg-[rgba(255,255,255,0.28)] p-2.5"
                   >
                     <ol v-if="collapsedRanks.length" class="flex flex-col gap-2">
                       <li

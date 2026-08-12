@@ -1,13 +1,12 @@
 @theme {
-  --font-sans: 'Noto Sans KR', sans-serif;
-  --font-serif: 'Noto Serif KR', serif;
-  --font-pen: 'Nanum Pen Script', cursive;
+  --font-sans: 'Gowun Dodum', sans-serif;
+  --font-serif: 'Gowun Batang', serif;
 
-  --color-auth-page: #0d1117;
-  --color-auth-title: #ffffff;
-  --color-auth-subtitle: #9ca3af;
-  --color-auth-tab: #f5edd9;
-  --color-auth-tab-muted: rgba(245, 237, 217, 0.45);
+  --color-auth-page: #d6bc8e;
+  --color-auth-title: #2c1810;
+  --color-auth-subtitle: rgba(44, 24, 16, 0.58);
+  --color-auth-tab: #2c1810;
+  --color-auth-tab-muted: rgba(44, 24, 16, 0.45);
   --color-auth-clip-border: #5a3820;
   --color-auth-paper-border: #d4b896;
   --color-auth-doc-ink: #3d1f08;
@@ -20,20 +19,22 @@
   --color-auth-cta: #c17f24;
   --color-auth-cta-text: #fff8ec;
   --color-auth-seal: rgba(139, 69, 19, 0.55);
-  --color-auth-footer: #6b7280;
+  --color-auth-footer: rgba(44, 24, 16, 0.48);
   --color-auth-method-card: rgba(255, 255, 255, 0.55);
   --color-auth-method-border: rgba(139, 100, 60, 0.25);
 
   --width-mobile: 390px;
   --height-mobile: 844px;
 
-  /* Navbar */
-  --color-nav-bg: #121212;
-  --color-nav-border: rgba(0, 0, 0, 0.08);
-  --color-nav-text: #1a1a1a;
-  --color-nav-text-muted: #b0b0b0;
+  /* Navbar — 크림 대시보드 패널과 맞춤 */
+  --color-nav-bg: #f7f1e4;
+  --color-nav-border: rgba(60, 48, 36, 0.12);
+  --color-nav-text: #2c1810;
+  --color-nav-text-muted: rgba(44, 24, 16, 0.48);
   --color-nav-active-primary: #c17f24;
-  --color-nav-active-secondary: #ffa1b8;
+  --color-nav-active-secondary: #c45c6a;
+  --color-nav-fab: #fffdf6;
+  --color-nav-fab-muted: #efe6d4;
 
   /* Scrollbar */
   --color-scrollbar-thumb: rgba(255, 255, 255, 0.14);
@@ -54,11 +55,21 @@
   --color-study-divider: rgba(0, 0, 0, 0.2);
   --color-study-score-label: rgba(0, 0, 0, 0.55);
   --color-study-tape: rgba(255, 242, 204, 0.55);
+  --color-study-quest-tape: rgba(255, 196, 168, 0.72);
   --color-study-sticker: #fffaed;
   --color-study-quest-surface: #ffecdd;
   --color-study-quest-border: #e0a07a;
-  --color-study-quest-tape: rgba(255, 196, 168, 0.72);
   --color-study-quest-continue: #c45c2a;
+
+  /* Memo push pins */
+  --color-pin-study: #5b8fd9;
+  --color-pin-quest: #e07a4a;
+  --color-pin-portfolio: #c17f24;
+  --color-pin-news: #e891a8;
+  --color-pin-red: #d4524a;
+  --color-pin-gold: #e2b84a;
+  --color-pin-needle: #9aa0a6;
+  --color-pin-needle-tip: #6b7075;
 
   /* PortfolioSummary */
   --color-portfolio-surface: #f5edd9;
@@ -77,14 +88,26 @@
   --color-portfolio-shop: #c17f24;
   --color-portfolio-shop-paper: #fcf7ed;
 
+  /* Cork board — 메모지 화면 배경 */
+  /* Screen surfaces — ivory cream dashboard panel */
+  --color-cork-base: #f7f1e4;
+  --color-cork-deep: #efe6d4;
+  --color-cork-light: #fbf7ee;
+  --color-cork-speckle: rgba(60, 48, 36, 0.08);
+  --color-cork-ink: #2c1810;
+  --color-cork-ink-muted: rgba(44, 24, 16, 0.58);
+  --color-cork-ink-faint: rgba(44, 24, 16, 0.42);
+  --color-cork-stamp: rgba(122, 58, 18, 0.88);
+  --color-cork-stamp-border: rgba(122, 58, 18, 0.75);
+
   /* NewsClipping */
   --color-news-surface: #f5edd9;
   --color-news-ink: #2c1810;
   --color-news-muted: rgba(44, 24, 16, 0.45);
   --color-news-masthead: rgba(44, 24, 16, 0.55);
   --color-news-line: rgba(44, 24, 16, 0.35);
-  --color-news-section: rgba(245, 237, 217, 0.9);
-  --color-news-section-muted: rgba(245, 237, 217, 0.5);
+  --color-news-section: rgba(44, 24, 16, 0.88);
+  --color-news-section-muted: rgba(44, 24, 16, 0.5);
   --color-news-tape: rgba(255, 161, 184, 0.55);
 
   /* NewsDetailModal */
@@ -156,6 +179,8 @@
   --nav-text-muted: var(--color-nav-text-muted);
   --nav-active-primary: var(--color-nav-active-primary);
   --nav-active-secondary: var(--color-nav-active-secondary);
+  --nav-fab: var(--color-nav-fab);
+  --nav-fab-muted: var(--color-nav-fab-muted);
 
   /* Scrollbar */
   --scrollbar-thumb: var(--color-scrollbar-thumb);
@@ -182,6 +207,16 @@
   --study-quest-tape: var(--color-study-quest-tape);
   --study-quest-continue: var(--color-study-quest-continue);
 
+  /* Memo push pins */
+  --pin-study: var(--color-pin-study);
+  --pin-quest: var(--color-pin-quest);
+  --pin-portfolio: var(--color-pin-portfolio);
+  --pin-news: var(--color-pin-news);
+  --pin-red: var(--color-pin-red);
+  --pin-gold: var(--color-pin-gold);
+  --pin-needle: var(--color-pin-needle);
+  --pin-needle-tip: var(--color-pin-needle-tip);
+
   /* PortfolioSummary */
   --portfolio-surface: var(--color-portfolio-surface);
   --portfolio-border: var(--color-portfolio-border);
@@ -198,6 +233,17 @@
   --portfolio-chip-value: var(--color-portfolio-chip-value);
   --portfolio-shop: var(--color-portfolio-shop);
   --portfolio-shop-paper: var(--color-portfolio-shop-paper);
+
+  /* Cork board */
+  --cork-base: var(--color-cork-base);
+  --cork-deep: var(--color-cork-deep);
+  --cork-light: var(--color-cork-light);
+  --cork-speckle: var(--color-cork-speckle);
+  --cork-ink: var(--color-cork-ink);
+  --cork-ink-muted: var(--color-cork-ink-muted);
+  --cork-ink-faint: var(--color-cork-ink-faint);
+  --cork-stamp: var(--color-cork-stamp);
+  --cork-stamp-border: var(--color-cork-stamp-border);
 
   /* NewsClipping */
   --news-surface: var(--color-news-surface);

@@ -181,8 +181,8 @@ export const useMainChapterScenarioQuiz = () => {
   const goToMainChapter = () => {
     studyStore.clearScenarioSession()
     router.push({
-      name: 'learning-main-chapter',
-      params: { mainChapterId: mainChapterId.value },
+      name: 'learning',
+      query: { mainChapterId: String(mainChapterId.value) },
     })
   }
 
