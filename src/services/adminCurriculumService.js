@@ -9,6 +9,8 @@ import {
   createAdminSubChapter,
   getAdminMainChapters,
   getAdminSubChapters,
+  getLearningMainChapters,
+  getLearningSubChapters,
   patchAdminMainChapter,
   patchAdminSubChapter,
 } from '@/api/admin/curriculumApi.js'
@@ -72,6 +74,58 @@ const listItems = (data) => {
   return []
 }
 
+/** @type {Map<number, string>} */
+const mainChapterDescriptionCache = new Map()
+/** @type {Map<number, string>} */
+const subChapterDescriptionCache = new Map()
+
+const rememberDescription = (cache, id, description) => {
+  if (id == null || description == null) return
+  const text = String(description).trim()
+  if (text) cache.set(Number(id), text)
+}
+
+const descriptionById = (items, ...idKeys) => {
+  const map = new Map()
+  for (const item of items) {
+    const id = Number(pickField(item, ...idKeys))
+    const description = pickField(item, 'description')
+    if (id && description != null && String(description).trim()) {
+      map.set(id, String(description).trim())
+    }
+  }
+  return map
+}
+
+const mergeDescriptions = (chapters, idKey, learningItems, cache) => {
+  const idKeys =
+    idKey === 'mainChapterId'
+      ? ['mainChapterId', 'main_chapter_id']
+      : ['subChapterId', 'sub_chapter_id']
+  const fromLearning = descriptionById(learningItems, ...idKeys)
+  return chapters.map((chapter) => {
+    const id = chapter[idKey]
+    const description = chapter.description ?? fromLearning.get(id) ?? cache.get(id) ?? null
+    return description === chapter.description ? chapter : { ...chapter, description }
+  })
+}
+
+const fetchLearningMainChapterDescriptions = async () => {
+  try {
+    return listItems(unwrapData(await getLearningMainChapters()))
+  } catch {
+    return []
+  }
+}
+
+const fetchLearningSubChapterDescriptions = async (mainChapterId) => {
+  try {
+    return listItems(unwrapData(await getLearningSubChapters(mainChapterId)))
+  } catch {
+    return []
+  }
+}
+
 /**
  * @param {{ chapterType?: ChapterType, isActive?: boolean }} [filters]
  * @returns {Promise<AdminMainChapter[]>}
@@ -81,10 +135,14 @@ export const fetchAdminMainChapters = async (filters = {}) => {
     const params = {}
     if (filters.chapterType) params.chapter_type = filters.chapterType
     if (typeof filters.isActive === 'boolean') params.is_active = filters.isActive
-    const data = unwrapData(await getAdminMainChapters(params))
-    return listItems(data)
+    const [adminData, learningItems] = await Promise.all([
+      getAdminMainChapters(params),
+      fetchLearningMainChapterDescriptions(),
+    ])
+    const chapters = listItems(unwrapData(adminData))
       .map(mapMainChapter)
       .sort((a, b) => a.displayOrder - b.displayOrder)
+    return mergeDescriptions(chapters, 'mainChapterId', learningItems, mainChapterDescriptionCache)
   } catch (error) {
     throw parseApiError(error)
   }
@@ -115,7 +173,12 @@ export const createMainChapter = async (payload) => {
       body.assetType = payload.assetType
     }
     const raw = unwrapData(await createAdminMainChapter(body))
-    return mapMainChapter(raw)
+    const chapter = mapMainChapter({
+      ...raw,
+      description: payload.description?.trim() || pickField(raw, 'description'),
+    })
+    rememberDescription(mainChapterDescriptionCache, chapter.mainChapterId, chapter.description)
+    return chapter
   } catch (error) {
     throw parseApiError(error)
   }
@@ -135,7 +198,13 @@ export const updateMainChapter = async (mainChapterId, payload) => {
     if (payload.displayOrder !== undefined) body.display_order = payload.displayOrder
     if (payload.isActive !== undefined) body.is_active = payload.isActive
     const raw = unwrapData(await patchAdminMainChapter(mainChapterId, body))
-    return mapMainChapter({ ...raw, mainChapterId })
+    const chapter = mapMainChapter({
+      ...raw,
+      mainChapterId,
+      description: payload.description ?? pickField(raw, 'description'),
+    })
+    rememberDescription(mainChapterDescriptionCache, chapter.mainChapterId, chapter.description)
+    return chapter
   } catch (error) {
     throw parseApiError(error)
   }
@@ -147,10 +216,14 @@ export const updateMainChapter = async (mainChapterId, payload) => {
  */
 export const fetchAdminSubChapters = async (mainChapterId) => {
   try {
-    const data = unwrapData(await getAdminSubChapters(mainChapterId))
-    return listItems(data)
+    const [adminData, learningItems] = await Promise.all([
+      getAdminSubChapters(mainChapterId),
+      fetchLearningSubChapterDescriptions(mainChapterId),
+    ])
+    const chapters = listItems(unwrapData(adminData))
       .map((item) => mapSubChapter({ ...item, mainChapterId }))
       .sort((a, b) => a.displayOrder - b.displayOrder)
+    return mergeDescriptions(chapters, 'subChapterId', learningItems, subChapterDescriptionCache)
   } catch (error) {
     throw parseApiError(error)
   }
@@ -163,13 +236,20 @@ export const fetchAdminSubChapters = async (mainChapterId) => {
  */
 export const createSubChapter = async (mainChapterId, payload) => {
   try {
+    /** POST .../sub-chapters — body snake_case (display_order) */
     const body = {
       title: payload.title,
-      description: payload.description || undefined,
-      displayOrder: payload.displayOrder,
+      display_order: payload.displayOrder,
     }
+    if (payload.description?.trim()) body.description = payload.description.trim()
     const raw = unwrapData(await createAdminSubChapter(mainChapterId, body))
-    return mapSubChapter({ ...raw, mainChapterId })
+    const chapter = mapSubChapter({
+      ...raw,
+      mainChapterId,
+      description: payload.description?.trim() || pickField(raw, 'description'),
+    })
+    rememberDescription(subChapterDescriptionCache, chapter.subChapterId, chapter.description)
+    return chapter
   } catch (error) {
     throw parseApiError(error)
   }
@@ -188,7 +268,13 @@ export const updateSubChapter = async (subChapterId, payload) => {
     if (payload.displayOrder !== undefined) body.display_order = payload.displayOrder
     if (payload.isActive !== undefined) body.is_active = payload.isActive
     const raw = unwrapData(await patchAdminSubChapter(subChapterId, body))
-    return mapSubChapter({ ...raw, subChapterId })
+    const chapter = mapSubChapter({
+      ...raw,
+      subChapterId,
+      description: payload.description ?? pickField(raw, 'description'),
+    })
+    rememberDescription(subChapterDescriptionCache, chapter.subChapterId, chapter.description)
+    return chapter
   } catch (error) {
     throw parseApiError(error)
   }
@@ -208,3 +294,18 @@ export const ASSET_TYPE_OPTIONS = [
 
 export const assetTypeLabel = (assetType) =>
   ASSET_TYPE_OPTIONS.find((o) => o.value === assetType)?.label ?? assetType ?? '—'
+
+/** 관리자 API 비즈니스 오류 — UI 메시지 */
+export const ADMIN_CURRICULUM_ERROR_MESSAGES = {
+  SUB_CHAPTER_ORDER_CONFLICT:
+    '같은 순서의 소단원이 이미 있습니다. 다른 display_order를 입력해 주세요.',
+  MAIN_CHAPTER_NOT_FOUND: '대단원을 찾을 수 없습니다.',
+  SUB_CHAPTER_NOT_FOUND: '소단원을 찾을 수 없습니다.',
+}
+
+export const formatAdminCurriculumError = (error) => {
+  if (error?.code && ADMIN_CURRICULUM_ERROR_MESSAGES[error.code]) {
+    return ADMIN_CURRICULUM_ERROR_MESSAGES[error.code]
+  }
+  return error?.message || '요청에 실패했습니다.'
+}

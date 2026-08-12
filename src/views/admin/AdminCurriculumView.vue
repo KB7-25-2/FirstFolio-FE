@@ -8,6 +8,7 @@ import {
   createSubChapter,
   fetchAdminMainChapters,
   fetchAdminSubChapters,
+  formatAdminCurriculumError,
   updateMainChapter,
   updateSubChapter,
 } from '@/services/adminCurriculumService.js'
@@ -65,7 +66,7 @@ const flash = (message) => {
 }
 
 const setError = (error) => {
-  errorMessage.value = error?.message || '요청에 실패했습니다.'
+  errorMessage.value = formatAdminCurriculumError(error)
 }
 
 const loadMainChapters = async () => {
