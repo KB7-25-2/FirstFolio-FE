@@ -201,6 +201,12 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminCurriculumView.vue'),
           meta: { title: '커리큘럼' },
         },
+        {
+          path: 'quiz',
+          name: 'admin-quiz',
+          component: () => import('@/views/admin/AdminQuizView.vue'),
+          meta: { title: '퀴즈 문항' },
+        },
       ],
     },
     {
