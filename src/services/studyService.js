@@ -1125,21 +1125,36 @@ export const getCurriculum = async () => {
     }
     return { data: { items } }
   } catch (error) {
-    if (error instanceof StudyApiError) throw error
-    const parsed = parseApiError(error)
-    if (parsed.status === 404 || parsed.code === 'CURRICULUM_NOT_FOUND') {
-      throw new StudyApiError(
-        'CURRICULUM_NOT_FOUND',
-        parsed.message || '확정된 커리큘럼이 없다.',
-        404,
-      )
+    if (!(error instanceof StudyApiError) || error.code === 'CURRICULUM_NOT_FOUND') {
+      if (!import.meta.env.DEV) {
+        if (error instanceof StudyApiError) throw error
+        const parsed = parseApiError(error)
+        if (parsed.status === 404 || parsed.code === 'CURRICULUM_NOT_FOUND') {
+          throw new StudyApiError(
+            'CURRICULUM_NOT_FOUND',
+            parsed.message || '확정된 커리큘럼이 없다.',
+            404,
+          )
+        }
+        throw new StudyApiError(
+          parsed.code || 'CURRICULUM_FETCH_FAILED',
+          parsed.message || '커리큘럼을 불러오지 못했다.',
+          parsed.status || 500,
+        )
+      }
+      console.warn('[studyService] GET /curriculum 실패 — mock으로 대체합니다.', error)
+    } else if (!import.meta.env.DEV) {
+      throw error
+    } else {
+      console.warn('[studyService] GET /curriculum 실패 — mock으로 대체합니다.', error)
     }
-    throw new StudyApiError(
-      parsed.code || 'CURRICULUM_FETCH_FAILED',
-      parsed.message || '커리큘럼을 불러오지 못했다.',
-      parsed.status || 500,
-    )
   }
+
+  await delay()
+  const items = normalizeCurriculumStatuses(
+    MOCK_CURRICULUM_RESPONSE.data.items.map(mapCurriculumItem),
+  )
+  return { data: { items } }
 }
 
 /**

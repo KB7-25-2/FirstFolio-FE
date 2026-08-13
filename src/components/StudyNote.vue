@@ -34,14 +34,17 @@ onMounted(async () => {
       await Promise.all([
         studyStore.fetchCurriculum(),
         studyStore.fetchLearningProgress(dashLearning.mainChapterId),
-        studyStore.fetchContinuePosition(),
       ])
+      await studyStore.fetchContinuePosition()
+      if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
+        return
+      }
     } catch (err) {
       studyStore.error = err?.message || '학습 현황을 불러오지 못했습니다.'
     } finally {
       studyStore.isLoading = false
     }
-    return
+    studyStore.error = null
   }
 
   await studyStore.fetchStudyNote()
@@ -51,7 +54,7 @@ const noteLoading = computed(
   () => isLoading.value || (dashboardLoading.value && !learningItems.value.length),
 )
 const noteError = computed(() => {
-  if (learning.value?.available === false) {
+  if (learning.value?.available === false && !learningItems.value.length && !noteLoading.value) {
     return learning.value.reason === 'NOT_STARTED'
       ? '아직 시작한 학습이 없습니다.'
       : learning.value.reason || '이어갈 학습이 없습니다.'

@@ -189,6 +189,86 @@ export const seedOnboardingSession = async (page, onboardingStep, options = {}) 
 }
 
 /**
+ * 홈 StudyNote·학습 E2E용 — dashboard / curriculum / continue
+ * @param {import('@playwright/test').Page} page
+ */
+export const mockHomeStudyApis = async (page) => {
+  await page.route('**/dashboard', async (route) => {
+    if (route.request().method() !== 'GET') return route.continue()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          portfolio: { available: false, reason: 'NOT_STARTED' },
+          daily_quest: { status: 'ASSIGNED', answered_count: 0, total_count: 5 },
+          learning: {
+            main_chapter_id: 2,
+            sub_chapter_id: 103,
+            progress_percent: 50,
+          },
+          upcoming_events: [],
+          latest_news: [],
+        },
+      }),
+    })
+  })
+
+  await page.route(/\/curriculum(?:\?|$)/, async (route) => {
+    if (route.request().method() !== 'GET') return route.continue()
+    const url = route.request().url()
+    if (url.includes('/curriculums/')) return route.continue()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          items: [
+            {
+              curriculum_item_id: 501,
+              main_chapter_id: 1,
+              title: '포트폴리오 기초',
+              chapter_type: 'FOUNDATION',
+              display_order: 1,
+              status: 'COMPLETED',
+              progress_percent: 100,
+            },
+            {
+              curriculum_item_id: 502,
+              main_chapter_id: 2,
+              title: '예·적금',
+              chapter_type: 'CORE',
+              display_order: 2,
+              status: 'ACTIVE',
+              progress_percent: 50,
+            },
+          ],
+        },
+      }),
+    })
+  })
+
+  await page.route('**/learning/continue', async (route) => {
+    if (route.request().method() !== 'GET') return route.continue()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          curriculum_item_id: 502,
+          main_chapter_id: 2,
+          sub_chapter_id: 103,
+          content_version_id: 303,
+          last_page_id: 'page-2',
+          progress_percent: 50,
+          route: '/learning/sub-chapters/103?page=page-2',
+        },
+      }),
+    })
+  })
+}
+
+/**
  * 온보딩 완료(HOME) 사용자 — /home·학습·뉴스 등 인증 필요 E2E용
  * @param {import('@playwright/test').Page} page
  */
@@ -197,6 +277,7 @@ export const seedHomeSession = async (page) => {
     levelTestCompleted: true,
     curriculumConfirmed: true,
   })
+  await mockHomeStudyApis(page)
 }
 
 /**
