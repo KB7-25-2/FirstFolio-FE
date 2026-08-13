@@ -1,5 +1,4 @@
 import { hasToken } from '@/utils/token.js'
-import { isCurriculumConfirmed } from '@/utils/curriculumConfirm.js'
 import { useAuthStore } from '@/store/authStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
 import { resolveAuthEntryPath, resolveOnboardingGuardTarget } from '@/router/onboardingRedirect.js'
@@ -21,9 +20,11 @@ export const setupAuthGuard = (router) => {
     if (hasToken() && (requiresAuth || guestOnly)) {
       const authStore = useAuthStore()
       const levelTestStore = useLevelTestStore()
-      const levelTestCompleted = await levelTestStore.ensureStatus()
-      const curriculumConfirmed = isCurriculumConfirmed()
-      const onboardingStep = authStore.onboardingStep
+      const onboardingStep = await authStore.ensureOnboardingStep()
+      const levelTestCompleted = onboardingStep
+        ? onboardingStep !== 'LEVEL_TEST'
+        : await levelTestStore.ensureStatus()
+      const curriculumConfirmed = onboardingStep === 'HOME'
 
       if (guestOnly) {
         const redirect = typeof to.query.redirect === 'string' ? to.query.redirect : '/home'

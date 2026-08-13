@@ -1,6 +1,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/authStore.js'
 import { useCurriculumStore } from '@/store/curriculumStore.js'
 
 /**
@@ -8,6 +9,7 @@ import { useCurriculumStore } from '@/store/curriculumStore.js'
  */
 export const useCurriculumConfirm = () => {
   const router = useRouter()
+  const authStore = useAuthStore()
   const curriculumStore = useCurriculumStore()
   const { orderedItems, availableItems, isLoading, isConfirming, error } =
     storeToRefs(curriculumStore)
@@ -89,6 +91,7 @@ export const useCurriculumConfirm = () => {
     actionError.value = ''
     try {
       await curriculumStore.confirm()
+      authStore.setOnboardingStep('HOME')
       await router.push({ name: 'home' })
     } catch (err) {
       actionError.value = err?.message || '확정에 실패했습니다.'
