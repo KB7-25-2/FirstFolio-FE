@@ -37,8 +37,8 @@ const mapQuestion = (raw) => ({
   prompt: raw.prompt,
   scenario: raw.scenario ?? null,
   optionsJson: (raw.choices ?? []).map((choice) => ({
-    key: choice.id,
-    label: choice.text,
+    key: choice.key,
+    label: choice.label,
   })),
   mainChapterId: raw.main_chapter?.main_chapter_id,
   assetType: raw.main_chapter?.asset_type,

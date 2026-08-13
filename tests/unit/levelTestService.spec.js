@@ -44,8 +44,8 @@ describe('levelTestService', () => {
               prompt: '금리가 오르면 예금 이자는?',
               scenario: null,
               choices: [
-                { id: 'A', text: '대체로 늘어난다' },
-                { id: 'B', text: '대체로 줄어든다' },
+                { key: 'A', label: '대체로 늘어난다' },
+                { key: 'B', label: '대체로 줄어든다' },
               ],
             },
           ],
