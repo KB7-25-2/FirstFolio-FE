@@ -1,14 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
-import { getCurriculum } from '@/services/studyService.js'
+import { __setMockLearningProfile, getCurriculum } from '@/services/studyService.js'
 import AppNavbar from '@/components/AppNavbar.vue'
 
 describe('studyService + studyStore (integration)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    __setMockLearningProfile('mid-curriculum')
+  })
+
+  afterEach(() => {
+    __setMockLearningProfile('mid-curriculum')
   })
 
   it('getCurriculum mock이 ACTIVE 대단원을 포함한다', async () => {
@@ -28,7 +33,15 @@ describe('studyService + studyStore (integration)', () => {
 })
 
 describe('AppNavbar (integration)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    __setMockLearningProfile('mid-curriculum')
+  })
+
   it('5개 탭 라벨을 렌더링한다', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
     const router = createRouter({
       history: createMemoryHistory(),
       routes: [
@@ -44,7 +57,7 @@ describe('AppNavbar (integration)', () => {
 
     const wrapper = mount(AppNavbar, {
       global: {
-        plugins: [router],
+        plugins: [pinia, router],
         stubs: { FontAwesomeIcon: true },
       },
     })

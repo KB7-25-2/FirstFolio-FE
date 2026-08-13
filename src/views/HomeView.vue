@@ -3,6 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/userStore.js'
+import { useStudyStore } from '@/store/studyStore.js'
+import { usePortfolioStore } from '@/store/portfolioStore.js'
 import { formatKoreanDate } from '@/utils/date.js'
 import { PORTFOLIO_LOCKED_MESSAGE } from '@/utils/foundationGuide.js'
 import PortfolioSummary from '@/components/PortfolioSummary.vue'
@@ -10,8 +12,10 @@ import StudyNote from '@/components/StudyNote.vue'
 import PointShopNote from '@/components/PointShopNote.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 import FoundationGuideOverlay from '@/components/FoundationGuideOverlay.vue'
+import FoundationUnlockCeremony from '@/components/FoundationUnlockCeremony.vue'
 import BaseToast from '@/components/BaseToast.vue'
 import { useFoundationGuide } from '@/composables/useFoundationGuide.js'
+import { __setMockLearningProfile } from '@/services/studyService.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,8 +24,11 @@ const { greeting } = storeToRefs(userStore)
 
 const todayLabel = computed(() => formatKoreanDate())
 const showPortfolioLockedToast = ref(false)
+const showUnlockPreview = ref(false)
 
 const { isOpen, dismiss, startFoundation } = useFoundationGuide()
+const portfolioStore = usePortfolioStore()
+const studyStore = useStudyStore()
 
 watch(
   () => route.query.portfolioLocked,
@@ -33,8 +40,32 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => route.query.unlockCeremony,
+  (preview) => {
+    if (preview !== '1') return
+    showUnlockPreview.value = true
+    router.replace({ name: 'home' })
+  },
+  { immediate: true },
+)
+
 const closePortfolioLockedToast = () => {
   showPortfolioLockedToast.value = false
+}
+
+const confirmUnlockPreview = async () => {
+  // 미리보기: 기초 수료 상태로 맞춘 뒤 지급·포트폴리오 진입
+  __setMockLearningProfile('mid-curriculum')
+  await studyStore.fetchCurriculum()
+  await portfolioStore.grantFoundationCash()
+  studyStore.clearFoundationUnlock()
+  showUnlockPreview.value = false
+  await router.push({ name: 'portfolio-purchase' })
+}
+
+const dismissUnlockPreview = () => {
+  showUnlockPreview.value = false
 }
 </script>
 
@@ -81,6 +112,12 @@ const closePortfolioLockedToast = () => {
       :message="PORTFOLIO_LOCKED_MESSAGE"
       data-testid="portfolio-locked-toast"
       @close="closePortfolioLockedToast"
+    />
+
+    <FoundationUnlockCeremony
+      :open="showUnlockPreview"
+      @confirm="confirmUnlockPreview"
+      @close="dismissUnlockPreview"
     />
   </div>
 </template>

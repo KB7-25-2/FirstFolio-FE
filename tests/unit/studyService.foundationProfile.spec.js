@@ -12,7 +12,8 @@ describe('studyService mock learning profile', () => {
     __setMockLearningProfile('mid-curriculum')
   })
 
-  it('기본 프로필은 mid-curriculum이다', () => {
+  it('명시적으로 mid-curriculum으로 돌릴 수 있다', () => {
+    __setMockLearningProfile('mid-curriculum')
     expect(__getMockLearningProfile()).toBe('mid-curriculum')
   })
 

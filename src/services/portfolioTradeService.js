@@ -16,11 +16,44 @@ import {
 } from '@/mappers/portfolioMapper.js'
 import { getAssetTypeMeta } from '@/constants/assetType.js'
 import { mockPortfolioSummary, mockPurchasableProducts } from '@/mocks/portfolioMock.js'
+import {
+  INITIAL_SIMULATION_CASH,
+  hasGrantedSimulationCash,
+  setGrantedSimulationCash,
+} from '@/utils/foundationGrant.js'
 
 // ============================================================
 // 상품 목록 / 상세 (FUNC-031, FUNC-032)
 // ============================================================
 
+/** 기초 수료 직후 지급된 초기 포트폴리오 (DEV mock) */
+let mockGrantedPortfolio = null
+
+const buildFreshGrantSummary = () =>
+  normalizeLocalSummary({
+    totalAssetValue: INITIAL_SIMULATION_CASH,
+    cashBalance: INITIAL_SIMULATION_CASH,
+    profitLossAmount: 0,
+    goalAchievementRate: 0,
+    holdings: [],
+    aiFeedback: '모의투자금 3천만 원으로 첫 포트폴리오를 구성해 보세요.',
+  })
+
+/**
+ * 포트폴리오 기초 수료 시 모의투자금 30,000,000원 지급 (목업)
+ * @returns {Promise<object>}
+ */
+export const grantInitialSimulationCash = async () => {
+  mockGrantedPortfolio = buildFreshGrantSummary()
+  setGrantedSimulationCash(true)
+  return structuredClone(mockGrantedPortfolio)
+}
+
+/** 테스트·프로필 전환용 */
+export const __resetGrantedSimulationCash = () => {
+  mockGrantedPortfolio = null
+  setGrantedSimulationCash(false)
+}
 export const getPurchasableProductsList = async (params = {}) => {
   try {
     const { data } = await getPurchasableProducts(params)
@@ -66,6 +99,18 @@ export const getCurrentPortfolio = async ({ productsById = {}, currentSummary = 
       )
       return currentSummary
     }
+
+    if (mockGrantedPortfolio && hasGrantedSimulationCash()) {
+      console.warn('[portfolioService] 기초 수료 지급분 mock 포트폴리오를 사용합니다.', err)
+      return structuredClone(mockGrantedPortfolio)
+    }
+
+    if (hasGrantedSimulationCash()) {
+      mockGrantedPortfolio = buildFreshGrantSummary()
+      console.warn('[portfolioService] 기초 수료 지급분 mock 포트폴리오를 사용합니다.', err)
+      return structuredClone(mockGrantedPortfolio)
+    }
+
     console.warn('[portfolioService] 포트폴리오 API 호출 실패 — 목데이터로 대체합니다.', err)
     return normalizeLocalSummary(structuredClone(mockPortfolioSummary))
   }

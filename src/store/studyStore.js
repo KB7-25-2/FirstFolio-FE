@@ -53,6 +53,9 @@ export const useStudyStore = defineStore('study', () => {
   const scenarioAnswers = ref({})
   const scenarioAttemptResult = ref(null)
 
+  /** 기초 수료 직후 모의투자금 지급 세리머니 표시 */
+  const pendingFoundationUnlock = ref(false)
+
   /** StudyNote에 표시할 활성 대단원 */
   const activeCurriculumItem = computed(
     () => curriculumItems.value.find((item) => item.status === 'ACTIVE') ?? null,
@@ -498,6 +501,10 @@ export const useStudyStore = defineStore('study', () => {
     const scenarioId = scenarioDetail.value?.scenarioId
     if (!mainChapterId || !scenarioId || !scenarioSteps.value.length) return null
 
+    const wasFoundationChapter =
+      curriculumItems.value.find((item) => item.mainChapterId === mainChapterId)?.chapterType ===
+      'FOUNDATION'
+
     const answers = scenarioSteps.value.map((step) => ({
       stepId: step.stepId,
       selectedKey: scenarioAnswers.value[step.stepId] ?? '',
@@ -528,7 +535,15 @@ export const useStudyStore = defineStore('study', () => {
 
     await Promise.all([fetchCurriculum(), fetchContinuePosition()])
 
+    if (wasFoundationChapter && isFoundationCompletedFlag.value) {
+      pendingFoundationUnlock.value = true
+    }
+
     return data
+  }
+
+  const clearFoundationUnlock = () => {
+    pendingFoundationUnlock.value = false
   }
 
   /** StudyNote용: 커리큘럼 + 소단원 목록 + 이어하기 */
@@ -566,6 +581,7 @@ export const useStudyStore = defineStore('study', () => {
     learningItems.value = []
     continuePosition.value = null
     currentContent.value = null
+    pendingFoundationUnlock.value = false
     clearLesson()
     clearQuizSession()
     clearScenarioSession()
@@ -654,6 +670,8 @@ export const useStudyStore = defineStore('study', () => {
     goNextScenarioStep,
     completeScenarioAttempt,
     clearScenarioSession,
+    pendingFoundationUnlock,
+    clearFoundationUnlock,
     clearLesson,
     clearStudy,
   }

@@ -91,6 +91,13 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     await fetchSummary()
   }
 
+  /** 기초 수료 직후 모의투자금 지급 + 요약 갱신 */
+  const grantFoundationCash = async () => {
+    summary.value = await portfolioService.grantInitialSimulationCash()
+    error.value = null
+    return summary.value
+  }
+
   // FUNC-034: 거래·자산 이벤트 이력(예정 이벤트 포함) 조회.
   const fetchTransactions = async (params = {}) => {
     isLoading.value = true
@@ -146,6 +153,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     buyProduct,
     lastTradeResult,
     resetPortfolio,
+    grantFoundationCash,
     transactions,
     transactionsNextCursor,
     fetchTransactions,

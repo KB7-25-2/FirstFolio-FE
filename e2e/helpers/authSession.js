@@ -170,6 +170,8 @@ export const seedOnboardingSession = async (page, onboardingStep, options = {}) 
       sessionStorage.clear()
       localStorage.setItem('access_token', token)
       sessionStorage.setItem('onboarding_step', step)
+      // 학습 E2E는 예·적금 진행 중 mock 유지 (홈 기초 가이드 기본값과 분리)
+      sessionStorage.setItem('mock_learning_profile', 'mid-curriculum')
 
       if (levelTestCompleted) {
         localStorage.setItem('level_test_state', JSON.stringify({ completed: true, attempt: null }))

@@ -1,4 +1,5 @@
 import { ALLOW_DUPLICATE_POINT_GRANT, POINTS_PER_CORRECT } from '@/constants/quizPolicy.js'
+import { setGrantedSimulationCash } from '@/utils/foundationGrant.js'
 
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
@@ -1555,6 +1556,22 @@ export const submitQuizAttempt = async (payload) => {
  */
 const MOCK_CHAPTER_GAMES = new Map([
   [
+    1,
+    {
+      chapterGameId: 40,
+      mainChapterId: 1,
+      title: '기초 실전 퀴즈',
+      unlocked: false,
+      scenarios: [
+        {
+          scenarioId: 401,
+          title: '첫 모의 포트폴리오를 짜는 친구',
+          completed: false,
+        },
+      ],
+    },
+  ],
+  [
     2,
     {
       chapterGameId: 50,
@@ -1574,6 +1591,76 @@ const MOCK_CHAPTER_GAMES = new Map([
 
 /** scenarioId → detail */
 const MOCK_SCENARIOS = {
+  401: {
+    scenarioId: 401,
+    title: '첫 모의 포트폴리오를 짜는 친구',
+    rewardStar: 30,
+    content: {
+      scenarioKey: 'foundation-first-portfolio',
+      chapterTitle: '포트폴리오 기초',
+      chapterSubtitle: '모의투자 전 필수 선행',
+      opening: {
+        documentTitle: '공 문 서',
+        docNo: '제 2026-기초-001 호',
+        docDate: '2026. 06. 01',
+        orgName: '금융 상담 교육원',
+        title: '포트폴리오 기초 실전 점검',
+        mission:
+          '친구가 모의투자금을 받아 첫 포트폴리오를 구성하려 합니다. 분산과 위험의 기본을 떠올리며 가장 알맞은 조언을 고르세요.',
+        issuerLabel: '발행처',
+        issuerName: '투자 상담 교육원장',
+        startLabel: '게임 시작',
+      },
+      conditions: {
+        persona: {
+          name: '펭귄',
+          age: '17세',
+          job: '고등학생',
+          monthlyIncome: '용돈 5만원',
+          monthlySaving: '2만원',
+        },
+        requirements: {
+          assets: '모의투자금 3천만원(가상)',
+          risk: '중위험 이하 선호',
+          goal: '첫 분산 포트폴리오 구성',
+        },
+        marketTitle: '기초 점검 시황',
+        marketDate: '2026. 06. 01',
+        marketBullets: [
+          '한 자산에만 몰빵하면 위험이 커져요',
+          '현금·예금·주식·펀드를 나눠 담아보세요',
+        ],
+        constraints: ['교육용 모의투자이며 실제 거래가 아닙니다'],
+      },
+      steps: [
+        {
+          stepId: 4011,
+          order: 1,
+          paperTitle: '첫 포트폴리오 조언',
+          prompt: '친구가 “주식만 사면 빨리 부자 되지 않아?”라고 물었습니다. 가장 알맞은 대답은?',
+          options: [
+            {
+              key: 'A',
+              label: '한 자산에만 몰아넣는 게 최고야',
+              description: '수익만 보고 위험을 무시하는 조언',
+            },
+            {
+              key: 'B',
+              label: '분산해서 위험을 나눠 담아보자',
+              description: '포트폴리오 기초의 핵심',
+            },
+            {
+              key: 'C',
+              label: '현금만 들고 있으면 돼',
+              description: '기회 비용을 전혀 고려하지 않음',
+            },
+          ],
+          correctKey: 'B',
+          explanation: '분산 투자는 위험을 한곳에 몰지 않고 자산 역할을 나누는 기본 원칙입니다.',
+        },
+      ],
+    },
+  },
   501: {
     scenarioId: 501,
     title: '첫 월급을 받은 사회초년생',
@@ -1891,6 +1978,14 @@ const applyFoundationPendingProfile = () => {
     row.updatedAt = '2026-06-01T00:00:00'
   }
 
+  for (const game of MOCK_CHAPTER_GAMES.values()) {
+    game.unlocked = false
+    for (const scenario of game.scenarios) {
+      scenario.completed = false
+    }
+  }
+
+  setGrantedSimulationCash(false)
   recomputeContinuePosition()
 }
 
