@@ -38,7 +38,15 @@ export const useLevelTestQuiz = () => {
   const actionError = ref('')
 
   onMounted(async () => {
-    if (levelTestStore.attempt?.status === 'IN_PROGRESS') return
+    const existing = levelTestStore.attempt
+    const options = levelTestStore.currentQuestion?.optionsJson ?? []
+    const optionsBroken =
+      existing?.status === 'IN_PROGRESS' &&
+      (options.length === 0 || options.some((o) => !o?.key || !o?.label))
+
+    // 이전 매핑 버그(id/text)로 저장된 세션이면 재시작
+    if (existing?.status === 'IN_PROGRESS' && !optionsBroken) return
+
     try {
       await levelTestStore.start()
     } catch (err) {

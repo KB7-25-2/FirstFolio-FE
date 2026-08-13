@@ -12,6 +12,7 @@ import {
   signUpWithEmail,
   getIdToken,
   signOutFirebase,
+  getCurrentFirebaseUser,
   FirebaseAuthError,
 } from '@/services/firebaseAuthService.js'
 import { getToken } from '@/utils/token.js'
@@ -84,6 +85,8 @@ export const authenticateWithGoogle = async (options = {}) => {
 
 /**
  * Google 계정으로 Firebase 인증 후 FirstFolio 회원가입
+ * — 신규 가입 전용. 이미 Firebase 세션이 있는 경우(로그인→SIGNUP_REQUIRED)는
+ *   signupWithExistingFirebaseSession 사용
  * @param {{ onDismissed?: () => void }} [options]
  * @returns {Promise<{ data: SignupResponse, idToken: string }>}
  */
@@ -116,6 +119,8 @@ export const signupWithGoogle = async (options = {}) => {
 
 /**
  * 이메일·비밀번호로 Firebase 계정 생성 후 FirstFolio 회원가입
+ * — 신규 가입 전용. 이미 Firebase 세션이 있는 경우(로그인→SIGNUP_REQUIRED)는
+ *   signupWithExistingFirebaseSession 사용
  * @param {{ nickname: string, email: string, password: string }} payload
  * @returns {Promise<{ data: SignupResponse, idToken: string }>}
  */
@@ -146,6 +151,38 @@ export const signupWithEmail = async ({ nickname, email, password }) => {
 }
 
 /**
+ * 이미 Firebase 로그인 세션이 있을 때 BE에만 회원가입
+ * — 로그인 시도 → SIGNUP_REQUIRED → 회원가입 탭 전환 흐름에서 사용
+ * Google 로그인 후 SIGNUP_REQUIRED: 닉네임은 Google 표시 이름에서 자동 생성
+ * 이메일 로그인 후 SIGNUP_REQUIRED: nickname 파라미터 필수
+ * @param {{ nickname?: string }} [payload]
+ * @returns {Promise<{ data: SignupResponse, idToken: string }>}
+ */
+export const signupWithExistingFirebaseSession = async ({ nickname } = {}) => {
+  const idToken = await getIdToken()
+  const user = getCurrentFirebaseUser()
+
+  const resolvedNickname = nickname ? validateNickname(nickname) : resolveNicknameFromGoogle(user)
+
+  try {
+    const { data } = await signUpApi(
+      { nickname: resolvedNickname, required_terms_agreed: true },
+      idToken,
+    )
+    return {
+      data: mapSignupResponse(data.data),
+      idToken,
+    }
+  } catch (error) {
+    throw mapAuthError(
+      error,
+      'SIGNUP_FAILED',
+      '회원가입에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+    )
+  }
+}
+
+/**
  * Google 계정으로 Firebase 인증 후 FirstFolio 로그인
  * @param {{ onDismissed?: () => void }} [options]
  * @returns {Promise<{ data: LoginResponse, idToken: string }>}
@@ -155,14 +192,21 @@ export const loginWithGoogle = async (options = {}) => {
 
   try {
     const { data } = await loginApi(idToken)
-
     return {
       data: mapLoginResponse(data.data),
       idToken,
     }
   } catch (error) {
-    await signOutFirebase().catch(() => {})
-    throw mapAuthError(error, 'LOGIN_FAILED', '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+    const mapped = mapAuthError(
+      error,
+      'LOGIN_FAILED',
+      '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+    )
+    // SIGNUP_REQUIRED는 Firebase 계정 자체가 유효한 상태 — Firebase 로그아웃 하지 않음
+    if (mapped.code !== 'SIGNUP_REQUIRED') {
+      await signOutFirebase().catch(() => {})
+    }
+    throw mapped
   }
 }
 
@@ -177,14 +221,21 @@ export const loginWithEmail = async ({ email, password }) => {
 
   try {
     const { data } = await loginApi(idToken)
-
     return {
       data: mapLoginResponse(data.data),
       idToken,
     }
   } catch (error) {
-    await signOutFirebase().catch(() => {})
-    throw mapAuthError(error, 'LOGIN_FAILED', '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+    const mapped = mapAuthError(
+      error,
+      'LOGIN_FAILED',
+      '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+    )
+    // SIGNUP_REQUIRED: Firebase 계정은 있으나 BE 미가입 — 세션 유지하여 회원가입 탭에서 재사용
+    if (mapped.code !== 'SIGNUP_REQUIRED') {
+      await signOutFirebase().catch(() => {})
+    }
+    throw mapped
   }
 }
 

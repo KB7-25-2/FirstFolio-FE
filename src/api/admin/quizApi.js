@@ -16,14 +16,14 @@ export const getAdminQuizQuestions = (params = {}) =>
 
 /**
  * POST /admin/quiz-questions
- * @param {object} body snake_case 문항 원본
+ * @param {object} body live DTO snake_case
  */
 export const createAdminQuizQuestion = (body) => adminApiClient.post('/admin/quiz-questions', body)
 
 /**
  * POST /admin/quiz-questions/{questionId}/versions
  * @param {number} questionId
- * @param {object} body
+ * @param {object} body live DTO snake_case
  */
 export const createAdminQuizQuestionVersion = (questionId, body) =>
   adminApiClient.post(`/admin/quiz-questions/${questionId}/versions`, body)

@@ -16,6 +16,45 @@ import {
 import { pickField, unwrapData } from '@/utils/apiMapper.js'
 
 const CACHE_KEY = 'admin_quiz_questions_cache'
+/** Live OpenAPI에 GET이 없으면 405 후 세션 동안 재호출하지 않는다. */
+const LIST_GET_FLAG_KEY = 'admin_quiz_list_get_supported'
+
+const isQuizListGetSupported = () => {
+  try {
+    return sessionStorage.getItem(LIST_GET_FLAG_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+const markQuizListGetUnsupported = () => {
+  try {
+    sessionStorage.setItem(LIST_GET_FLAG_KEY, '0')
+  } catch {
+    // ignore
+  }
+}
+
+/** @param {object} filters @returns {{ items: QuizQuestion[], nextCursor: null }} */
+const listFromCache = (filters = {}) => {
+  let items = readCache()
+  if (filters.usageType) items = items.filter((q) => q.usageType === filters.usageType)
+  if (filters.status) items = items.filter((q) => q.status === filters.status)
+  if (filters.mainChapterId != null && filters.mainChapterId !== '') {
+    items = items.filter((q) => q.mainChapterId === Number(filters.mainChapterId))
+  }
+  if (filters.subChapterId != null && filters.subChapterId !== '') {
+    items = items.filter((q) => q.subChapterId === Number(filters.subChapterId))
+  }
+  if (filters.questionKey?.trim()) {
+    const key = filters.questionKey.trim()
+    items = items.filter((q) => q.questionKey.includes(key))
+  }
+  return {
+    items: items.sort((a, b) => Number(b.questionId) - Number(a.questionId)),
+    nextCursor: null,
+  }
+}
 
 /**
  * @typedef {import('@/types/quiz.js').QuizQuestion} QuizQuestion
@@ -121,6 +160,11 @@ const listItems = (data) => {
  * @returns {Promise<{ items: QuizQuestion[], nextCursor: string | null }>}
  */
 export const fetchAdminQuizQuestions = async (filters = {}) => {
+  // Live OpenAPI: POST만 존재. GET 405면 세션 동안 캐시만 사용(콘솔 반복 로그 방지).
+  if (!isQuizListGetSupported()) {
+    return listFromCache(filters)
+  }
+
   const params = {}
   if (filters.usageType) params.usage_type = filters.usageType
   if (filters.status) params.status = filters.status
@@ -152,29 +196,23 @@ export const fetchAdminQuizQuestions = async (filters = {}) => {
     }
   } catch (error) {
     const parsed = parseApiError(error)
-    // 일시적 미구현·권한 외 — 작성 직후 캐시로 폴백
     if (parsed.status === 404 || parsed.status === 405 || parsed.code === 'METHOD_NOT_ALLOWED') {
-      let items = readCache()
-      if (filters.usageType) items = items.filter((q) => q.usageType === filters.usageType)
-      if (filters.status) items = items.filter((q) => q.status === filters.status)
-      if (filters.mainChapterId != null && filters.mainChapterId !== '') {
-        items = items.filter((q) => q.mainChapterId === Number(filters.mainChapterId))
-      }
-      if (filters.subChapterId != null && filters.subChapterId !== '') {
-        items = items.filter((q) => q.subChapterId === Number(filters.subChapterId))
-      }
-      if (filters.questionKey?.trim()) {
-        const key = filters.questionKey.trim()
-        items = items.filter((q) => q.questionKey.includes(key))
-      }
-      return {
-        items: items.sort((a, b) => Number(b.questionId) - Number(a.questionId)),
-        nextCursor: null,
-      }
+      markQuizListGetUnsupported()
+      return listFromCache(filters)
     }
     throw parsed
   }
 }
+
+/** OpenAPI QuizQuestionCreateRequest / VersionCreateRequest — camelCase */
+const mapOptionsForRequest = (optionsJson) =>
+  (optionsJson ?? []).map((o) => {
+    const item = { key: String(o.key), label: String(o.label ?? '').trim() }
+    if (o.description != null && String(o.description).trim()) {
+      item.description = String(o.description).trim()
+    }
+    return item
+  })
 
 /**
  * @param {{
@@ -197,25 +235,22 @@ export const fetchAdminQuizQuestions = async (filters = {}) => {
 export const createQuizQuestion = async (payload) => {
   validateQuestionPayload(payload)
 
-  /** JSON_SCHEMA / 관리자 API — snake_case */
+  // Live BE: snake_case JSON properties (OpenAPI camelCase와 불일치 — ProductImport와 동일)
   const body = {
     question_key: payload.questionKey.trim(),
     usage_type: payload.usageType,
     question_type: payload.questionType,
     prompt: payload.prompt.trim(),
-    options_json: payload.optionsJson,
+    options_json: mapOptionsForRequest(payload.optionsJson),
     correct_answer_json: { key: String(payload.correctAnswerJson.key) },
     explanation: payload.explanation.trim(),
-    generation_type: payload.generationType ?? 'HUMAN',
   }
 
   if (payload.difficulty) body.difficulty = payload.difficulty
   if (payload.mainChapterId != null) body.main_chapter_id = Number(payload.mainChapterId)
   if (payload.subChapterId != null) body.sub_chapter_id = Number(payload.subChapterId)
-  if (payload.questionType === 'SCENARIO') {
-    body.scenario_json = payload.scenarioJson ?? null
-  } else {
-    body.scenario_json = null
+  if (payload.questionType === 'SCENARIO' && payload.scenarioJson != null) {
+    body.scenario_json = payload.scenarioJson
   }
   if (payload.sourceRefsJson != null) body.source_refs_json = payload.sourceRefsJson
 
@@ -225,6 +260,7 @@ export const createQuizQuestion = async (payload) => {
       ...payload,
       status: 'DRAFT',
       versionNo: 1,
+      generationType: 'HUMAN',
       createdAt: new Date().toISOString(),
     })
     return upsertCache(question)
@@ -262,10 +298,12 @@ export const createQuizQuestionVersion = async (questionId, payload) => {
 
   const body = {
     prompt: payload.prompt.trim(),
-    options_json: payload.optionsJson,
+    options_json: mapOptionsForRequest(payload.optionsJson),
     correct_answer_json: { key: String(payload.correctAnswerJson.key) },
     explanation: payload.explanation.trim(),
-    scenario_json: questionType === 'SCENARIO' ? (payload.scenarioJson ?? null) : null,
+  }
+  if (questionType === 'SCENARIO' && payload.scenarioJson != null) {
+    body.scenario_json = payload.scenarioJson
   }
   if (payload.sourceRefsJson != null) body.source_refs_json = payload.sourceRefsJson
 
@@ -448,7 +486,10 @@ export const STATUS_LABELS = {
 
 export const ADMIN_QUIZ_ERROR_MESSAGES = {
   QUIZ_VALIDATION_ERROR: '문항 값이 올바르지 않습니다.',
+  QUESTION_VALIDATION_FAILED: '문항 또는 단원 참조 검증에 실패했습니다.',
   QUESTION_NOT_FOUND: '문항을 찾을 수 없습니다.',
+  QUESTION_KEY_CONFLICT: '같은 question_key가 이미 있습니다.',
+  INVALID_REQUEST: '요청 본문이 올바르지 않습니다. 필드를 확인해 주세요.',
   VALIDATION_ERROR: '요청 값이 올바르지 않습니다.',
   DUPLICATE_QUESTION_KEY: '같은 question_key가 이미 있습니다.',
   ADMIN_REQUIRED: '관리자 권한이 필요합니다.',
@@ -458,10 +499,17 @@ export const formatAdminQuizError = (error) => {
   if (error?.code === 'QUIZ_VALIDATION_ERROR' && Array.isArray(error.errors)) {
     return error.errors.join('\n')
   }
-  if (error?.code && ADMIN_QUIZ_ERROR_MESSAGES[error.code]) {
-    return ADMIN_QUIZ_ERROR_MESSAGES[error.code]
+  const beMessage = error?.message || error?.data?.error?.message
+  const code = error?.code || error?.data?.error?.code
+  if (code && ADMIN_QUIZ_ERROR_MESSAGES[code]) {
+    // BE 메시지가 더 구체하면 그대로 우선
+    if (beMessage && beMessage !== ADMIN_QUIZ_ERROR_MESSAGES[code]) {
+      return `${ADMIN_QUIZ_ERROR_MESSAGES[code]}\n(${code}) ${beMessage}`
+    }
+    return ADMIN_QUIZ_ERROR_MESSAGES[code]
   }
-  return error?.message || '요청에 실패했습니다.'
+  if (beMessage && code) return `(${code}) ${beMessage}`
+  return beMessage || '요청에 실패했습니다.'
 }
 
 /** @returns {{ key: string, label: string, description: null }[]} */

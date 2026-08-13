@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { name: 'admin-dashboard', label: '대시보드', path: '/admin' },
   { name: 'admin-curriculum', label: '커리큘럼', path: '/admin/curriculum' },
   { name: 'admin-quiz', label: '퀴즈', path: '/admin/quiz' },
-  { name: 'admin-products', label: '모의 상품', path: '/admin/products', disabled: true },
+  { name: 'admin-products', label: '모의 상품', path: '/admin/products' },
 ]
 
 const route = useRoute()

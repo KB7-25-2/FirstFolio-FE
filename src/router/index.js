@@ -207,6 +207,12 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminQuizView.vue'),
           meta: { title: '퀴즈 문항' },
         },
+        {
+          path: 'products',
+          name: 'admin-products',
+          component: () => import('@/views/admin/AdminProductsView.vue'),
+          meta: { title: '모의 금융상품' },
+        },
       ],
     },
     {

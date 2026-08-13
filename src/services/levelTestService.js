@@ -4,6 +4,7 @@ import {
   startLevelTestAttempt,
   submitLevelTestAttempt,
 } from '@/api/user/levelTestApi.js'
+import { pickField } from '@/utils/apiMapper.js'
 
 const SESSION_KEY = 'level_test_api_session'
 
@@ -12,13 +13,6 @@ export class LevelTestApiError extends ApiError {
     super(message, status, data, code)
     this.name = 'LevelTestApiError'
   }
-}
-
-const pick = (obj, ...keys) => {
-  for (const key of keys) {
-    if (obj?.[key] !== undefined && obj?.[key] !== null) return obj[key]
-  }
-  return undefined
 }
 
 const readSession = () => {
@@ -36,84 +30,89 @@ const writeSession = (patch) => {
 
 const unwrap = (response) => response.data?.data ?? response.data
 
+/** OpenAPI QuizChoiceResponse: key/label — 구버전 id/text 호환 */
 const mapChoice = (choice) => ({
-  key: pick(choice, 'key', 'id'),
-  label: pick(choice, 'label', 'text'),
+  key: String(pickField(choice, 'key', 'id') ?? ''),
+  label: String(pickField(choice, 'label', 'text') ?? ''),
 })
 
 const mapQuestion = (raw) => {
-  const questionId = pick(raw, 'questionId', 'question_id')
-  const saved = raw.savedAnswer ?? raw.saved_answer
+  const mainChapter = pickField(raw, 'mainChapter', 'main_chapter') ?? {}
+  const questionId = Number(pickField(raw, 'questionId', 'question_id'))
+  const choices = pickField(raw, 'choices', 'optionsJson', 'options_json') ?? []
+
   return {
     questionId,
-    questionKey: pick(raw, 'questionKey', 'question_key') ?? String(questionId),
-    questionType: pick(raw, 'questionType', 'question_type'),
-    generationType: pick(raw, 'generationType', 'generation_type'),
-    prompt: raw.prompt,
-    scenario: raw.scenario ?? null,
-    optionsJson: (raw.choices ?? []).map(mapChoice),
-    mainChapterId: pick(
-      raw.mainChapter ?? raw.main_chapter ?? {},
-      'mainChapterId',
-      'main_chapter_id',
-    ),
-    assetType: pick(raw.mainChapter ?? raw.main_chapter ?? {}, 'assetType', 'asset_type'),
-    displayOrder: pick(raw, 'displayOrder', 'display_order'),
-    savedAnswerKey: saved?.key ?? null,
+    questionKey: String(pickField(raw, 'questionKey', 'question_key') ?? questionId),
+    questionType: pickField(raw, 'questionType', 'question_type'),
+    generationType: pickField(raw, 'generationType', 'generation_type'),
+    prompt: String(pickField(raw, 'prompt') ?? ''),
+    scenario: pickField(raw, 'scenario', 'scenarioJson', 'scenario_json') ?? null,
+    optionsJson: (Array.isArray(choices) ? choices : []).map(mapChoice).filter((c) => c.key),
+    mainChapterId: (() => {
+      const v =
+        pickField(mainChapter, 'mainChapterId', 'main_chapter_id') ??
+        pickField(raw, 'mainChapterId', 'main_chapter_id')
+      return v == null ? null : Number(v)
+    })(),
+    assetType:
+      pickField(mainChapter, 'assetType', 'asset_type') ??
+      pickField(raw, 'assetType', 'asset_type') ??
+      null,
+    displayOrder: (() => {
+      const v = pickField(raw, 'displayOrder', 'display_order')
+      return v == null ? null : Number(v)
+    })(),
   }
 }
 
-const mapSavedAnswer = (raw, fallbackQuestionId) => {
-  const questionId = pick(raw, 'questionId', 'question_id') ?? fallbackQuestionId
-  const key = raw.answer?.key ?? raw.key ?? null
+const mapSavedAnswer = (raw) => {
+  const questionId = Number(pickField(raw, 'questionId', 'question_id'))
+  const answer = pickField(raw, 'answer', 'savedAnswer', 'saved_answer')
+  const key =
+    pickField(answer, 'key') ??
+    (typeof answer === 'string' ? answer : null) ??
+    pickField(raw, 'key')
   return {
     questionId,
-    selectedChoiceIds: key ? [key] : [],
+    selectedChoiceIds: key ? [String(key)] : [],
   }
 }
 
-const mapAttempt = (raw) => {
-  const questions = (raw.questions ?? []).map(mapQuestion)
-  const fromAnswers = (raw.answers ?? [])
-    .map((row, index) => mapSavedAnswer(row, questions[index]?.questionId))
-    .filter((row) => row.questionId != null && row.selectedChoiceIds.length)
-  const fromQuestions = questions
-    .filter((q) => q.savedAnswerKey)
-    .map((q) => ({ questionId: q.questionId, selectedChoiceIds: [q.savedAnswerKey] }))
-
-  return {
-    attemptId: pick(raw, 'attemptId', 'attempt_id'),
-    status: raw.status,
-    questionCount: pick(raw, 'questionCount', 'question_count'),
-    questions,
-    savedAnswers: fromAnswers.length ? fromAnswers : fromQuestions,
-    updatedAt: pick(raw, 'updatedAt', 'updated_at') ?? null,
-  }
-}
+const mapAttempt = (raw) => ({
+  attemptId: Number(pickField(raw, 'attemptId', 'attempt_id')),
+  status: pickField(raw, 'status'),
+  questionCount: Number(pickField(raw, 'questionCount', 'question_count') ?? 0),
+  questions: (pickField(raw, 'questions') ?? []).map(mapQuestion),
+  savedAnswers: (pickField(raw, 'answers', 'savedAnswers', 'saved_answers') ?? []).map(
+    mapSavedAnswer,
+  ),
+  updatedAt: pickField(raw, 'updatedAt', 'updated_at') ?? null,
+})
 
 const mapSubmitResult = (raw) => ({
-  attemptId: pick(raw, 'attemptId', 'attempt_id'),
-  status: raw.status,
-  results: (raw.questionResults ?? raw.question_results ?? []).map((result) => ({
-    questionId: pick(result, 'questionId', 'question_id'),
-    mainChapterId: pick(result, 'mainChapterId', 'main_chapter_id'),
-    assetType: pick(result, 'assetType', 'asset_type'),
-    isCorrect: pick(result, 'isCorrect', 'is_correct'),
+  attemptId: Number(pickField(raw, 'attemptId', 'attempt_id')),
+  status: pickField(raw, 'status'),
+  results: (pickField(raw, 'questionResults', 'question_results') ?? []).map((result) => ({
+    questionId: Number(pickField(result, 'questionId', 'question_id')),
+    mainChapterId: Number(pickField(result, 'mainChapterId', 'main_chapter_id')),
+    assetType: pickField(result, 'assetType', 'asset_type'),
+    isCorrect: Boolean(pickField(result, 'isCorrect', 'is_correct')),
   })),
-  chapterResults: (raw.chapterResults ?? raw.chapter_results ?? []).map((result) => ({
-    mainChapterId: pick(result, 'mainChapterId', 'main_chapter_id'),
-    assetType: pick(result, 'assetType', 'asset_type'),
-    totalCount: pick(result, 'totalCount', 'total_count'),
-    correctCount: pick(result, 'correctCount', 'correct_count'),
-    allCorrect: pick(result, 'allCorrect', 'all_correct'),
+  chapterResults: (pickField(raw, 'chapterResults', 'chapter_results') ?? []).map((result) => ({
+    mainChapterId: Number(pickField(result, 'mainChapterId', 'main_chapter_id')),
+    assetType: pickField(result, 'assetType', 'asset_type'),
+    totalCount: Number(pickField(result, 'totalCount', 'total_count') ?? 0),
+    correctCount: Number(pickField(result, 'correctCount', 'correct_count') ?? 0),
+    allCorrect: Boolean(pickField(result, 'allCorrect', 'all_correct')),
   })),
-  recommendations: (raw.recommendations ?? []).map((item) => ({
-    mainChapterId: pick(item, 'mainChapterId', 'main_chapter_id'),
-    sourceType: pick(item, 'sourceType', 'source_type'),
+  recommendations: (pickField(raw, 'recommendations') ?? []).map((item) => ({
+    mainChapterId: Number(pickField(item, 'mainChapterId', 'main_chapter_id')),
+    sourceType: pickField(item, 'sourceType', 'source_type'),
   })),
-  cartCandidates: (raw.cartCandidates ?? raw.cart_candidates ?? []).map((item) => ({
-    mainChapterId: pick(item, 'mainChapterId', 'main_chapter_id'),
-    assetType: pick(item, 'assetType', 'asset_type'),
+  cartCandidates: (pickField(raw, 'cartCandidates', 'cart_candidates') ?? []).map((item) => ({
+    mainChapterId: Number(pickField(item, 'mainChapterId', 'main_chapter_id')),
+    assetType: pickField(item, 'assetType', 'asset_type'),
   })),
 })
 
@@ -136,7 +135,7 @@ export const startLevelTest = async () => {
   const attempt = mapAttempt(unwrap(response))
   const answers = Object.fromEntries(
     attempt.savedAnswers
-      .filter((item) => item.selectedChoiceIds.length)
+      .filter((item) => item.selectedChoiceIds.length && item.questionId)
       .map((item) => [item.questionId, item.selectedChoiceIds]),
   )
   writeSession({ attempt, answers, submitResult: null })
@@ -145,6 +144,7 @@ export const startLevelTest = async () => {
 
 export const saveLevelTestAnswers = async (attemptId, payload) => {
   const answerItems = payload?.answers ?? []
+  // Live DTO는 snake_case (OpenAPI camelCase와 불일치 가능)
   const body = {
     answers: answerItems.map((item) => ({
       // 라이브 BE: question_id (snake_case)
@@ -155,12 +155,12 @@ export const saveLevelTestAnswers = async (attemptId, payload) => {
   const response = await saveLevelTestAttemptAnswers(attemptId, body)
   const raw = unwrap(response)
   const data = {
-    attemptId: pick(raw, 'attemptId', 'attempt_id'),
-    savedAnswerCount: pick(raw, 'savedAnswerCount', 'saved_answer_count'),
-    answeredCount: pick(raw, 'answeredCount', 'answered_count'),
-    totalCount: pick(raw, 'totalCount', 'total_count'),
-    status: raw.status,
-    updatedAt: pick(raw, 'updatedAt', 'updated_at'),
+    attemptId: Number(pickField(raw, 'attemptId', 'attempt_id')),
+    savedAnswerCount: Number(pickField(raw, 'savedAnswerCount', 'saved_answer_count') ?? 0),
+    answeredCount: Number(pickField(raw, 'answeredCount', 'answered_count') ?? 0),
+    totalCount: Number(pickField(raw, 'totalCount', 'total_count') ?? 0),
+    status: pickField(raw, 'status'),
+    updatedAt: pickField(raw, 'updatedAt', 'updated_at'),
   }
   const currentAnswers = readSession().answers ?? {}
   const answers = { ...currentAnswers }
