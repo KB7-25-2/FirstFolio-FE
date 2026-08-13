@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import AdminContentVersionPanel from '@/components/admin/AdminContentVersionPanel.vue'
 import {
   ASSET_TYPE_OPTIONS,
   CHAPTER_TYPE_LABELS,
@@ -32,6 +33,9 @@ const mainForm = ref(emptyMainForm())
 const showSubForm = ref(false)
 const editingSubId = ref(null)
 const subForm = ref(emptySubForm())
+
+/** @type {import('vue').Ref<import('@/services/adminCurriculumService.js').AdminSubChapter | null>} */
+const contentVersionTarget = ref(null)
 
 const selectedMain = computed(
   () => mainChapters.value.find((c) => c.mainChapterId === selectedMainId.value) ?? null,
@@ -315,6 +319,28 @@ const moveSubOrder = async (chapter, direction) => {
   }
 }
 
+const openContentVersions = (chapter) => {
+  contentVersionTarget.value = chapter
+}
+
+const closeContentVersions = () => {
+  contentVersionTarget.value = null
+}
+
+const onContentPublished = async ({ subChapterId, contentVersionId }) => {
+  const target = subChapters.value.find((c) => c.subChapterId === subChapterId)
+  if (target) {
+    target.currentContentVersionId = contentVersionId
+  }
+  if (contentVersionTarget.value?.subChapterId === subChapterId) {
+    contentVersionTarget.value = {
+      ...contentVersionTarget.value,
+      currentContentVersionId: contentVersionId,
+    }
+  }
+  flash(`소단원 #${subChapterId} 현재 게시본 → #${contentVersionId}`)
+}
+
 watch(selectedMainId, (id) => {
   loadSubChapters(id)
 })
@@ -335,7 +361,7 @@ onMounted(() => {
         <p class="admin-page__kicker">Curriculum</p>
         <h2 class="admin-page__title">대단원 · 소단원</h2>
         <p class="admin-page__desc">
-          학습 트리 메타데이터를 관리합니다. 강좌 JSON 업로드·게시는 다음 단계에서 연결합니다.
+          대단원·소단원 메타데이터와 소단원 강좌 JSON 버전 업로드·게시를 관리합니다.
         </p>
       </div>
       <button
@@ -531,6 +557,14 @@ onMounted(() => {
                   </button>
                   <button
                     type="button"
+                    class="admin-btn admin-btn--primary"
+                    :disabled="saving"
+                    @click="openContentVersions(chapter)"
+                  >
+                    JSON
+                  </button>
+                  <button
+                    type="button"
                     class="admin-btn admin-btn--ghost"
                     :disabled="saving"
                     @click="openEditSub(chapter)"
@@ -701,5 +735,11 @@ onMounted(() => {
         </form>
       </div>
     </div>
+
+    <AdminContentVersionPanel
+      :sub-chapter="contentVersionTarget"
+      @close="closeContentVersions"
+      @published="onContentPublished"
+    />
   </div>
 </template>
