@@ -283,7 +283,7 @@ const canPublish = (version) => version.status === 'DRAFT' || version.status ===
           </p>
 
           <label class="admin-field">
-            <span>versionNo</span>
+            <span>version_no</span>
             <input v-model.number="versionNo" class="admin-input" type="number" min="1" required />
           </label>
 

@@ -96,8 +96,9 @@ export const uploadContentVersion = async (subChapterId, payload) => {
   }
 
   try {
+    /** BE body: { version_no, lesson } — lesson 내부는 schemaVersion 등 camelCase */
     const body = {
-      versionNo: Number(payload.versionNo),
+      version_no: Number(payload.versionNo),
       lesson: validation.lesson,
     }
     const raw = unwrapData(await createAdminContentVersion(subChapterId, body))

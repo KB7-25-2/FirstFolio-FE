@@ -10,7 +10,7 @@ export const getAdminContentVersions = (subChapterId) =>
 /**
  * POST /admin/sub-chapters/{subChapterId}/content-versions
  * @param {number} subChapterId
- * @param {{ versionNo: number, lesson: object }} body
+ * @param {{ version_no: number, lesson: object }} body
  */
 export const createAdminContentVersion = (subChapterId, body) =>
   adminApiClient.post(`/admin/sub-chapters/${subChapterId}/content-versions`, body)
