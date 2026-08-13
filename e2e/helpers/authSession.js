@@ -127,7 +127,7 @@ export const mockOnboardingApis = async (page) => {
     })
   })
 
-  await page.route('**/curriculums/draft', async (route) => {
+  await page.route('**/curriculum/draft', async (route) => {
     const items = [foundation, recommended]
     await route.fulfill({
       status: 200,
@@ -145,7 +145,7 @@ export const mockOnboardingApis = async (page) => {
     })
   })
 
-  await page.route('**/curriculums/confirm', async (route) => {
+  await page.route('**/curriculum/confirm', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
