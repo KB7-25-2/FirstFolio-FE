@@ -278,39 +278,40 @@ onMounted(() => {
     </section>
 
     <div class="admin-split">
-      <section class="admin-card admin-card--flush">
+      <section class="admin-card admin-card--flush admin-product-list-panel">
         <h3 class="admin-card__title">상품 목록</h3>
-        <p v-if="loading" class="admin-muted">불러오는 중…</p>
-        <p v-else-if="!products.length" class="admin-muted">상품이 없습니다.</p>
-        <ul v-else class="admin-list">
-          <li
-            v-for="product in products"
-            :key="product.productId"
-            class="admin-list__item admin-list__item--clickable"
-            :class="{ 'is-selected': selected?.productId === product.productId }"
-            @click="selectProduct(product)"
-          >
-            <div>
-              <p class="admin-list__label">
-                {{ product.displayName || '(가명 미설정)' }}
-                <span class="admin-code">#{{ product.productId }}</span>
-              </p>
-              <p class="admin-list__meta">
-                {{ assetTypeLabel(product.assetType) }} ·
-                {{ STATUS_LABELS[product.status] || product.status }} ·
-                {{ RISK_LEVEL_LABELS[product.riskLevel] || product.riskLevel || '위험도 없음' }}
-              </p>
-              <p v-if="product.sourceProductName" class="admin-list__meta">
-                원상품: {{ product.sourceProductName }}
-              </p>
-            </div>
-          </li>
-        </ul>
+        <div class="admin-product-list-scroll" role="region" aria-label="상품 목록">
+          <p v-if="loading" class="admin-muted">불러오는 중…</p>
+          <p v-else-if="!products.length" class="admin-muted">상품이 없습니다.</p>
+          <ul v-else class="admin-list admin-list--scroll">
+            <li
+              v-for="product in products"
+              :key="product.productId"
+              class="admin-list__item admin-list__item--clickable"
+              :class="{ 'is-selected': selected?.productId === product.productId }"
+              @click="selectProduct(product)"
+            >
+              <div>
+                <p class="admin-list__label">
+                  {{ product.displayName || '(가명 미설정)' }}
+                  <span class="admin-code">#{{ product.productId }}</span>
+                </p>
+                <p class="admin-list__meta">
+                  {{ assetTypeLabel(product.assetType) }} ·
+                  {{ STATUS_LABELS[product.status] || product.status }} ·
+                  {{ RISK_LEVEL_LABELS[product.riskLevel] || product.riskLevel || '위험도 없음' }}
+                </p>
+                <p v-if="product.sourceProductName" class="admin-list__meta">
+                  원상품: {{ product.sourceProductName }}
+                </p>
+              </div>
+            </li>
+          </ul>
+        </div>
         <button
-          v-if="nextCursor"
+          v-if="nextCursor && products.length"
           type="button"
-          class="admin-btn"
-          style="margin-top: 12px"
+          class="admin-btn admin-product-list-more"
           :disabled="loadingMore"
           @click="loadMore"
         >
@@ -473,6 +474,51 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.admin-product-list-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.admin-product-list-scroll {
+  height: 480px;
+  margin-top: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #e2e8f0;
+}
+
+.admin-product-list-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.admin-product-list-scroll::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 6px;
+}
+
+.admin-product-list-scroll::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 6px;
+  border: 2px solid #e2e8f0;
+}
+
+.admin-product-list-scroll::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.admin-list--scroll {
+  margin-top: 0;
+}
+
+.admin-product-list-more {
+  margin-top: 12px;
+  width: 100%;
+}
+
 .admin-list__item--clickable {
   cursor: pointer;
 }
