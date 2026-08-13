@@ -164,6 +164,16 @@ const router = createRouter({
                 navTab: 'portfolios',
               },
             },
+            {
+              path: 'history',
+              name: 'portfolio-history',
+              component: () => import('@/views/portfolio/TransactionHistoryView.vue'),
+              meta: {
+                title: '거래 내역',
+                subtitle: '매수·매도·이자·만기 등 자산 이벤트 이력을 확인하세요',
+                navTab: 'portfolios',
+              },
+            },
           ],
         },
         {

@@ -50,7 +50,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
       summary.value = await portfolioService.getCurrentPortfolio({
         productsById: buildProductsById(),
-        currentSummary: summary.value,
       })
     } catch (err) {
       error.value = err.message
@@ -62,6 +61,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
   // holdingId 보유 상품을 판매한다. 매수형(주식·펀드)은 quantity(개수), 가입형(예·적금·채권)은
   // quantity 없이(undefined) 호출하면 서비스 레이어가 전량 처리한다.
+  // tradeResult를 반환한다 — 호출부(뷰)가 거래 완료 모달에 상품명 등과 함께 표시할 수 있도록.
   const sellHolding = async (holdingId, quantity) => {
     const { summary: updatedSummary, tradeResult } = await portfolioService.sellHoldingService({
       holdingId,
@@ -71,18 +71,19 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     })
     summary.value = updatedSummary
     lastTradeResult.value = tradeResult
+    return tradeResult
   }
 
-  // product를 amount원만큼 구매한다.
+  // product를 amount원만큼 구매한다. tradeResult를 반환한다(용도는 sellHolding과 동일).
   const buyProduct = async (product, amount) => {
     const { summary: updatedSummary, tradeResult } = await portfolioService.buyProductService({
       product,
       amount,
-      currentSummary: summary.value,
       productsById: buildProductsById(),
     })
     summary.value = updatedSummary
     lastTradeResult.value = tradeResult
+    return tradeResult
   }
 
   // FUNC-037: 파산 신청·포트폴리오 초기화. 성공하면 새 세대(현금 3천만원)로 다시 조회한다.
@@ -92,13 +93,15 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   }
 
   // FUNC-034: 거래·자산 이벤트 이력(예정 이벤트 포함) 조회.
+  // append=true면 커서로 다음 페이지를 이어붙인다("더 보기"), 아니면 목록을 새로 채운다(필터 변경 등).
   const fetchTransactions = async (params = {}) => {
+    const { append = false, ...queryParams } = params
     isLoading.value = true
     error.value = null
 
     try {
-      const { items, nextCursor } = await portfolioService.getPortfolioTransactionsList(params)
-      transactions.value = items
+      const { items, nextCursor } = await portfolioService.getPortfolioTransactionsList(queryParams)
+      transactions.value = append ? [...transactions.value, ...items] : items
       transactionsNextCursor.value = nextCursor
     } catch (err) {
       error.value = err.message
