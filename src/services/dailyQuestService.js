@@ -400,25 +400,52 @@ export const mapQuestionSnapshot = (raw) => ({
 export const mapUserAnswer = (raw) => {
   if (!raw) return null
   const answer = {}
+  // OpenAPI SavedAnswerResponse: { key }
+  if (raw.key != null) answer.selectedKey = raw.key
   if (raw.selected_key != null) answer.selectedKey = raw.selected_key
+  if (raw.selectedKey != null) answer.selectedKey = raw.selectedKey
   if (Array.isArray(raw.selected_keys)) answer.selectedKeys = [...raw.selected_keys]
+  if (Array.isArray(raw.selectedKeys)) answer.selectedKeys = [...raw.selectedKeys]
   return Object.keys(answer).length ? answer : null
 }
 
 /**
+ * OpenAPI QuestionResponse → DailyQuestItem
  * @param {object} raw
  * @returns {DailyQuestItem}
  */
-export const mapDailyQuestItem = (raw) => ({
-  dailyQuestItemId: raw.daily_quest_item_id ?? raw.dailyQuestItemId,
-  questionId: raw.question_id ?? raw.questionId,
-  sourceType: raw.source_type ?? raw.sourceType,
-  displayOrder: raw.display_order ?? raw.displayOrder,
-  questionSnapshot: mapQuestionSnapshot(raw.question_snapshot_json ?? raw.questionSnapshot ?? {}),
-  userAnswer: mapUserAnswer(raw.user_answer_json ?? raw.userAnswer),
-  isCorrect: raw.is_correct ?? raw.isCorrect ?? null,
-  answeredAt: raw.answered_at ?? raw.answeredAt ?? null,
-})
+export const mapDailyQuestItem = (raw) => {
+  const choices = raw.choices ?? raw.options_json ?? raw.optionsJson ?? []
+  const snapshotSource =
+    raw.question_snapshot_json ??
+    raw.questionSnapshot ??
+    (raw.prompt != null
+      ? {
+          question_id: raw.questionId ?? raw.question_id,
+          question_type: raw.questionType ?? raw.question_type,
+          generation_type: raw.generationType ?? raw.generation_type,
+          prompt: raw.prompt,
+          scenario_json: raw.scenario ?? null,
+          options_json: choices.map((c) => ({
+            key: c.key ?? c.id,
+            label: c.label ?? c.text,
+          })),
+        }
+      : {})
+
+  return {
+    dailyQuestItemId: raw.dailyQuestItemId ?? raw.daily_quest_item_id,
+    questionId: raw.questionId ?? raw.question_id,
+    sourceType: raw.sourceType ?? raw.source_type ?? 'GENERAL',
+    displayOrder: raw.displayOrder ?? raw.display_order,
+    questionSnapshot: mapQuestionSnapshot(snapshotSource),
+    userAnswer: mapUserAnswer(
+      raw.savedAnswer ?? raw.saved_answer ?? raw.user_answer_json ?? raw.userAnswer,
+    ),
+    isCorrect: raw.is_correct ?? raw.isCorrect ?? null,
+    answeredAt: raw.answered_at ?? raw.answeredAt ?? null,
+  }
+}
 
 /**
  * @param {object[]} itemsRaw
@@ -431,7 +458,11 @@ export const buildQuestionTypeSummary = (itemsRaw) => {
   const counts = {}
 
   for (const item of itemsRaw ?? []) {
-    const type = item.question_snapshot_json?.question_type ?? item.questionSnapshot?.questionType
+    const type =
+      item.question_snapshot_json?.question_type ??
+      item.questionSnapshot?.questionType ??
+      item.questionType ??
+      item.question_type
     if (!type) continue
     if (!counts[type]) {
       questionTypes.push(type)
@@ -454,8 +485,12 @@ export const buildQuestionTypeSummary = (itemsRaw) => {
  * @returns {DailyQuest}
  */
 export const mapDailyQuest = (raw) => {
-  const items = (raw.items ?? []).map(mapDailyQuestItem)
-  const answeredCount = raw.answered_count ?? items.filter((item) => item.userAnswer != null).length
+  const itemsRaw = raw.questions ?? raw.items ?? []
+  const items = itemsRaw.map(mapDailyQuestItem)
+  const answeredCount =
+    raw.answeredCount ??
+    raw.answered_count ??
+    items.filter((item) => item.userAnswer != null).length
 
   const fromRaw =
     Array.isArray(raw.question_types) && Array.isArray(raw.question_type_summary)
@@ -470,21 +505,17 @@ export const mapDailyQuest = (raw) => {
             count: row.count,
           })),
         }
-      : buildQuestionTypeSummary(
-          (raw.items ?? []).map((item) => ({
-            question_snapshot_json: item.question_snapshot_json,
-          })),
-        )
+      : buildQuestionTypeSummary(itemsRaw)
 
   return {
-    dailyQuestId: raw.daily_quest_id ?? raw.dailyQuestId,
-    questDate: raw.quest_date ?? raw.questDate,
+    dailyQuestId: raw.dailyQuestId ?? raw.daily_quest_id,
+    questDate: raw.questDate ?? raw.quest_date,
     status: raw.status,
-    totalCount: raw.total_count ?? raw.totalCount,
-    correctCount: raw.correct_count ?? raw.correctCount ?? 0,
+    totalCount: raw.totalCount ?? raw.total_count,
+    correctCount: raw.correctCount ?? raw.correct_count ?? 0,
     score: raw.score ?? 0,
     answeredCount,
-    completedAt: raw.completed_at ?? raw.completedAt ?? null,
+    completedAt: raw.completedAt ?? raw.completed_at ?? null,
     items,
     questionTypes: fromRaw.questionTypes,
     questionTypeSummary: fromRaw.questionTypeSummary,
@@ -496,12 +527,18 @@ export const mapDailyQuest = (raw) => {
  * @returns {DailyQuestSaveAnswerResult}
  */
 export const mapSaveAnswerResult = (raw) => ({
-  dailyQuestId: raw.daily_quest_id ?? raw.dailyQuestId,
+  dailyQuestId: raw.dailyQuestId ?? raw.daily_quest_id,
   status: raw.status,
-  answeredCount: raw.answered_count ?? raw.answeredCount,
-  totalCount: raw.total_count ?? raw.totalCount,
-  dailyQuestItemId: raw.daily_quest_item_id ?? raw.dailyQuestItemId,
-  userAnswer: mapUserAnswer(raw.user_answer_json ?? raw.userAnswer ?? raw.user_answer),
+  answeredCount: raw.answeredCount ?? raw.answered_count,
+  totalCount: raw.totalCount ?? raw.total_count,
+  dailyQuestItemId: raw.dailyQuestItemId ?? raw.daily_quest_item_id,
+  userAnswer: mapUserAnswer(
+    raw.savedAnswer ??
+      raw.saved_answer ??
+      raw.user_answer_json ??
+      raw.userAnswer ??
+      raw.user_answer,
+  ),
 })
 
 /**
@@ -735,15 +772,12 @@ export const saveDailyQuestAnswer = async (input) => {
     )
   }
 
-  /** @type {{ selected_key?: string, selected_keys?: string[] }} */
-  const user_answer_json = selectedKeys?.length
-    ? { selected_keys: [...selectedKeys] }
-    : { selected_key: selectedKey }
+  // OpenAPI: 단일 선택 { answer: { key } }
+  const key = selectedKey ?? selectedKeys?.[0]
 
   try {
-    const { data } = await saveAnswerApi({
-      daily_quest_item_id: dailyQuestItemId,
-      user_answer_json,
+    const { data } = await saveAnswerApi(dailyQuestItemId, {
+      answer: { key },
     })
     const raw = data?.data ?? data
     return { data: mapSaveAnswerResult(raw) }
@@ -754,7 +788,7 @@ export const saveDailyQuestAnswer = async (input) => {
       '답안을 저장하지 못했습니다.',
     )
     if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[dailyQuestService] PUT answers 실패 — mock으로 대체합니다.', mapped)
+    console.warn('[dailyQuestService] PUT answer 실패 — mock으로 대체합니다.', mapped)
     return saveDailyQuestAnswerMock(input)
   }
 }

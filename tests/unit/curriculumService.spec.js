@@ -50,7 +50,7 @@ describe('curriculumService', () => {
   it('FOUNDATION을 제외한 선택 대단원 순서를 PUT 요청으로 보낸다', async () => {
     updateCurriculumDraft.mockResolvedValue({ data: { data: { items: [] } } })
 
-    await saveCurriculumDraft({ main_chapter_ids: [30, 20] })
+    await saveCurriculumDraft({ mainChapterIds: [30, 20] })
 
     expect(updateCurriculumDraft).toHaveBeenCalledWith({ main_chapter_ids: [30, 20] })
   })
@@ -58,7 +58,7 @@ describe('curriculumService', () => {
   it('최종 선택 순서를 확정 API로 보낸다', async () => {
     confirmCurriculumDraft.mockResolvedValue({ data: { data: { items: [] } } })
 
-    await confirmCurriculum({ main_chapter_ids: [20] })
+    await confirmCurriculum({ mainChapterIds: [20] })
 
     expect(confirmCurriculumDraft).toHaveBeenCalledWith({ main_chapter_ids: [20] })
   })

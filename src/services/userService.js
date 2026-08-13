@@ -38,13 +38,13 @@ export class UserApiError extends Error {
  * @returns {UserProfile}
  */
 const mapUserProfile = (raw) => ({
-  userId: raw.user_id,
+  userId: raw.userId ?? raw.user_id,
   email: raw.email,
   nickname: raw.nickname,
-  roleCode: raw.role_code,
-  newsletterOptIn: raw.newsletter_opt_in,
-  pointBalance: raw.point_balance,
-  createdAt: raw.created_at,
+  roleCode: raw.roleCode ?? raw.role_code,
+  newsletterOptIn: raw.newsletterOptIn ?? raw.newsletter_opt_in,
+  pointBalance: raw.pointBalance ?? raw.point_balance,
+  createdAt: raw.createdAt ?? raw.created_at,
 })
 
 /**
@@ -52,10 +52,10 @@ const mapUserProfile = (raw) => ({
  * @returns {UpdateUserProfileResult}
  */
 const mapUpdateResult = (raw) => ({
-  userId: raw.user_id,
+  userId: raw.userId ?? raw.user_id,
   nickname: raw.nickname,
-  newsletterOptIn: raw.newsletter_opt_in,
-  updatedAt: raw.updated_at,
+  newsletterOptIn: raw.newsletterOptIn ?? raw.newsletter_opt_in,
+  updatedAt: raw.updatedAt ?? raw.updated_at,
 })
 
 /**
@@ -140,6 +140,7 @@ export const updateUserProfile = async (input = {}) => {
   }
 
   if (input.newsletterOptIn !== undefined) {
+    // 라이브 BE는 snake_case 요청만 수용
     body.newsletter_opt_in = Boolean(input.newsletterOptIn)
   }
 

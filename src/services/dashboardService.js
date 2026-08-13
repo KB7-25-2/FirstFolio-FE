@@ -1,7 +1,8 @@
 /**
- * GET /dashboard 서비스
+ * GET /dashboard 서비스 (OpenAPI DashboardResponse)
+ * — 응답 필드는 camelCase 기준. snake_case 도 하위 호환 매핑
+ * — 섹션 장애는 HTTP 200 + available:false (전체 실패 없음)
  * — 실 API 우선, DEV에서 실패 시 목업 폴백
- * — mock의 daily_quest 는 일일 퀘스트 서비스 진행 상태와 동기화
  */
 
 /**
@@ -55,7 +56,7 @@ const mapDailyQuestStatus = (status) => {
  * @returns {AssetAllocation}
  */
 const mapAllocation = (item) => ({
-  assetType: item.asset_type ?? item.assetType,
+  assetType: item.assetType ?? item.asset_type,
   ratio: item.ratio,
 })
 
@@ -64,9 +65,11 @@ const mapAllocation = (item) => ({
  * @returns {DashboardDailyQuest}
  */
 export const mapDashboardDailyQuest = (raw) => ({
+  available: raw?.available ?? true,
+  reason: raw?.reason,
   status: mapDailyQuestStatus(raw?.status),
-  answeredCount: raw?.answered_count ?? raw?.answeredCount ?? 0,
-  totalCount: raw?.total_count ?? raw?.totalCount ?? 5,
+  answeredCount: raw?.answeredCount ?? raw?.answered_count ?? 0,
+  totalCount: raw?.totalCount ?? raw?.total_count ?? 5,
 })
 
 /**
@@ -77,24 +80,28 @@ export const mapDashboardSummary = (raw) => ({
   portfolio: {
     available: raw.portfolio?.available ?? false,
     reason: raw.portfolio?.reason,
-    totalAssets: raw.portfolio?.total_assets ?? raw.portfolio?.totalAssets,
-    profitLoss: raw.portfolio?.profit_loss ?? raw.portfolio?.profitLoss,
+    // OpenAPI: totalAssets / profitLoss / profitRate (string | number)
+    totalAssets: raw.portfolio?.totalAssets ?? raw.portfolio?.total_assets,
+    profitLoss: raw.portfolio?.profitLoss ?? raw.portfolio?.profit_loss,
+    profitRate: raw.portfolio?.profitRate ?? raw.portfolio?.profit_rate,
     allocation: (raw.portfolio?.allocation ?? []).map(mapAllocation),
   },
-  dailyQuest: mapDashboardDailyQuest(raw.daily_quest ?? raw.dailyQuest ?? {}),
+  dailyQuest: mapDashboardDailyQuest(raw.dailyQuest ?? raw.daily_quest ?? {}),
   learning: {
-    mainChapterId: raw.learning?.main_chapter_id ?? raw.learning?.mainChapterId,
-    subChapterId: raw.learning?.sub_chapter_id ?? raw.learning?.subChapterId,
-    progressPercent: raw.learning?.progress_percent ?? raw.learning?.progressPercent,
+    available: raw.learning?.available ?? true,
+    reason: raw.learning?.reason,
+    mainChapterId: raw.learning?.mainChapterId ?? raw.learning?.main_chapter_id,
+    subChapterId: raw.learning?.subChapterId ?? raw.learning?.sub_chapter_id,
+    progressPercent: raw.learning?.progressPercent ?? raw.learning?.progress_percent,
   },
-  upcomingEvents: (raw.upcoming_events ?? raw.upcomingEvents ?? []).map((event) => ({
+  upcomingEvents: (raw.upcomingEvents ?? raw.upcoming_events ?? []).map((event) => ({
     type: event.type,
-    scheduledAt: event.scheduled_at ?? event.scheduledAt,
+    scheduledAt: event.scheduledAt ?? event.scheduled_at,
   })),
-  latestNews: (raw.latest_news ?? raw.latestNews ?? []).map((news) => ({
-    knowledgeContentId: news.knowledge_content_id ?? news.knowledgeContentId,
+  latestNews: (raw.latestNews ?? raw.latest_news ?? []).map((news) => ({
+    knowledgeContentId: news.knowledgeContentId ?? news.knowledge_content_id,
     title: news.title,
-    referenceAt: news.reference_at ?? news.referenceAt,
+    referenceAt: news.referenceAt ?? news.reference_at,
   })),
 })
 

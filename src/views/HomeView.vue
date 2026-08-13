@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/store/userStore.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 import { formatKoreanDate } from '@/utils/date.js'
 import PortfolioSummary from '@/components/PortfolioSummary.vue'
 import StudyNote from '@/components/StudyNote.vue'
@@ -9,9 +10,14 @@ import PointShopNote from '@/components/PointShopNote.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 
 const userStore = useUserStore()
+const dashboardStore = useDashboardStore()
 const { greeting } = storeToRefs(userStore)
 
 const todayLabel = computed(() => formatKoreanDate())
+
+onMounted(() => {
+  dashboardStore.fetchDashboard()
+})
 </script>
 
 <template>

@@ -73,13 +73,30 @@ describe('dashboardService (unit)', () => {
     })
 
     expect(data.dailyQuest).toEqual({
+      available: true,
+      reason: undefined,
       status: 'IN_PROGRESS',
       answeredCount: 2,
       totalCount: 5,
     })
     expect(data.portfolio.totalAssets).toBe('30420000.00')
     expect(data.learning.progressPercent).toBe(35)
+    expect(data.learning.available).toBe(true)
     expect(data.latestNews[0].knowledgeContentId).toBe(9001)
+  })
+
+  it('섹션 available=false 와 reason 을 보존한다', () => {
+    const data = mapDashboardSummary({
+      portfolio: { available: false, reason: 'NO_PORTFOLIO' },
+      daily_quest: { available: false, reason: 'NOT_ASSIGNED', status: 'ASSIGNED' },
+      learning: { available: false, reason: 'NOT_STARTED' },
+      upcoming_events: [],
+      latest_news: [],
+    })
+
+    expect(data.portfolio).toMatchObject({ available: false, reason: 'NO_PORTFOLIO' })
+    expect(data.dailyQuest).toMatchObject({ available: false, reason: 'NOT_ASSIGNED' })
+    expect(data.learning).toMatchObject({ available: false, reason: 'NOT_STARTED' })
   })
 
   it('일퀘 status NOT_STARTED 는 ASSIGNED 로 정규화한다', () => {
@@ -104,6 +121,8 @@ describe('dashboardService (unit)', () => {
     const { data } = await getDashboard()
     expect(getDashboardApi).toHaveBeenCalled()
     expect(data.dailyQuest).toEqual({
+      available: true,
+      reason: undefined,
       status: 'ASSIGNED',
       answeredCount: 0,
       totalCount: 5,
@@ -121,6 +140,8 @@ describe('dashboardService (unit)', () => {
 
     const { data } = await getDashboard()
     expect(data.dailyQuest).toEqual({
+      available: true,
+      reason: undefined,
       status: 'IN_PROGRESS',
       answeredCount: 3,
       totalCount: 5,
