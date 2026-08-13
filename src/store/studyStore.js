@@ -14,6 +14,7 @@ import {
   submitScenarioAttempt,
 } from '@/services/studyService.js'
 import { useUserStore } from '@/store/userStore.js'
+import { shouldShowFoundationGuide } from '@/utils/foundationGuide.js'
 
 export const useStudyStore = defineStore('study', () => {
   const curriculumItems = ref([])
@@ -56,6 +57,14 @@ export const useStudyStore = defineStore('study', () => {
   const activeCurriculumItem = computed(
     () => curriculumItems.value.find((item) => item.status === 'ACTIVE') ?? null,
   )
+
+  /** 필수 선행 포트폴리오 기초 과정 */
+  const foundationItem = computed(
+    () => curriculumItems.value.find((item) => item.chapterType === 'FOUNDATION') ?? null,
+  )
+
+  /** 홈 기초 과정 가이드 노출 (미시작 FOUNDATION만) */
+  const needsFoundationGuide = computed(() => shouldShowFoundationGuide(curriculumItems.value))
 
   const chapterTitle = computed(() => activeCurriculumItem.value?.title ?? '')
 
@@ -585,6 +594,8 @@ export const useStudyStore = defineStore('study', () => {
     scenarioAnswers,
     scenarioAttemptResult,
     activeCurriculumItem,
+    foundationItem,
+    needsFoundationGuide,
     chapterTitle,
     progressPercent,
     continueRoute,

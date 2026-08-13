@@ -7,11 +7,15 @@ import PortfolioSummary from '@/components/PortfolioSummary.vue'
 import StudyNote from '@/components/StudyNote.vue'
 import PointShopNote from '@/components/PointShopNote.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
+import FoundationGuideOverlay from '@/components/FoundationGuideOverlay.vue'
+import { useFoundationGuide } from '@/composables/useFoundationGuide.js'
 
 const userStore = useUserStore()
 const { greeting } = storeToRefs(userStore)
 
 const todayLabel = computed(() => formatKoreanDate())
+
+const { isOpen, dismiss, startFoundation } = useFoundationGuide()
 </script>
 
 <template>
@@ -40,9 +44,12 @@ const todayLabel = computed(() => formatKoreanDate())
         <PortfolioSummary />
       </ScrollReveal>
 
-      <ScrollReveal class="flex justify-center">
-        <StudyNote />
-      </ScrollReveal>
+      <!-- ScrollReveal transform이 stacking을 가리므로 가이드+StudyNote는 밖에 둔다 -->
+      <div class="flex justify-center">
+        <FoundationGuideOverlay :open="isOpen" @dismiss="dismiss" @start="startFoundation">
+          <StudyNote />
+        </FoundationGuideOverlay>
+      </div>
 
       <ScrollReveal class="flex justify-center">
         <PointShopNote />

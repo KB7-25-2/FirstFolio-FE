@@ -1850,3 +1850,65 @@ export const getContinuePosition = async () => {
   }
   return { data: mapContinuePosition(structuredClone(MOCK_CONTINUE_POSITION.data)) }
 }
+
+/** @typedef {'mid-curriculum' | 'foundation-pending'} MockLearningProfile */
+
+/** 기본 시드 스냅샷 (기초 수료 · 예·적금 진행 중) */
+const MID_CURRICULUM_SNAPSHOT = {
+  curriculumItems: structuredClone(MOCK_CURRICULUM_RESPONSE.data.items),
+  learningProgress: structuredClone(MOCK_LEARNING_PROGRESS),
+}
+
+/** @type {MockLearningProfile} */
+let mockLearningProfile = 'mid-curriculum'
+
+const applyMidCurriculumProfile = () => {
+  MOCK_CURRICULUM_RESPONSE.data.items = structuredClone(MID_CURRICULUM_SNAPSHOT.curriculumItems)
+  MOCK_LEARNING_PROGRESS.length = 0
+  MOCK_LEARNING_PROGRESS.push(...structuredClone(MID_CURRICULUM_SNAPSHOT.learningProgress))
+  recomputeContinuePosition()
+}
+
+const applyFoundationPendingProfile = () => {
+  for (const item of MOCK_CURRICULUM_RESPONSE.data.items) {
+    if (item.chapter_type === 'FOUNDATION') {
+      item.status = 'ACTIVE'
+      item.completed_at = null
+      item.progress_percent = 0
+    } else {
+      item.status = 'LOCKED'
+      item.completed_at = null
+      item.progress_percent = 0
+    }
+  }
+
+  for (const row of MOCK_LEARNING_PROGRESS) {
+    row.status = 'NOT_STARTED'
+    row.startedAt = null
+    row.completedAt = null
+    row.lastPageId = null
+    row.quizScore = null
+    row.updatedAt = '2026-06-01T00:00:00'
+  }
+
+  recomputeContinuePosition()
+}
+
+/**
+ * 학습 mock 진도 프로필 전환 (테스트·가이드 연동용)
+ * @param {MockLearningProfile} profile
+ */
+export const __setMockLearningProfile = (profile) => {
+  if (profile !== 'mid-curriculum' && profile !== 'foundation-pending') {
+    throw new Error(`Unknown mock learning profile: ${profile}`)
+  }
+  mockLearningProfile = profile
+  if (profile === 'foundation-pending') {
+    applyFoundationPendingProfile()
+    return
+  }
+  applyMidCurriculumProfile()
+}
+
+/** @returns {MockLearningProfile} */
+export const __getMockLearningProfile = () => mockLearningProfile

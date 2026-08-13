@@ -114,7 +114,7 @@ const goLearning = () => {
 </script>
 
 <template>
-  <div class="relative w-full max-w-[346px]">
+  <div class="relative w-full max-w-[346px]" data-testid="study-note">
     <div
       class="memo-selectable relative z-10"
       role="button"
