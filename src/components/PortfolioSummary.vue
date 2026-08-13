@@ -3,16 +3,23 @@ import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
+import { useStudyStore } from '@/store/studyStore.js'
 import { resolveInvestmentStyle } from '@/utils/investmentStyle.js'
+import { PORTFOLIO_LOCKED_MESSAGE } from '@/utils/foundationGuide.js'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
 
 const portfolioStore = usePortfolioStore()
+const studyStore = useStudyStore()
 const router = useRouter()
 const { portfolioSummary, allocationView, totalAssetsDisplay, isLoading, error } =
   storeToRefs(portfolioStore)
+const { isPortfolioLocked } = storeToRefs(studyStore)
 
 onMounted(() => {
+  if (!studyStore.curriculumItems.length) {
+    studyStore.fetchCurriculum().catch(() => {})
+  }
   portfolioStore.fetchPortfolioSummary()
 })
 
@@ -21,17 +28,21 @@ const ruledOffsets = computed(() => Array.from({ length: 8 }, (_, index) => 44 +
 const investmentStyle = computed(() => resolveInvestmentStyle(allocationView.value))
 
 const goPortfolios = () => {
+  if (isPortfolioLocked.value) {
+    router.push({ name: 'learning', query: { mainChapterId: '1' } })
+    return
+  }
   router.push({ name: 'portfolio-holdings' })
 }
 </script>
 
 <template>
-  <div class="memo-selectable relative w-full max-w-[346px]">
+  <div class="memo-selectable relative w-full max-w-[346px]" data-testid="portfolio-summary">
     <MemoPin side="center" tone="portfolio" />
 
     <section
       class="relative min-h-[133px] w-full rotate-[0.8deg] overflow-hidden rounded border-[0.5px] border-[var(--portfolio-border)] bg-[var(--portfolio-surface)] shadow-[0_5px_14px_rgba(0,0,0,0.35)]"
-      aria-label="현재 포트폴리오로 이동"
+      :aria-label="isPortfolioLocked ? PORTFOLIO_LOCKED_MESSAGE : '현재 포트폴리오로 이동'"
       role="button"
       tabindex="0"
       @click="goPortfolios"
@@ -55,12 +66,24 @@ const goPortfolios = () => {
 
       <div class="relative flex flex-col gap-2 py-5 pr-4 pl-[38px]">
         <BaseLoading
-          v-if="isLoading"
+          v-if="isLoading && !isPortfolioLocked"
           class="py-6 text-center"
           tone="onLight"
           size="2xs"
           message="포트폴리오를 불러오는 중…"
         />
+
+        <div v-else-if="isPortfolioLocked" class="py-5 pr-2" data-testid="portfolio-summary-locked">
+          <p class="font-serif text-[10px] font-bold tracking-wide text-[var(--portfolio-muted)]">
+            포트폴리오 잠금
+          </p>
+          <p
+            class="mt-1.5 font-serif text-[14px] leading-snug font-bold text-[var(--portfolio-ink)]"
+          >
+            {{ PORTFOLIO_LOCKED_MESSAGE }}
+          </p>
+          <p class="mt-2 font-serif text-[11px] text-[#c17f24]">기초 과정 학습 →</p>
+        </div>
 
         <div
           v-else-if="error || !portfolioSummary?.available"
@@ -111,6 +134,7 @@ const goPortfolios = () => {
 
       <!-- 투자 성향 칩 -->
       <div
+        v-if="!isPortfolioLocked && portfolioSummary?.available"
         class="pointer-events-none absolute top-11 right-3 z-10 flex max-w-[42%] items-center gap-1.5 rounded-[14px] border-[0.5px] border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
         aria-hidden="true"
       >

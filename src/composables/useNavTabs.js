@@ -1,5 +1,8 @@
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
+import { useStudyStore } from '@/store/studyStore.js'
+import { PORTFOLIO_LOCKED_MESSAGE } from '@/utils/foundationGuide.js'
 
 export const NAV_TABS = [
   {
@@ -48,17 +51,55 @@ export const NAV_TABS = [
 export const useNavTabs = () => {
   const route = useRoute()
   const router = useRouter()
+  const studyStore = useStudyStore()
+  const { isPortfolioLocked } = storeToRefs(studyStore)
+
+  onMounted(() => {
+    if (!studyStore.curriculumItems.length) {
+      studyStore.fetchCurriculum().catch(() => {})
+    }
+  })
 
   const activeTab = computed(() => {
     const tabMeta = [...route.matched].reverse().find((record) => record.meta.navTab)?.meta.navTab
     return tabMeta ?? route.name
   })
   const isActive = (name) => activeTab.value === name
-  const navigate = (path) => router.push(path)
+
+  const isTabLocked = (name) => name === 'portfolios' && isPortfolioLocked.value
+
+  const navigate = async (path) => {
+    if (path.startsWith('/portfolios')) {
+      if (!studyStore.curriculumItems.length) {
+        try {
+          await studyStore.fetchCurriculum()
+        } catch {
+          /* ignore */
+        }
+      }
+      if (studyStore.isPortfolioLocked) {
+        await router.push({ name: 'home', query: { portfolioLocked: '1' } })
+        return false
+      }
+    }
+    await router.push(path)
+    return true
+  }
 
   const leftTabs = computed(() => NAV_TABS.filter((tab) => !tab.isCenter).slice(0, 2))
   const rightTabs = computed(() => NAV_TABS.filter((tab) => !tab.isCenter).slice(2))
   const centerTab = computed(() => NAV_TABS.find((tab) => tab.isCenter) ?? null)
 
-  return { tabs: NAV_TABS, leftTabs, rightTabs, centerTab, activeTab, isActive, navigate }
+  return {
+    tabs: NAV_TABS,
+    leftTabs,
+    rightTabs,
+    centerTab,
+    activeTab,
+    isActive,
+    isTabLocked,
+    isPortfolioLocked,
+    portfolioLockedMessage: PORTFOLIO_LOCKED_MESSAGE,
+    navigate,
+  }
 }

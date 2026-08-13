@@ -1,21 +1,41 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/userStore.js'
 import { formatKoreanDate } from '@/utils/date.js'
+import { PORTFOLIO_LOCKED_MESSAGE } from '@/utils/foundationGuide.js'
 import PortfolioSummary from '@/components/PortfolioSummary.vue'
 import StudyNote from '@/components/StudyNote.vue'
 import PointShopNote from '@/components/PointShopNote.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 import FoundationGuideOverlay from '@/components/FoundationGuideOverlay.vue'
+import BaseToast from '@/components/BaseToast.vue'
 import { useFoundationGuide } from '@/composables/useFoundationGuide.js'
 
+const route = useRoute()
+const router = useRouter()
 const userStore = useUserStore()
 const { greeting } = storeToRefs(userStore)
 
 const todayLabel = computed(() => formatKoreanDate())
+const showPortfolioLockedToast = ref(false)
 
 const { isOpen, dismiss, startFoundation } = useFoundationGuide()
+
+watch(
+  () => route.query.portfolioLocked,
+  (locked) => {
+    if (locked !== '1') return
+    showPortfolioLockedToast.value = true
+    router.replace({ name: 'home' })
+  },
+  { immediate: true },
+)
+
+const closePortfolioLockedToast = () => {
+  showPortfolioLockedToast.value = false
+}
 </script>
 
 <template>
@@ -55,5 +75,12 @@ const { isOpen, dismiss, startFoundation } = useFoundationGuide()
         <PointShopNote />
       </ScrollReveal>
     </div>
+
+    <BaseToast
+      :open="showPortfolioLockedToast"
+      :message="PORTFOLIO_LOCKED_MESSAGE"
+      data-testid="portfolio-locked-toast"
+      @close="closePortfolioLockedToast"
+    />
   </div>
 </template>

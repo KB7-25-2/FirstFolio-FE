@@ -1,7 +1,8 @@
 <script setup>
 import { useNavTabs } from '@/composables/useNavTabs.js'
 
-const { leftTabs, rightTabs, centerTab, isActive, navigate } = useNavTabs()
+const { leftTabs, rightTabs, centerTab, isActive, isTabLocked, portfolioLockedMessage, navigate } =
+  useNavTabs()
 </script>
 <template>
   <nav
@@ -45,7 +46,10 @@ const { leftTabs, rightTabs, centerTab, isActive, navigate } = useNavTabs()
       :key="tab.name"
       type="button"
       class="relative flex min-w-0 flex-1 flex-col items-center justify-end pb-[0.2dvh]"
+      :class="isTabLocked(tab.name) ? 'opacity-45' : ''"
       :aria-current="isActive(tab.name) ? 'page' : undefined"
+      :aria-disabled="isTabLocked(tab.name) ? 'true' : undefined"
+      :title="isTabLocked(tab.name) ? portfolioLockedMessage : undefined"
       @click="navigate(tab.path)"
     >
       <span
@@ -53,7 +57,7 @@ const { leftTabs, rightTabs, centerTab, isActive, navigate } = useNavTabs()
         :class="isActive(tab.name) ? '-translate-y-[1px]' : ''"
       >
         <font-awesome-icon
-          :icon="tab.icon"
+          :icon="isTabLocked(tab.name) ? 'fa-solid fa-lock' : tab.icon"
           class="transition-all"
           :class="[
             isActive(tab.name) ? tab.activeClass : 'text-[var(--nav-text-muted)]',

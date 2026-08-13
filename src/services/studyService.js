@@ -1903,6 +1903,13 @@ export const __setMockLearningProfile = (profile) => {
     throw new Error(`Unknown mock learning profile: ${profile}`)
   }
   mockLearningProfile = profile
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('mock_learning_profile', profile)
+    }
+  } catch {
+    /* ignore */
+  }
   if (profile === 'foundation-pending') {
     applyFoundationPendingProfile()
     return
@@ -1912,3 +1919,22 @@ export const __setMockLearningProfile = (profile) => {
 
 /** @returns {MockLearningProfile} */
 export const __getMockLearningProfile = () => mockLearningProfile
+
+const resolveInitialMockLearningProfile = () => {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const stored = sessionStorage.getItem('mock_learning_profile')
+      if (stored === 'mid-curriculum' || stored === 'foundation-pending') return stored
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'mid-curriculum'
+}
+
+__setMockLearningProfile(resolveInitialMockLearningProfile())
+
+if (typeof window !== 'undefined') {
+  window.__setMockLearningProfile = __setMockLearningProfile
+  window.__getMockLearningProfile = __getMockLearningProfile
+}

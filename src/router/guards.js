@@ -1,9 +1,37 @@
 import { hasToken } from '@/utils/token.js'
 import { useAuthStore } from '@/store/authStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
+import { useStudyStore } from '@/store/studyStore.js'
 import { resolveAuthEntryPath, resolveOnboardingGuardTarget } from '@/router/onboardingRedirect.js'
 
 export { resolvePostAuthPath } from '@/router/onboardingRedirect.js'
+
+const isPortfolioRoute = (to) => to.path === '/portfolios' || to.path.startsWith('/portfolios/')
+
+/**
+ * 기초 과정 미수료 시 포트폴리오 라우트 차단
+ * @param {import('vue-router').RouteLocationNormalized} to
+ * @returns {Promise<true | { name: string, query: Record<string, string> }>}
+ */
+const resolvePortfolioAccess = async (to) => {
+  if (!isPortfolioRoute(to)) return true
+
+  const studyStore = useStudyStore()
+  if (!studyStore.curriculumItems.length) {
+    try {
+      await studyStore.fetchCurriculum()
+    } catch {
+      /* CURRICULUM_NOT_FOUND 등 → 잠금 유지 */
+    }
+  }
+
+  if (studyStore.isFoundationCompleted) return true
+
+  return {
+    name: 'home',
+    query: { portfolioLocked: '1' },
+  }
+}
 
 export const setupAuthGuard = (router) => {
   router.beforeEach(async (to) => {
@@ -42,6 +70,8 @@ export const setupAuthGuard = (router) => {
         curriculumConfirmed,
       })
       if (target !== true) return target
+
+      return resolvePortfolioAccess(to)
     }
 
     return true
