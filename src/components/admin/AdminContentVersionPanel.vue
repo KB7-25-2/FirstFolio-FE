@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   CONTENT_VERSION_STATUS_LABELS,
   fetchContentVersions,
@@ -8,10 +9,11 @@ import {
   suggestNextVersionNo,
   uploadContentVersion,
 } from '@/services/adminContentVersionService.js'
+import { listPublishedQuestionsForSubChapter } from '@/services/adminQuizService.js'
 import { createLessonJsonTemplate, validateLessonJson } from '@/utils/lessonJsonSchema.js'
 
 const props = defineProps({
-  /** @type {import('vue').PropType<{ subChapterId: number, title: string, currentContentVersionId?: number | null } | null>} */
+  /** @type {import('vue').PropType<{ subChapterId: number, title: string, currentContentVersionId?: number | null, mainChapterId?: number } | null>} */
   subChapter: {
     type: Object,
     default: null,
@@ -19,12 +21,14 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'published'])
+const router = useRouter()
 
 const loading = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
 const notice = ref('')
 const versions = ref([])
+const fileName = ref('')
 
 const versionNo = ref(1)
 const jsonText = ref(JSON.stringify(createLessonJsonTemplate(), null, 2))
@@ -35,6 +39,15 @@ const showPublishConfirm = ref(false)
 const publishTarget = ref(null)
 
 const currentVersion = computed(() => versions.value.find((v) => v.current) ?? null)
+
+const publishedQuestions = computed(() => {
+  if (!props.subChapter?.subChapterId) return []
+  return listPublishedQuestionsForSubChapter(props.subChapter.subChapterId)
+})
+
+const publishedQuestionIdsHint = computed(() =>
+  publishedQuestions.value.map((q) => q.questionId).join(', '),
+)
 
 const flash = (message) => {
   notice.value = message
@@ -87,15 +100,26 @@ const runClientValidate = () => {
     clientErrors.value = result.errors
     return null
   }
+
+  const ids = result.lesson.subChapterQuiz?.questionIds ?? []
+  const published = new Set(publishedQuestions.value.map((q) => q.questionId))
+  const unknown = ids.filter((id) => published.size > 0 && !published.has(id))
+  if (unknown.length) {
+    clientErrors.value = [
+      `로컬 PUBLISHED 목록에 없는 questionId: ${unknown.join(', ')} (서버 검증에서 실패할 수 있음)`,
+    ]
+  }
+
   return result.lesson
 }
 
 const handleValidateOnly = () => {
   errorMessage.value = ''
   const lesson = runClientValidate()
-  if (lesson) {
-    clientErrors.value = []
+  if (lesson && !clientErrors.value.length) {
     flash('스키마 검증 통과')
+  } else if (lesson && clientErrors.value.length) {
+    flash('스키마는 통과 · questionIds 안내를 확인하세요')
   }
 }
 
@@ -107,10 +131,42 @@ const handleFileChange = async (event) => {
     const text = await file.text()
     JSON.parse(text)
     jsonText.value = text
+    fileName.value = file.name
     clientErrors.value = []
     flash(`${file.name} 불러옴`)
   } catch {
     errorMessage.value = 'JSON 파일을 읽지 못했습니다.'
+  }
+}
+
+const goToQuizAdmin = () => {
+  if (!props.subChapter) return
+  router.push({
+    name: 'admin-quiz',
+    query: {
+      subChapterId: String(props.subChapter.subChapterId),
+      ...(props.subChapter.mainChapterId != null
+        ? { mainChapterId: String(props.subChapter.mainChapterId) }
+        : {}),
+      status: 'PUBLISHED',
+    },
+  })
+}
+
+const insertPublishedIdsIntoTemplate = () => {
+  const ids = publishedQuestions.value.map((q) => q.questionId)
+  if (!ids.length) {
+    flash('이 소단원에 PUBLISHED 문항이 없습니다. 퀴즈 메뉴에서 먼저 게시하세요.')
+    return
+  }
+  try {
+    const parsed = JSON.parse(jsonText.value)
+    if (!parsed.subChapterQuiz) parsed.subChapterQuiz = {}
+    parsed.subChapterQuiz.questionIds = ids
+    jsonText.value = JSON.stringify(parsed, null, 2)
+    flash(`questionIds에 [${ids.join(', ')}] 반영`)
+  } catch {
+    errorMessage.value = '현재 JSON을 파싱할 수 없어 questionIds를 넣지 못했습니다.'
   }
 }
 
@@ -279,8 +335,27 @@ const canPublish = (version) => version.status === 'DRAFT' || version.status ===
         <section class="admin-cv__upload">
           <h4 class="admin-card__title">새 버전 업로드</h4>
           <p class="admin-toolbar__hint">
-            schemaVersion 1.0 · pages / subChapterQuiz.questionIds 검증 후 업로드
+            schemaVersion 1.0 · pages / subChapterQuiz.questionIds 검증 후 업로드. questionIds는
+            PUBLISHED · SUB_CHAPTER 문항만 허용됩니다.
           </p>
+
+          <div class="admin-cv__quiz-hint">
+            <span class="admin-cv__label">이 소단원 PUBLISHED 문항</span>
+            <template v-if="publishedQuestions.length">
+              <code class="admin-mono">[{{ publishedQuestionIdsHint }}]</code>
+              <button
+                type="button"
+                class="admin-btn admin-btn--ghost"
+                @click="insertPublishedIdsIntoTemplate"
+              >
+                JSON에 넣기
+              </button>
+            </template>
+            <span v-else class="admin-cell-sub">없음 — 퀴즈에서 DRAFT→게시 후 사용</span>
+            <button type="button" class="admin-btn admin-btn--ghost" @click="goToQuizAdmin">
+              퀴즈 문항 관리
+            </button>
+          </div>
 
           <label class="admin-field">
             <span>version_no</span>

@@ -320,7 +320,10 @@ const moveSubOrder = async (chapter, direction) => {
 }
 
 const openContentVersions = (chapter) => {
-  contentVersionTarget.value = chapter
+  contentVersionTarget.value = {
+    ...chapter,
+    mainChapterId: chapter.mainChapterId ?? selectedMainId.value ?? undefined,
+  }
 }
 
 const closeContentVersions = () => {

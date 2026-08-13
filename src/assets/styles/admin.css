@@ -654,14 +654,16 @@
   min-width: 0;
 }
 
-.admin-cv__errors {
-  margin: 0;
-  padding: 10px 12px 10px 28px;
+.admin-cv__quiz-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--admin-border-strong);
   border-radius: 6px;
-  background: #fef2f2;
-  color: #b91c1c;
-  font-size: 12px;
-  line-height: 1.45;
+  background: #f8fafc;
 }
 
 .admin-modal__title {
