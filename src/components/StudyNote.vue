@@ -34,16 +34,8 @@ onMounted(async () => {
       await Promise.all([
         studyStore.fetchCurriculum(),
         studyStore.fetchLearningProgress(dashLearning.mainChapterId),
+        studyStore.fetchContinuePosition(),
       ])
-      if (learningContinueRoute.value) {
-        studyStore.continuePosition = {
-          ...(studyStore.continuePosition ?? {}),
-          mainChapterId: dashLearning.mainChapterId,
-          subChapterId: dashLearning.subChapterId ?? null,
-          progressPercent: dashLearning.progressPercent ?? 0,
-          route: learningContinueRoute.value,
-        }
-      }
     } catch (err) {
       studyStore.error = err?.message || '학습 현황을 불러오지 못했습니다.'
     } finally {
@@ -67,7 +59,8 @@ const noteError = computed(() => {
   return error.value || dashboardError.value
 })
 
-const effectiveContinueRoute = computed(() => learningContinueRoute.value || continueRoute.value)
+/** 이어하기 API route(page 쿼리 포함) 우선, dashboard 요약 경로는 폴백 */
+const effectiveContinueRoute = computed(() => continueRoute.value || learningContinueRoute.value)
 
 const ruledOffsets = computed(() => Array.from({ length: 10 }, (_, index) => 48 + index * 22))
 
