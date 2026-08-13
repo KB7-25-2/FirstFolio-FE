@@ -48,7 +48,7 @@ vi.mock('@/router/index.js', () => ({
 /** 다른 스펙이 api/index를 먼저 로드하지 않도록 모듈 단위 격리 */
 const loadInterceptors = async () => {
   vi.resetModules()
-  return import('@/api/interceptors.js')
+  return import('@/api/user/interceptors.js')
 }
 
 describe('api/interceptors (unit)', () => {

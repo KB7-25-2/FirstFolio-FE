@@ -17,6 +17,7 @@ import {
 import { useUserStore } from '@/store/userStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
 import { useCurriculumStore } from '@/store/curriculumStore.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 import router from '@/router/index.js'
 
 const REMEMBER_KEY = 'auth_remember_email'
@@ -102,6 +103,7 @@ export const useAuthStore = defineStore('auth', () => {
       useUserStore().clearProfile()
       useLevelTestStore().clear()
       useCurriculumStore().clear()
+      useDashboardStore().clear()
       await router.push({ path: '/login' })
     }
   }

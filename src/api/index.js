@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { setupRequestInterceptor, setupResponseInterceptor } from '@/api/interceptors.js'
+import { setupRequestInterceptor, setupResponseInterceptor } from '@/api/user/interceptors.js'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',

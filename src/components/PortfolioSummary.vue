@@ -2,33 +2,40 @@
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import { usePortfolioStore } from '@/store/portfolioStore.js'
-import { useStudyStore } from '@/store/studyStore.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 import { resolveInvestmentStyle } from '@/utils/investmentStyle.js'
 import { PORTFOLIO_LOCKED_MESSAGE } from '@/utils/foundationGuide.js'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
 
-const portfolioStore = usePortfolioStore()
-const studyStore = useStudyStore()
+const dashboardStore = useDashboardStore()
 const router = useRouter()
-const { portfolioSummary, allocationView, totalAssetsDisplay, isLoading, error } =
-  storeToRefs(portfolioStore)
-const { isPortfolioLocked } = storeToRefs(studyStore)
+const { portfolio, allocationView, totalAssetsDisplay, isLoading, error, portfolioAvailable } =
+  storeToRefs(dashboardStore)
 
 onMounted(() => {
-  if (!studyStore.curriculumItems.length) {
-    studyStore.fetchCurriculum().catch(() => {})
+  // HomeView에서 선조회; 미적재 시만 보완
+  if (!portfolio.value) {
+    dashboardStore.fetchDashboard()
   }
-  portfolioStore.fetchPortfolioSummary()
 })
 
 const ruledOffsets = computed(() => Array.from({ length: 8 }, (_, index) => 44 + index * 22))
 
 const investmentStyle = computed(() => resolveInvestmentStyle(allocationView.value))
 
+const emptyMessage = computed(() => {
+  if (error.value) return error.value
+  if (!portfolioAvailable.value) {
+    return portfolio.value?.reason === 'NO_PORTFOLIO'
+      ? '아직 포트폴리오가 없습니다.'
+      : portfolio.value?.reason || '포트폴리오 정보가 없습니다.'
+  }
+  return '포트폴리오 정보가 없습니다.'
+})
+
 const goPortfolios = () => {
-  if (isPortfolioLocked.value) {
+  if (dashboardStore.isPortfolioLocked.value) {
     router.push({ name: 'learning', query: { mainChapterId: '1' } })
     return
   }
@@ -48,7 +55,6 @@ const goPortfolios = () => {
       @click="goPortfolios"
       @keydown.enter="goPortfolios"
     >
-      <!-- 줄노트 -->
       <div class="pointer-events-none absolute inset-0" aria-hidden="true">
         <div
           v-for="top in ruledOffsets"
@@ -58,7 +64,6 @@ const goPortfolios = () => {
         />
       </div>
 
-      <!-- 왼쪽 여백 라인 -->
       <div
         class="pointer-events-none absolute top-3 bottom-3 left-[26px] w-px bg-[var(--portfolio-margin)]"
         aria-hidden="true"
@@ -66,7 +71,7 @@ const goPortfolios = () => {
 
       <div class="relative flex flex-col gap-2 py-5 pr-4 pl-[38px]">
         <BaseLoading
-          v-if="isLoading && !isPortfolioLocked"
+          v-if="isLoading && !portfolio"
           class="py-6 text-center"
           tone="onLight"
           size="2xs"
@@ -86,10 +91,10 @@ const goPortfolios = () => {
         </div>
 
         <div
-          v-else-if="error || !portfolioSummary?.available"
+          v-else-if="error || !portfolioAvailable"
           class="py-6 text-center font-serif text-[10px] text-[var(--portfolio-muted)]"
         >
-          {{ error || portfolioSummary?.reason || '포트폴리오 정보가 없습니다.' }}
+          {{ emptyMessage }}
         </div>
 
         <template v-else>
@@ -102,7 +107,6 @@ const goPortfolios = () => {
             <p class="font-serif text-[11px] text-[var(--portfolio-unit)]">원</p>
           </div>
 
-          <!-- 비중 바 -->
           <div class="flex h-2.5 w-full overflow-hidden rounded-[3px]" aria-hidden="true">
             <div
               v-for="item in allocationView"
@@ -112,7 +116,6 @@ const goPortfolios = () => {
             />
           </div>
 
-          <!-- 범례 -->
           <div class="flex flex-wrap gap-2.5">
             <div
               v-for="item in allocationView"
@@ -132,7 +135,6 @@ const goPortfolios = () => {
         </template>
       </div>
 
-      <!-- 투자 성향 칩 -->
       <div
         v-if="!isPortfolioLocked && portfolioSummary?.available"
         class="pointer-events-none absolute top-11 right-3 z-10 flex max-w-[42%] items-center gap-1.5 rounded-[14px] border-[0.5px] border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"

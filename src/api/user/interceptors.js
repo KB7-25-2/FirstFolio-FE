@@ -1,5 +1,5 @@
 import { getToken, removeToken, setToken } from '@/utils/token.js'
-import { parseApiError } from '@/api/errorHandler.js'
+import { parseApiError } from '@/api/user/errorHandler.js'
 import router from '@/router/index.js'
 import {
   getCurrentFirebaseUser,

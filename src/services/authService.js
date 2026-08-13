@@ -4,8 +4,8 @@
  */
 
 import { deleteUser } from 'firebase/auth'
-import { signUp as signUpApi, login as loginApi, logout as logoutApi } from '@/api/authApi.js'
-import { ApiError } from '@/api/errorHandler.js'
+import { signUp as signUpApi, login as loginApi, logout as logoutApi } from '@/api/user/authApi.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 import {
   signInWithGoogle,
   signInWithEmail,
