@@ -277,6 +277,63 @@ describe('dailyQuestService (unit)', () => {
     expect(second.data.correctCount).toBe(first.data.correctCount)
   })
 
+  it('OpenAPI questions·savedAnswer 형식을 매핑한다', async () => {
+    getTodayApi.mockResolvedValue({
+      data: {
+        data: {
+          dailyQuestId: 4200,
+          questDate: '2026-08-13',
+          status: 'IN_PROGRESS',
+          totalCount: 5,
+          answeredCount: 1,
+          questions: [
+            {
+              dailyQuestItemId: 5200,
+              questionId: 3001,
+              displayOrder: 1,
+              questionType: 'SINGLE_CHOICE',
+              generationType: 'HUMAN',
+              prompt: 'OpenAPI 문항',
+              scenario: null,
+              choices: [{ key: 'A', label: '보기' }],
+              savedAnswer: { key: 'A' },
+            },
+          ],
+        },
+      },
+    })
+
+    const { data } = await getTodayDailyQuest()
+    expect(data.dailyQuestId).toBe(4200)
+    expect(data.items[0]).toMatchObject({
+      dailyQuestItemId: 5200,
+      userAnswer: { selectedKey: 'A' },
+    })
+    expect(data.items[0].questionSnapshot.prompt).toBe('OpenAPI 문항')
+  })
+
+  it('답안 저장은 items/{id}/answer + answer.key 로 호출한다', async () => {
+    saveAnswerApi.mockResolvedValue({
+      data: {
+        data: {
+          dailyQuestId: 4001,
+          dailyQuestItemId: 5001,
+          savedAnswer: { key: 'B' },
+          answeredCount: 1,
+          totalCount: 5,
+        },
+      },
+    })
+
+    const { data } = await saveDailyQuestAnswer({
+      dailyQuestItemId: 5001,
+      answer: { selectedKey: 'B' },
+    })
+
+    expect(saveAnswerApi).toHaveBeenCalledWith(5001, { answer: { key: 'B' } })
+    expect(data.userAnswer).toEqual({ selectedKey: 'B' })
+  })
+
   it('실 API 성공 시 GET today 응답을 매핑한다', async () => {
     getTodayApi.mockResolvedValue({
       data: {

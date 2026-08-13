@@ -1,31 +1,18 @@
 import apiClient from '@/api/index.js'
 
-/**
- * GET /quiz/questions?question_ids=1,2,3
- * — 사용자 조회: 정답·해설 제외 (QuizQuestionView)
- * @param {number[]} questionIds
- */
-export const getQuizQuestions = (questionIds) =>
-  apiClient.get('/quiz/questions', {
-    params: { question_ids: questionIds.join(',') },
-  })
+/** POST /learning/sub-chapters/{subChapterId}/quiz-attempts */
+export const startSubChapterQuizAttempt = (subChapterId) =>
+  apiClient.post(`/learning/sub-chapters/${subChapterId}/quiz-attempts`)
+
+/** POST /learning/main-chapters/{mainChapterId}/quiz-attempts */
+export const startMainChapterQuizAttempt = (mainChapterId) =>
+  apiClient.post(`/learning/main-chapters/${mainChapterId}/quiz-attempts`)
 
 /**
- * POST /learning/sub-chapters/{subChapterId}/quiz/answers
- * — 문항 단위 제출·채점
- * @param {number} subChapterId
- * @param {{ question_id: number, selected_key: string }} body
+ * PUT /learning/quiz-attempts/{attemptId}/answers/{questionId}
+ * @param {number} attemptId
+ * @param {number} questionId
+ * @param {{ answer: { key: string } }} body
  */
-export const gradeQuizAnswer = (subChapterId, body) =>
-  apiClient.post(`/learning/sub-chapters/${subChapterId}/quiz/answers`, body)
-
-/**
- * POST /quiz/attempts
- * — 소단원 퀴즈 일괄 제출·채점
- * @param {{
- *   quiz_type: string,
- *   sub_chapter_id: number,
- *   answers: { question_id: number, selected_key: string }[]
- * }} body
- */
-export const submitQuizAttempt = (body) => apiClient.post('/quiz/attempts', body)
+export const gradeQuizAnswer = (attemptId, questionId, body) =>
+  apiClient.put(`/learning/quiz-attempts/${attemptId}/answers/${questionId}`, body)

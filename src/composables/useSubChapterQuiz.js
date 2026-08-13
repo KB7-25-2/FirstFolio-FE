@@ -145,11 +145,7 @@ export const useSubChapterQuiz = () => {
       return
     }
 
-    try {
-      await studyStore.submitCurrentQuizQuestion()
-    } catch (err) {
-      error.value = err?.message || '채점에 실패했습니다.'
-    }
+    await studyStore.submitCurrentQuizQuestion()
   }
 
   const goToMainChapter = async () => {

@@ -1,21 +1,17 @@
 import { ALLOW_DUPLICATE_POINT_GRANT, POINTS_PER_CORRECT } from '@/constants/quizPolicy.js'
-import { ApiError } from '@/api/user/errorHandler.js'
+import { getUserCurriculum } from '@/api/user/curriculumApi.js'
+import { parseApiError } from '@/api/user/errorHandler.js'
 import {
-  getChapterGame as getChapterGameApi,
   getContinuePosition as getContinuePositionApi,
-  getCurriculum as getCurriculumApi,
-  getLearningProgress as getLearningProgressApi,
-  getScenario as getScenarioApi,
   getSubChapterLesson as getSubChapterLessonApi,
-  saveLessonProgress as saveLessonProgressApi,
-  submitScenarioAttempt as submitScenarioAttemptApi,
+  getSubChapterProgress as getSubChapterProgressApi,
+  putSubChapterProgress as putSubChapterProgressApi,
 } from '@/api/user/studyApi.js'
 import {
-  getQuizQuestions as getQuizQuestionsApi,
   gradeQuizAnswer as gradeQuizAnswerApi,
-  submitQuizAttempt as submitQuizAttemptApi,
+  startMainChapterQuizAttempt as startMainChapterQuizAttemptApi,
+  startSubChapterQuizAttempt as startSubChapterQuizAttemptApi,
 } from '@/api/user/quizApi.js'
-import { pickField, unwrapData } from '@/utils/apiMapper.js'
 
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
@@ -33,10 +29,19 @@ import { pickField, unwrapData } from '@/utils/apiMapper.js'
  * @typedef {import('@/types/study.js').ScenarioDetail} ScenarioDetail
  * @typedef {import('@/types/study.js').ScenarioAnswerItem} ScenarioAnswerItem
  * @typedef {import('@/types/study.js').ScenarioAttemptResult} ScenarioAttemptResult
- * @typedef {import('@/types/quiz.js').QuizGradeResult} QuizGradeResult
  */
 
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const unwrap = (response) => response?.data?.data ?? response?.data
+
+const pickField = (obj, ...keys) => {
+  if (!obj || typeof obj !== 'object') return undefined
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null) return obj[key]
+  }
+  return undefined
+}
 export class StudyApiError extends Error {
   /**
    * @param {string} code
@@ -51,213 +56,6 @@ export class StudyApiError extends Error {
     this.requestId = `req-mock-${Date.now()}`
   }
 }
-
-/** @type {Record<string, string>} */
-const STUDY_ERROR_MESSAGES = {
-  UNAUTHORIZED: '인증이 필요합니다. 다시 로그인해 주세요.',
-  CURRICULUM_NOT_FOUND: '확정된 커리큘럼이 없다.',
-  SUB_CHAPTER_NOT_FOUND: '공개 소단원을 찾을 수 없다.',
-  CONTENT_NOT_FOUND: '학습 페이지를 찾을 수 없다.',
-  PREREQUISITE_REQUIRED: '선행 학습이 필요하다.',
-  QUESTIONS_NOT_FOUND: '퀴즈 문항을 찾을 수 없다.',
-  CONTINUE_POSITION_NOT_FOUND: '이어갈 미완료 학습이 없다.',
-  CHAPTER_GAME_NOT_FOUND: '챕터 게임을 찾을 수 없다.',
-  CHAPTER_GAME_LOCKED: '아직 잠긴 챕터 게임이다.',
-  SCENARIO_NOT_FOUND: '시나리오를 찾을 수 없다.',
-  INVALID_ATTEMPT: '제출 데이터가 올바르지 않다.',
-}
-
-/** DEV에서도 mock으로 가리지 않는 비즈니스 오류 (NOT_FOUND 는 시드 전이라 DEV 폴백 허용) */
-const BUSINESS_ERROR_CODES = new Set([
-  'UNAUTHORIZED',
-  'PREREQUISITE_REQUIRED',
-  'CHAPTER_GAME_LOCKED',
-  'INVALID_ATTEMPT',
-  'INVALID_ANSWER',
-  'VALIDATION_ERROR',
-])
-
-/**
- * @param {unknown} error
- * @param {string} fallbackCode
- * @param {string} fallbackMessage
- * @returns {StudyApiError}
- */
-const mapStudyError = (error, fallbackCode, fallbackMessage) => {
-  if (error instanceof StudyApiError) return error
-
-  if (error instanceof ApiError) {
-    const code = error.code || fallbackCode
-    const message = STUDY_ERROR_MESSAGES[error.code] ?? error.message ?? fallbackMessage
-    const mapped = new StudyApiError(code, message, error.status)
-    mapped.unmapped = !error.code
-    return mapped
-  }
-
-  if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
-    const err = /** @type {{ code: string, message: string, status?: number }} */ (error)
-    return new StudyApiError(
-      err.code,
-      STUDY_ERROR_MESSAGES[err.code] ?? err.message,
-      err.status ?? 400,
-    )
-  }
-
-  const mapped = new StudyApiError(fallbackCode, fallbackMessage, 500)
-  mapped.unmapped = true
-  return mapped
-}
-
-/**
- * @param {StudyApiError} error
- * @returns {boolean}
- */
-const shouldFallbackToMock = (error) => {
-  if (BUSINESS_ERROR_CODES.has(error.code)) return false
-  if (import.meta.env.DEV) return true
-  return Boolean(error.unmapped) && (error.status === 404 || error.status === 0)
-}
-
-/** @type {Map<string, SubChapterLessonJson>} */
-const LESSON_JSON_CACHE = new Map()
-
-const lessonCacheKey = (subChapterId) => `api:sub-chapter:${subChapterId}`
-
-/**
- * @param {object | null | undefined} lesson
- * @returns {SubChapterLessonJson}
- */
-const mapLessonJson = (lesson) => {
-  if (!lesson || typeof lesson !== 'object') {
-    return { schemaVersion: '1.0', pages: [], subChapterQuiz: { questionIds: [] } }
-  }
-  const quiz = lesson.subChapterQuiz ?? lesson.sub_chapter_quiz ?? {}
-  return {
-    schemaVersion: String(pickField(lesson, 'schemaVersion', 'schema_version') ?? '1.0'),
-    pages: Array.isArray(lesson.pages) ? lesson.pages : [],
-    subChapterQuiz: {
-      questionIds: quiz.questionIds ?? quiz.question_ids ?? [],
-    },
-  }
-}
-
-/**
- * @param {object} raw LessonContentResponse
- * @param {SubChapterLessonJson} lessonJson
- * @returns {SubChapterContent}
- */
-const mapLessonContentResponse = (raw, lessonJson) => {
-  const subChapterId = Number(pickField(raw, 'subChapterId', 'sub_chapter_id'))
-  const progress = raw.progress ?? {}
-  return {
-    subChapterId,
-    mainChapterId: Number(pickField(raw, 'mainChapterId', 'main_chapter_id') ?? 0),
-    title: raw.title ?? '',
-    contentVersionId: Number(pickField(raw, 'contentVersionId', 'content_version_id') ?? 0),
-    schemaVersion: String(
-      pickField(raw, 'schemaVersion', 'schema_version') ?? lessonJson.schemaVersion,
-    ),
-    contentUrl: pickField(raw, 'contentUrl', 'content_url') ?? lessonCacheKey(subChapterId),
-    expiresAt:
-      pickField(raw, 'expiresAt', 'expires_at') ??
-      new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-    progress: {
-      status: progress.status ?? 'NOT_STARTED',
-      lastPageId: pickField(progress, 'lastPageId', 'last_page_id') ?? null,
-      completedAt: pickField(progress, 'completedAt', 'completed_at') ?? null,
-    },
-  }
-}
-
-/**
- * @param {object} raw
- * @returns {LearningProgressItem}
- */
-const mapLearningProgressItem = (raw) => ({
-  progressId: Number(pickField(raw, 'progressId', 'progress_id') ?? 0),
-  userId: Number(pickField(raw, 'userId', 'user_id') ?? 0),
-  mainChapterId: Number(pickField(raw, 'mainChapterId', 'main_chapter_id')),
-  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id') ?? null,
-  contentVersionId: pickField(raw, 'contentVersionId', 'content_version_id') ?? null,
-  lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? null,
-  status: raw.status ?? 'NOT_STARTED',
-  startedAt: pickField(raw, 'startedAt', 'started_at') ?? null,
-  completedAt: pickField(raw, 'completedAt', 'completed_at') ?? null,
-  updatedAt: pickField(raw, 'updatedAt', 'updated_at') ?? new Date().toISOString(),
-  order: Number(pickField(raw, 'order', 'displayOrder', 'display_order') ?? 0),
-  title: raw.title ?? '',
-  shortLabel: pickField(raw, 'shortLabel', 'short_label') ?? '',
-  periodSubtitle: pickField(raw, 'periodSubtitle', 'period_subtitle'),
-  entryType: pickField(raw, 'entryType', 'entry_type') ?? 'LESSON',
-  quizScore: pickField(raw, 'quizScore', 'quiz_score') ?? null,
-})
-
-/**
- * @param {object} raw
- * @returns {QuizQuestion}
- */
-const mapQuizQuestion = (raw) => ({
-  questionId: Number(pickField(raw, 'questionId', 'question_id')),
-  questionKey: pickField(raw, 'questionKey', 'question_key') ?? '',
-  versionNo: Number(pickField(raw, 'versionNo', 'version_no') ?? 1),
-  usageType: pickField(raw, 'usageType', 'usage_type') ?? 'SUB_CHAPTER',
-  mainChapterId: pickField(raw, 'mainChapterId', 'main_chapter_id') ?? null,
-  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id') ?? null,
-  displayOrder: pickField(raw, 'displayOrder', 'display_order') ?? null,
-  questionType: pickField(raw, 'questionType', 'question_type'),
-  difficulty: raw.difficulty ?? null,
-  prompt: raw.prompt ?? '',
-  scenarioJson: pickField(raw, 'scenarioJson', 'scenario_json', 'scenario') ?? null,
-  optionsJson: pickField(raw, 'optionsJson', 'options_json', 'options') ?? [],
-  correctAnswerJson:
-    pickField(raw, 'correctAnswerJson', 'correct_answer_json', 'correctAnswer') ?? null,
-  explanation: raw.explanation ?? '',
-  generationType: pickField(raw, 'generationType', 'generation_type') ?? 'HUMAN',
-  sourceRefsJson: pickField(raw, 'sourceRefsJson', 'source_refs_json') ?? null,
-  status: raw.status ?? 'PUBLISHED',
-})
-
-/**
- * @param {object} raw
- * @returns {QuizGradeResult}
- */
-const mapQuizGradeResult = (raw) => ({
-  quizAnswerId: Number(pickField(raw, 'quizAnswerId', 'quiz_answer_id') ?? 0),
-  questionId: Number(pickField(raw, 'questionId', 'question_id')),
-  generationType: pickField(raw, 'generationType', 'generation_type') ?? 'HUMAN',
-  selectedKey: pickField(raw, 'selectedKey', 'selected_key') ?? '',
-  isCorrect: Boolean(pickField(raw, 'isCorrect', 'is_correct')),
-  correctAnswer: pickField(raw, 'correctAnswer', 'correct_answer', 'correctAnswerJson') ?? {
-    key: '',
-  },
-  explanation: raw.explanation ?? '',
-  answeredCount: Number(pickField(raw, 'answeredCount', 'answered_count') ?? 0),
-  totalCount: Number(pickField(raw, 'totalCount', 'total_count') ?? 0),
-  attemptCompleted: Boolean(pickField(raw, 'attemptCompleted', 'attempt_completed')),
-  result: pickField(raw, 'result') ?? undefined,
-})
-
-/**
- * @param {object} raw
- * @returns {QuizAttemptResult}
- */
-const mapQuizAttemptResult = (raw) => ({
-  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id'),
-  totalCount: Number(pickField(raw, 'totalCount', 'total_count') ?? 0),
-  correctCount: Number(pickField(raw, 'correctCount', 'correct_count') ?? 0),
-  quizScore: Number(pickField(raw, 'quizScore', 'quiz_score', 'score') ?? 0),
-  pointsGranted: Number(pickField(raw, 'pointsGranted', 'points_granted') ?? 0),
-  wrongAnswers: (pickField(raw, 'wrongAnswers', 'wrong_answers') ?? []).map((item) => ({
-    questionId: Number(pickField(item, 'questionId', 'question_id')),
-    selectedKey: pickField(item, 'selectedKey', 'selected_key') ?? '',
-    correctKey: pickField(item, 'correctKey', 'correct_key') ?? '',
-  })),
-  gradedAnswers: (pickField(raw, 'gradedAnswers', 'graded_answers') ?? []).map((item) => ({
-    questionId: Number(pickField(item, 'questionId', 'question_id')),
-    selectedKey: pickField(item, 'selectedKey', 'selected_key') ?? '',
-    isCorrect: Boolean(pickField(item, 'isCorrect', 'is_correct')),
-  })),
-})
 
 /** 개인 커리큘럼 조회 API 목업 — 기초 수료 후 예·적금 진행 중 유저 */
 const MOCK_CURRICULUM_RESPONSE = {
@@ -1256,89 +1054,91 @@ const recomputeContinuePosition = () => {
 
 /**
  * @param {object} item
- * @returns {CurriculumItem}
+ * @returns {CurriculumItem & { status: string }}
  */
-const mapCurriculumItem = (item) => ({
-  curriculumItemId: Number(pickField(item, 'curriculumItemId', 'curriculum_item_id')),
-  mainChapterId: Number(pickField(item, 'mainChapterId', 'main_chapter_id')),
-  title: item.title,
-  chapterType: pickField(item, 'chapterType', 'chapter_type'),
-  displayOrder: Number(pickField(item, 'displayOrder', 'display_order')),
-  status: item.status,
-  completedAt: pickField(item, 'completedAt', 'completed_at') ?? null,
-  progressPercent: Number(pickField(item, 'progressPercent', 'progress_percent') ?? 0),
-})
+const mapCurriculumItem = (item) => {
+  const chapterTypeRaw = String(pickField(item, 'chapterType', 'chapter_type') ?? '')
+  const chapterType = chapterTypeRaw === 'ASSET' ? 'CORE' : chapterTypeRaw
+  const progressPercent = Number(pickField(item, 'progressPercent', 'progress_percent') ?? 0)
+  const completedAt = pickField(item, 'completedAt', 'completed_at') ?? null
+  const rawStatus = String(pickField(item, 'status') ?? '')
 
-/**
- * @param {object} raw
- * @returns {SubChapterContent}
- */
-const mapSubChapterContent = (raw) => ({
-  subChapterId: Number(pickField(raw, 'subChapterId', 'sub_chapter_id')),
-  mainChapterId: Number(pickField(raw, 'mainChapterId', 'main_chapter_id')),
-  title: raw.title,
-  contentVersionId: Number(pickField(raw, 'contentVersionId', 'content_version_id')),
-  schemaVersion: pickField(raw, 'schemaVersion', 'schema_version'),
-  contentUrl: pickField(raw, 'contentUrl', 'content_url'),
-  expiresAt: pickField(raw, 'expiresAt', 'expires_at'),
-  progress: {
-    status: raw.progress.status,
-    lastPageId: pickField(raw.progress, 'lastPageId', 'last_page_id'),
-    completedAt: pickField(raw.progress, 'completedAt', 'completed_at'),
-  },
-})
-
-/**
- * @param {object} raw
- * @returns {ContinuePosition}
- */
-const mapContinuePosition = (raw) => ({
-  curriculumItemId: Number(pickField(raw, 'curriculumItemId', 'curriculum_item_id')),
-  mainChapterId: Number(pickField(raw, 'mainChapterId', 'main_chapter_id')),
-  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id') ?? null,
-  contentVersionId: pickField(raw, 'contentVersionId', 'content_version_id') ?? null,
-  lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? null,
-  progressPercent: Number(pickField(raw, 'progressPercent', 'progress_percent') ?? 0),
-  route: raw.route,
-})
-
-/**
- * 확정된 개인 커리큘럼 + 대단원별 진행 상태 조회 (목업)
- * @returns {Promise<{ data: { items: CurriculumItem[] } }>}
- * @throws {StudyApiError} CURRICULUM_NOT_FOUND
- */
-const getCurriculumMock = async () => {
-  await delay()
-  const raw = structuredClone(MOCK_CURRICULUM_RESPONSE)
-  const items = raw.data?.items ?? []
-  if (!items.length) {
-    throw new StudyApiError('CURRICULUM_NOT_FOUND', '확정된 커리큘럼이 없다.', 404)
+  /** @type {string} */
+  let status
+  if (rawStatus === 'REMOVED') {
+    status = 'REMOVED'
+  } else if (rawStatus === 'COMPLETED' || rawStatus === 'LOCKED') {
+    status = rawStatus
+  } else if (completedAt || progressPercent >= 100) {
+    status = 'COMPLETED'
+  } else {
+    // API ACTIVE = 커리큘럼 포함. 학습 UI ACTIVE/LOCKED는 아래에서 정규화
+    status = 'PENDING'
   }
+
   return {
-    data: {
-      items: items.map(mapCurriculumItem),
-    },
+    curriculumItemId: Number(pickField(item, 'curriculumItemId', 'curriculum_item_id')),
+    mainChapterId: Number(pickField(item, 'mainChapterId', 'main_chapter_id')),
+    title: String(pickField(item, 'title') ?? ''),
+    chapterType,
+    displayOrder: Number(pickField(item, 'displayOrder', 'display_order') ?? 0),
+    status,
+    completedAt,
+    progressPercent,
   }
 }
 
 /**
- * GET /curriculums — 실 API 우선, DEV에서 미구현·시드 전 404 시 mock
+ * 순차 학습용 status 정규화: 완료 → 첫 미완료 ACTIVE → 나머지 LOCKED
+ * @param {Array<CurriculumItem & { status: string }>} items
+ * @returns {CurriculumItem[]}
+ */
+const normalizeCurriculumStatuses = (items) => {
+  const sorted = items
+    .filter((item) => item.status !== 'REMOVED')
+    .slice()
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+
+  let activeAssigned = false
+  return sorted.map((item) => {
+    if (item.status === 'COMPLETED') return /** @type {CurriculumItem} */ (item)
+    if (!activeAssigned) {
+      activeAssigned = true
+      return { ...item, status: 'ACTIVE' }
+    }
+    return { ...item, status: 'LOCKED' }
+  })
+}
+
+/**
+ * 확정된 개인 커리큘럼 + 대단원별 진행 상태 조회
+ * GET /curriculum
  * @returns {Promise<{ data: { items: CurriculumItem[] } }>}
  * @throws {StudyApiError} CURRICULUM_NOT_FOUND
  */
 export const getCurriculum = async () => {
   try {
-    const raw = unwrapData(await getCurriculumApi())
-    const items = (raw?.items ?? []).map(mapCurriculumItem)
+    const raw = unwrap(await getUserCurriculum())
+    const items = normalizeCurriculumStatuses((raw?.items ?? []).map(mapCurriculumItem))
     if (!items.length) {
       throw new StudyApiError('CURRICULUM_NOT_FOUND', '확정된 커리큘럼이 없다.', 404)
     }
     return { data: { items } }
   } catch (error) {
-    const mapped = mapStudyError(error, 'CURRICULUM_FETCH_FAILED', '커리큘럼을 불러오지 못했다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] getCurriculum API 실패 — mock 사용', mapped)
-    return getCurriculumMock()
+    if (error instanceof StudyApiError) throw error
+    const parsed = parseApiError(error)
+    if (parsed.status === 404 || parsed.code === 'CURRICULUM_NOT_FOUND') {
+      throw new StudyApiError(
+        'CURRICULUM_NOT_FOUND',
+        parsed.message || '확정된 커리큘럼이 없다.',
+        404,
+      )
+    }
+    throw new StudyApiError(
+      parsed.code || 'CURRICULUM_FETCH_FAILED',
+      parsed.message || '커리큘럼을 불러오지 못했다.',
+      parsed.status || 500,
+    )
   }
 }
 
@@ -1347,28 +1147,64 @@ export const getCurriculum = async () => {
  * @param {number} mainChapterId
  * @returns {Promise<{ data: { items: LearningProgressItem[] } }>}
  */
-const getLearningProgressMock = async (mainChapterId) => {
+export const getLearningProgress = async (mainChapterId) => {
   await delay()
   const items = MOCK_LEARNING_PROGRESS.filter((item) => item.mainChapterId === mainChapterId)
   return { data: { items: structuredClone(items) } }
 }
 
 /**
- * GET /learning/main-chapters/{id}/progress
- * @param {number} mainChapterId
- * @returns {Promise<{ data: { items: LearningProgressItem[] } }>}
+ * @param {object} raw
+ * @returns {SubChapterContent}
  */
-export const getLearningProgress = async (mainChapterId) => {
-  try {
-    const raw = unwrapData(await getLearningProgressApi(mainChapterId))
-    const items = (raw?.items ?? (Array.isArray(raw) ? raw : [])).map(mapLearningProgressItem)
-    return { data: { items } }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'PROGRESS_FETCH_FAILED', '학습 진행을 불러오지 못했다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] getLearningProgress API 실패 — mock 사용', mapped)
-    return getLearningProgressMock(mainChapterId)
+const mapSubChapterContent = (raw, progressRaw = null) => {
+  const progress = progressRaw ?? raw.progress ?? {}
+  const lesson = raw.lesson ?? null
+  return {
+    subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id'),
+    mainChapterId: pickField(raw, 'mainChapterId', 'main_chapter_id'),
+    title: raw.title,
+    contentVersionId: pickField(raw, 'contentVersionId', 'content_version_id'),
+    schemaVersion: pickField(raw, 'schemaVersion', 'schema_version'),
+    contentUrl: pickField(raw, 'contentUrl', 'content_url') ?? null,
+    expiresAt: pickField(raw, 'expiresAt', 'expires_at') ?? null,
+    lesson,
+    progress: {
+      status: pickField(progress, 'status') ?? 'NOT_STARTED',
+      lastPageId: pickField(progress, 'lastPageId', 'last_page_id') ?? null,
+      completedAt: pickField(progress, 'completedAt', 'completed_at') ?? null,
+    },
   }
+}
+
+/**
+ * @param {object} raw
+ * @returns {ContinuePosition}
+ */
+const mapContinuePosition = (raw) => ({
+  curriculumItemId: pickField(raw, 'curriculumItemId', 'curriculum_item_id'),
+  mainChapterId: pickField(raw, 'mainChapterId', 'main_chapter_id'),
+  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id'),
+  contentVersionId: pickField(raw, 'contentVersionId', 'content_version_id'),
+  lastPageId: pickField(raw, 'lastPageId', 'last_page_id'),
+  progressPercent: pickField(raw, 'progressPercent', 'progress_percent'),
+  route: raw.route,
+})
+
+const shouldFallbackStudyMock = (error) => {
+  if (!import.meta.env.DEV) return false
+  const code = error?.code
+  if (
+    code === 'CONTINUE_POSITION_NOT_FOUND' ||
+    code === 'SUB_CHAPTER_NOT_FOUND' ||
+    code === 'CONTENT_NOT_PUBLISHED' ||
+    code === 'PREREQUISITE_REQUIRED' ||
+    code === 'QUIZ_NOT_AVAILABLE' ||
+    code === 'SUB_CHAPTERS_INCOMPLETE'
+  ) {
+    return false
+  }
+  return true
 }
 
 /**
@@ -1386,14 +1222,31 @@ const isPrerequisiteBlocked = (subChapterId) => {
 }
 
 /**
- * 소단원 메타 + 백엔드 발급 콘텐츠 접근 정보 조회 (목업)
- * - 클라이언트는 content_url만 사용하고 S3 경로를 조합하지 않는다.
- * - 완료한 소단원도 재열람 가능하다.
+ * 소단원 메타 + 공개 강좌 + 진도
+ * OpenAPI: GET /learning/sub-chapters/{id} + GET …/progress
  * @param {number} subChapterId
  * @returns {Promise<{ data: SubChapterContent }>}
- * @throws {StudyApiError} SUB_CHAPTER_NOT_FOUND | PREREQUISITE_REQUIRED
  */
-const getSubChapterContentMock = async (subChapterId) => {
+export const getSubChapterContent = async (subChapterId) => {
+  try {
+    const [lessonRes, progressRes] = await Promise.all([
+      getSubChapterLessonApi(subChapterId),
+      getSubChapterProgressApi(subChapterId).catch(() => null),
+    ])
+    const lessonRaw = unwrap(lessonRes)
+    const progressRaw = progressRes ? unwrap(progressRes) : null
+    return { data: mapSubChapterContent(lessonRaw, progressRaw) }
+  } catch (error) {
+    const parsed = parseApiError(error)
+    const mapped = new StudyApiError(
+      parsed?.code ?? error?.code ?? 'SUB_CHAPTER_FETCH_FAILED',
+      parsed?.message ?? error?.message ?? '소단원을 불러오지 못했습니다.',
+      parsed?.status ?? error?.status ?? 500,
+    )
+    if (!shouldFallbackStudyMock(mapped)) throw mapped
+    console.warn('[studyService] GET sub-chapter 실패 — mock으로 대체합니다.', mapped)
+  }
+
   await delay()
   if (isPrerequisiteBlocked(subChapterId)) {
     throw new StudyApiError('PREREQUISITE_REQUIRED', '선행 학습이 필요하다.', 403)
@@ -1406,36 +1259,24 @@ const getSubChapterContentMock = async (subChapterId) => {
 }
 
 /**
- * GET /learning/sub-chapters/{id} — lesson JSON 인라인
- * @param {number} subChapterId
- * @returns {Promise<{ data: SubChapterContent }>}
- * @throws {StudyApiError} SUB_CHAPTER_NOT_FOUND | PREREQUISITE_REQUIRED
- */
-export const getSubChapterContent = async (subChapterId) => {
-  try {
-    const raw = unwrapData(await getSubChapterLessonApi(subChapterId))
-    const lessonJson = mapLessonJson(raw?.lesson)
-    const meta = mapLessonContentResponse(raw, lessonJson)
-    LESSON_JSON_CACHE.set(meta.contentUrl, lessonJson)
-    LESSON_JSON_CACHE.set(lessonCacheKey(meta.subChapterId), lessonJson)
-    return { data: meta }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'SUB_CHAPTER_NOT_FOUND', '공개 소단원을 찾을 수 없다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] getSubChapterContent API 실패 — mock 사용', mapped)
-    return getSubChapterContentMock(subChapterId)
-  }
-}
-
-/**
- * 백엔드가 발급한 contentUrl로 소단원 강좌 JSON 로드 (목업)
- * @param {string} contentUrl
+ * 강좌 JSON 로드 — OpenAPI는 lesson을 콘텐츠 응답에 포함
+ * @param {string | null | undefined} contentUrl
+ * @param {import('@/types/study.js').SubChapterLessonJson | null} [embeddedLesson]
  * @returns {Promise<{ data: SubChapterLessonJson }>}
- * @throws {StudyApiError} CONTENT_NOT_FOUND
  */
-const getLessonPagesMock = async (contentUrl) => {
+export const getLessonPages = async (contentUrl, embeddedLesson = null) => {
+  if (embeddedLesson && (embeddedLesson.pages || embeddedLesson.schemaVersion)) {
+    return { data: structuredClone(embeddedLesson) }
+  }
+  if (embeddedLesson && typeof embeddedLesson === 'object') {
+    // lesson 노드가 pages를 직접 감싸지 않고 루트일 수 있음
+    if (Array.isArray(embeddedLesson.pages) || embeddedLesson.subChapterQuiz) {
+      return { data: structuredClone(embeddedLesson) }
+    }
+  }
+
   await delay()
-  const payload = MOCK_LESSON_JSON_BY_URL[contentUrl]
+  const payload = contentUrl ? MOCK_LESSON_JSON_BY_URL[contentUrl] : null
   if (!payload) {
     throw new StudyApiError('CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.', 404)
   }
@@ -1443,67 +1284,50 @@ const getLessonPagesMock = async (contentUrl) => {
 }
 
 /**
- * 인라인 캐시 → 서명 URL fetch → mock
- * @param {string} contentUrl
- * @returns {Promise<{ data: SubChapterLessonJson }>}
- * @throws {StudyApiError} CONTENT_NOT_FOUND
- */
-export const getLessonPages = async (contentUrl) => {
-  const cached = LESSON_JSON_CACHE.get(contentUrl)
-  if (cached) return { data: structuredClone(cached) }
-
-  const sentinelId = /^api:sub-chapter:(\d+)$/.exec(contentUrl)?.[1]
-  if (sentinelId) {
-    try {
-      const raw = unwrapData(await getSubChapterLessonApi(Number(sentinelId)))
-      const lessonJson = mapLessonJson(raw?.lesson)
-      LESSON_JSON_CACHE.set(contentUrl, lessonJson)
-      return { data: structuredClone(lessonJson) }
-    } catch (error) {
-      const mapped = mapStudyError(error, 'CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.')
-      if (!shouldFallbackToMock(mapped)) throw mapped
-      console.warn('[studyService] getLessonPages API 재조회 실패 — mock 사용', mapped)
-    }
-  }
-
-  if (/^https?:\/\//.test(contentUrl)) {
-    try {
-      const response = await fetch(contentUrl)
-      if (!response.ok) {
-        throw new StudyApiError('CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.', response.status)
-      }
-      const lessonJson = mapLessonJson(await response.json())
-      LESSON_JSON_CACHE.set(contentUrl, lessonJson)
-      return { data: structuredClone(lessonJson) }
-    } catch (error) {
-      const mapped = mapStudyError(error, 'CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.')
-      if (!shouldFallbackToMock(mapped)) throw mapped
-      console.warn('[studyService] getLessonPages URL fetch 실패 — mock 사용', mapped)
-    }
-  }
-
-  return getLessonPagesMock(contentUrl)
-}
-
-/**
- * 소단원 강좌 진도 저장 (목업) — lastPageId / status
+ * 소단원 강좌 진도 저장
+ * OpenAPI PUT: { contentVersionId, lastPageId, status }
  * @param {number} subChapterId
- * @param {{ lastPageId: string, status?: LearningProgressStatus }} payload
- * @returns {Promise<{ data: { lastPageId: string, status: LearningProgressStatus } }>}
- * @throws {StudyApiError} SUB_CHAPTER_NOT_FOUND
+ * @param {{ lastPageId: string, status?: LearningProgressStatus, contentVersionId?: number }} payload
  */
-const saveLessonProgressMock = async (subChapterId, payload) => {
+export const saveLessonProgress = async (subChapterId, payload) => {
+  const contentVersionId =
+    payload.contentVersionId ?? MOCK_SUB_CHAPTER_CONTENT[subChapterId]?.content_version_id
+  const lastPageId = payload.lastPageId
+  let status = payload.status ?? 'IN_PROGRESS'
+  if (status === 'NOT_STARTED') status = 'IN_PROGRESS'
+  if (lastPageId === 'page-final' && payload.status === 'COMPLETED') {
+    status = 'COMPLETED'
+  }
+
+  if (contentVersionId != null) {
+    try {
+      const response = await putSubChapterProgressApi(subChapterId, {
+        contentVersionId,
+        lastPageId,
+        status: status === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS',
+      })
+      const raw = unwrap(response)
+      return {
+        data: {
+          lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? lastPageId,
+          status: pickField(raw, 'status') ?? status,
+        },
+      }
+    } catch (error) {
+      const mapped = new StudyApiError(
+        error?.code ?? 'PROGRESS_SAVE_FAILED',
+        error?.message ?? '진도를 저장하지 못했습니다.',
+        error?.status ?? 500,
+      )
+      if (!shouldFallbackStudyMock(mapped)) throw mapped
+      console.warn('[studyService] PUT progress 실패 — mock으로 대체합니다.', mapped)
+    }
+  }
+
   await delay(80)
   const raw = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
   if (!raw) {
     throw new StudyApiError('SUB_CHAPTER_NOT_FOUND', '공개 소단원을 찾을 수 없다.', 404)
-  }
-
-  const lastPageId = payload.lastPageId
-  let status = payload.status ?? raw.progress.status
-  if (status === 'NOT_STARTED') status = 'IN_PROGRESS'
-  if (lastPageId === 'page-final' && payload.status === 'COMPLETED') {
-    status = 'COMPLETED'
   }
 
   raw.progress.last_page_id = lastPageId
@@ -1532,34 +1356,6 @@ const saveLessonProgressMock = async (subChapterId, payload) => {
       lastPageId,
       status,
     },
-  }
-}
-
-/**
- * PATCH /learning/sub-chapters/{id}/progress
- * @param {number} subChapterId
- * @param {{ lastPageId: string, status?: LearningProgressStatus }} payload
- * @returns {Promise<{ data: { lastPageId: string, status: LearningProgressStatus } }>}
- */
-export const saveLessonProgress = async (subChapterId, payload) => {
-  try {
-    const raw = unwrapData(
-      await saveLessonProgressApi(subChapterId, {
-        last_page_id: payload.lastPageId,
-        status: payload.status,
-      }),
-    )
-    return {
-      data: {
-        lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? payload.lastPageId,
-        status: raw?.status ?? payload.status ?? 'IN_PROGRESS',
-      },
-    }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'PROGRESS_SAVE_FAILED', '학습 진도를 저장하지 못했다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] saveLessonProgress API 실패 — mock 사용', mapped)
-    return saveLessonProgressMock(subChapterId, payload)
   }
 }
 
@@ -1789,12 +1585,121 @@ const MOCK_QUIZ_QUESTIONS = {
 }
 
 /**
+ * OpenAPI QuizAttemptQuestionResponse → QuizQuestion (정답·해설 제외)
+ * @param {object} raw
+ * @returns {QuizQuestion}
+ */
+export const mapQuizAttemptQuestion = (raw) => ({
+  questionId: pickField(raw, 'questionId', 'question_id'),
+  questionKey: String(pickField(raw, 'questionId', 'question_id') ?? ''),
+  questionType: pickField(raw, 'questionType', 'question_type'),
+  generationType: pickField(raw, 'generationType', 'generation_type'),
+  prompt: raw.prompt,
+  scenarioJson: raw.scenario ?? null,
+  optionsJson: (raw.choices ?? []).map((choice) => ({
+    key: pickField(choice, 'key', 'id'),
+    label: pickField(choice, 'label', 'text'),
+  })),
+  correctAnswerJson: null,
+  explanation: null,
+  status: 'PUBLISHED',
+  displayOrder: pickField(raw, 'displayOrder', 'display_order'),
+})
+
+/**
+ * @param {object} raw
+ */
+export const mapQuizAttemptStart = (raw) => ({
+  attemptId: pickField(raw, 'attemptId', 'attempt_id'),
+  quizType: pickField(raw, 'quizType', 'quiz_type'),
+  mainChapterId: pickField(raw, 'mainChapterId', 'main_chapter_id'),
+  subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id'),
+  contentVersionId: pickField(raw, 'contentVersionId', 'content_version_id'),
+  status: raw.status,
+  questionCount: pickField(raw, 'questionCount', 'question_count'),
+  questions: (raw.questions ?? []).map(mapQuizAttemptQuestion),
+})
+
+/**
+ * @param {object} raw
+ */
+export const mapQuizAnswerGrading = (raw) => ({
+  attemptId: pickField(raw, 'attemptId', 'attempt_id'),
+  questionId: pickField(raw, 'questionId', 'question_id'),
+  generationType: pickField(raw, 'generationType', 'generation_type'),
+  selectedKey: pickField(raw, 'selectedKey', 'selected_key'),
+  isCorrect: pickField(raw, 'isCorrect', 'is_correct'),
+  correctAnswer: {
+    key: pickField(raw.correctAnswer ?? raw.correct_answer ?? {}, 'key'),
+  },
+  explanation: raw.explanation ?? null,
+  attempt: {
+    status: raw.attempt?.status,
+    answeredCount: pickField(raw.attempt ?? {}, 'answeredCount', 'answered_count'),
+    totalCount: pickField(raw.attempt ?? {}, 'totalCount', 'total_count'),
+    correctCount: pickField(raw.attempt ?? {}, 'correctCount', 'correct_count'),
+    score: raw.attempt?.score ?? null,
+    completed: raw.attempt?.completed ?? false,
+  },
+  reward: raw.reward
+    ? {
+        points: raw.reward.points ?? 0,
+        pointTransactionId: pickField(raw.reward, 'pointTransactionId', 'point_transaction_id'),
+      }
+    : null,
+  mainChapterCompleted: pickField(raw, 'mainChapterCompleted', 'main_chapter_completed'),
+  nextAction: pickField(raw, 'nextAction', 'next_action'),
+})
+
+/**
+ * 소단원 퀴즈 응시 시작 (OpenAPI)
+ * @param {number} subChapterId
+ */
+export const startSubChapterQuizAttempt = async (subChapterId) => {
+  try {
+    const response = await startSubChapterQuizAttemptApi(subChapterId)
+    return { data: mapQuizAttemptStart(unwrap(response)) }
+  } catch (error) {
+    const mapped = new StudyApiError(
+      error?.code ?? parseApiError(error)?.code ?? 'QUIZ_START_FAILED',
+      error?.message ?? '퀴즈를 시작하지 못했습니다.',
+      error?.status ?? 500,
+    )
+    if (!shouldFallbackStudyMock(mapped)) throw mapped
+    console.warn('[studyService] POST quiz-attempts 실패 — mock 문항으로 대체합니다.', mapped)
+    return null
+  }
+}
+
+/**
+ * 대단원 퀴즈 응시 시작 (OpenAPI)
+ * @param {number} mainChapterId
+ */
+export const startMainChapterQuizAttempt = async (mainChapterId) => {
+  const response = await startMainChapterQuizAttemptApi(mainChapterId)
+  return { data: mapQuizAttemptStart(unwrap(response)) }
+}
+
+/**
+ * 퀴즈 문항 즉시 채점 (OpenAPI)
+ * @param {number} attemptId
+ * @param {number} questionId
+ * @param {string} selectedKey
+ */
+export const gradeQuizAttemptAnswer = async (attemptId, questionId, selectedKey) => {
+  const response = await gradeQuizAnswerApi(attemptId, questionId, {
+    answer: { key: selectedKey },
+  })
+  return { data: mapQuizAnswerGrading(unwrap(response)) }
+}
+
+/**
  * 게시된 문항 행 조회 (목업) — 소단원 JSON questionIds 순서 유지
  * @param {number[]} questionIds
  * @returns {Promise<{ data: { items: QuizQuestion[] } }>}
  * @throws {StudyApiError} QUESTIONS_NOT_FOUND
  */
-const getQuizQuestionsMock = async (questionIds) => {
+export const getQuizQuestions = async (questionIds) => {
   await delay()
   if (!questionIds?.length) {
     throw new StudyApiError('QUESTIONS_NOT_FOUND', '퀴즈 문항 ID가 없다.', 404)
@@ -1811,56 +1716,11 @@ const getQuizQuestionsMock = async (questionIds) => {
 }
 
 /**
- * GET /quiz/questions?question_ids=
- * @param {number[]} questionIds
- * @returns {Promise<{ data: { items: QuizQuestion[] } }>}
- * @throws {StudyApiError} QUESTIONS_NOT_FOUND
- */
-export const getQuizQuestions = async (questionIds) => {
-  if (!questionIds?.length) {
-    throw new StudyApiError('QUESTIONS_NOT_FOUND', '퀴즈 문항 ID가 없다.', 404)
-  }
-  try {
-    const raw = unwrapData(await getQuizQuestionsApi(questionIds))
-    const items = (raw?.items ?? (Array.isArray(raw) ? raw : [])).map(mapQuizQuestion)
-    if (!items.length) {
-      throw new StudyApiError('QUESTIONS_NOT_FOUND', '퀴즈 문항을 찾을 수 없다.', 404)
-    }
-    return { data: { items } }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'QUESTIONS_NOT_FOUND', '퀴즈 문항을 찾을 수 없다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] getQuizQuestions API 실패 — mock 사용', mapped)
-    return getQuizQuestionsMock(questionIds)
-  }
-}
-
-/**
- * 문항 단위 채점 — 서버 정답 미포함 문항용
- * @param {{ subChapterId: number, questionId: number, selectedKey: string }} payload
- * @returns {Promise<{ data: QuizGradeResult }>}
- */
-export const gradeQuizAnswer = async (payload) => {
-  const { subChapterId, questionId, selectedKey } = payload
-  try {
-    const raw = unwrapData(
-      await gradeQuizAnswerApi(subChapterId, {
-        question_id: questionId,
-        selected_key: selectedKey,
-      }),
-    )
-    return { data: mapQuizGradeResult(raw) }
-  } catch (error) {
-    throw mapStudyError(error, 'INVALID_ANSWER', '채점에 실패했다.')
-  }
-}
-
-/**
  * 소단원 퀴즈 제출·채점 (목업)
  * @param {{ subChapterId: number, answers: QuizAnswerItem[] }} payload
  * @returns {Promise<{ data: QuizAttemptResult }>}
  */
-const submitQuizAttemptMock = async (payload) => {
+export const submitQuizAttempt = async (payload) => {
   await delay(120)
   const { subChapterId, answers } = payload
   if (!subChapterId || !answers?.length) {
@@ -1949,32 +1809,6 @@ const submitQuizAttemptMock = async (payload) => {
       wrongAnswers,
       gradedAnswers,
     },
-  }
-}
-
-/**
- * POST /quiz/attempts
- * @param {{ subChapterId: number, answers: QuizAnswerItem[] }} payload
- * @returns {Promise<{ data: QuizAttemptResult }>}
- */
-export const submitQuizAttempt = async (payload) => {
-  try {
-    const raw = unwrapData(
-      await submitQuizAttemptApi({
-        quiz_type: 'SUB_CHAPTER',
-        sub_chapter_id: payload.subChapterId,
-        answers: (payload.answers ?? []).map((answer) => ({
-          question_id: answer.questionId,
-          selected_key: answer.selectedKey,
-        })),
-      }),
-    )
-    return { data: mapQuizAttemptResult(raw) }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'INVALID_ATTEMPT', '퀴즈 제출에 실패했다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] submitQuizAttempt API 실패 — mock 사용', mapped)
-    return submitQuizAttemptMock(payload)
   }
 }
 
@@ -2152,7 +1986,7 @@ const MOCK_SCENARIO_POINT_GRANTED = new Set()
  * @param {number} mainChapterId
  * @returns {Promise<{ data: ChapterGame }>}
  */
-const getChapterGameMock = async (mainChapterId) => {
+export const getChapterGame = async (mainChapterId) => {
   await delay()
   const game = MOCK_CHAPTER_GAMES.get(Number(mainChapterId))
   if (!game) {
@@ -2167,28 +2001,11 @@ const getChapterGameMock = async (mainChapterId) => {
 }
 
 /**
- * GET /learning/main-chapters/{id}/game
- * @param {number} mainChapterId
- * @returns {Promise<{ data: ChapterGame }>}
- */
-export const getChapterGame = async (mainChapterId) => {
-  try {
-    const raw = unwrapData(await getChapterGameApi(mainChapterId))
-    return { data: raw }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'CHAPTER_GAME_NOT_FOUND', '챕터 게임을 찾을 수 없다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] getChapterGame API 실패 — mock 사용', mapped)
-    return getChapterGameMock(mainChapterId)
-  }
-}
-
-/**
  * 시나리오 상세 조회 (목업)
  * @param {number} scenarioId
  * @returns {Promise<{ data: ScenarioDetail }>}
  */
-const getScenarioMock = async (scenarioId) => {
+export const getScenario = async (scenarioId) => {
   await delay()
   const row = MOCK_SCENARIOS[Number(scenarioId)]
   if (!row) {
@@ -2198,28 +2015,11 @@ const getScenarioMock = async (scenarioId) => {
 }
 
 /**
- * GET /scenarios/{id}
- * @param {number} scenarioId
- * @returns {Promise<{ data: ScenarioDetail }>}
- */
-export const getScenario = async (scenarioId) => {
-  try {
-    const raw = unwrapData(await getScenarioApi(scenarioId))
-    return { data: raw }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'SCENARIO_NOT_FOUND', '시나리오를 찾을 수 없다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] getScenario API 실패 — mock 사용', mapped)
-    return getScenarioMock(scenarioId)
-  }
-}
-
-/**
  * 시나리오 응시 제출·채점 (목업)
  * @param {{ scenarioId: number, mainChapterId: number, answers: ScenarioAnswerItem[] }} payload
  * @returns {Promise<{ data: ScenarioAttemptResult }>}
  */
-const submitScenarioAttemptMock = async (payload) => {
+export const submitScenarioAttempt = async (payload) => {
   await delay(120)
   const { scenarioId, mainChapterId, answers } = payload
   if (!scenarioId || !mainChapterId || !answers?.length) {
@@ -2301,58 +2101,29 @@ const submitScenarioAttemptMock = async (payload) => {
 }
 
 /**
- * POST /scenarios/{id}/attempts
- * @param {{ scenarioId: number, mainChapterId: number, answers: ScenarioAnswerItem[] }} payload
- * @returns {Promise<{ data: ScenarioAttemptResult }>}
- */
-export const submitScenarioAttempt = async (payload) => {
-  try {
-    const raw = unwrapData(
-      await submitScenarioAttemptApi(payload.scenarioId, {
-        main_chapter_id: payload.mainChapterId,
-        answers: (payload.answers ?? []).map((answer) => ({
-          step_id: answer.stepId,
-          selected_key: answer.selectedKey,
-        })),
-      }),
-    )
-    return { data: raw }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'INVALID_ATTEMPT', '시나리오 제출에 실패했다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] submitScenarioAttempt API 실패 — mock 사용', mapped)
-    return submitScenarioAttemptMock(payload)
-  }
-}
-
-/**
  * 마지막 미완료 학습 위치 조회 (목업) — StudyNote「이어서 →」
  * @returns {Promise<{ data: ContinuePosition }>}
  */
-const getContinuePositionMock = async () => {
+export const getContinuePosition = async () => {
+  try {
+    const response = await getContinuePositionApi()
+    return { data: mapContinuePosition(unwrap(response)) }
+  } catch (error) {
+    const parsed = parseApiError(error)
+    const mapped = new StudyApiError(
+      parsed?.code ?? error?.code ?? 'CONTINUE_FETCH_FAILED',
+      parsed?.message ?? error?.message ?? '이어하기 위치를 불러오지 못했습니다.',
+      parsed?.status ?? error?.status ?? 500,
+    )
+    if (mapped.code === 'CONTINUE_POSITION_NOT_FOUND') throw mapped
+    if (!shouldFallbackStudyMock(mapped)) throw mapped
+    console.warn('[studyService] GET continue 실패 — mock으로 대체합니다.', mapped)
+  }
+
   await delay()
   recomputeContinuePosition()
   if (!MOCK_CONTINUE_POSITION?.data) {
     throw new StudyApiError('CONTINUE_POSITION_NOT_FOUND', '이어갈 미완료 학습이 없다.', 404)
   }
   return { data: mapContinuePosition(structuredClone(MOCK_CONTINUE_POSITION.data)) }
-}
-
-/**
- * GET /learning/continue
- * @returns {Promise<{ data: ContinuePosition }>}
- */
-export const getContinuePosition = async () => {
-  try {
-    const raw = unwrapData(await getContinuePositionApi())
-    if (!raw) {
-      throw new StudyApiError('CONTINUE_POSITION_NOT_FOUND', '이어갈 미완료 학습이 없다.', 404)
-    }
-    return { data: mapContinuePosition(raw) }
-  } catch (error) {
-    const mapped = mapStudyError(error, 'CONTINUE_POSITION_NOT_FOUND', '이어갈 미완료 학습이 없다.')
-    if (!shouldFallbackToMock(mapped)) throw mapped
-    console.warn('[studyService] getContinuePosition API 실패 — mock 사용', mapped)
-    return getContinuePositionMock()
-  }
 }
