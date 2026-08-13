@@ -6,10 +6,11 @@ const { fetchCurriculumDraft, updateCurriculumDraft, confirmCurriculumDraft } = 
   confirmCurriculumDraft: vi.fn(),
 }))
 
-vi.mock('@/api/curriculumApi.js', () => ({
+vi.mock('@/api/user/curriculumApi.js', () => ({
   fetchCurriculumDraft,
   updateCurriculumDraft,
   confirmCurriculumDraft,
+  getUserCurriculum: vi.fn(),
 }))
 
 import {

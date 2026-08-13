@@ -8,7 +8,7 @@ const { startLevelTestAttempt, saveLevelTestAttemptAnswers, submitLevelTestAttem
   }),
 )
 
-vi.mock('@/api/levelTestApi.js', () => ({
+vi.mock('@/api/user/levelTestApi.js', () => ({
   startLevelTestAttempt,
   saveLevelTestAttemptAnswers,
   submitLevelTestAttempt,

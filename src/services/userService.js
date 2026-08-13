@@ -7,8 +7,8 @@
 import {
   getUserProfile as getUserProfileApi,
   updateUserProfile as updateUserProfileApi,
-} from '@/api/userApi.js'
-import { ApiError } from '@/api/errorHandler.js'
+} from '@/api/user/userApi.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 import { validateNickname } from '@/utils/nickname.js'
 
 /** @type {Record<string, string>} */

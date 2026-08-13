@@ -1,17 +1,17 @@
 import { ALLOW_DUPLICATE_POINT_GRANT, POINTS_PER_CORRECT } from '@/constants/quizPolicy.js'
-import { getUserCurriculum } from '@/api/curriculumApi.js'
-import { parseApiError } from '@/api/errorHandler.js'
+import { getUserCurriculum } from '@/api/user/curriculumApi.js'
+import { parseApiError } from '@/api/user/errorHandler.js'
 import {
   getContinuePosition as getContinuePositionApi,
   getSubChapterLesson as getSubChapterLessonApi,
   getSubChapterProgress as getSubChapterProgressApi,
   putSubChapterProgress as putSubChapterProgressApi,
-} from '@/api/studyApi.js'
+} from '@/api/user/studyApi.js'
 import {
   gradeQuizAnswer as gradeQuizAnswerApi,
   startMainChapterQuizAttempt as startMainChapterQuizAttemptApi,
   startSubChapterQuizAttempt as startSubChapterQuizAttemptApi,
-} from '@/api/quizApi.js'
+} from '@/api/user/quizApi.js'
 
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem

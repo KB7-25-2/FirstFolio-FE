@@ -11,8 +11,8 @@
  * @typedef {import('@/types/portfolio.js').DashboardDailyQuest} DashboardDailyQuest
  */
 
-import { getDashboard as getDashboardApi } from '@/api/dashboardApi.js'
-import { ApiError } from '@/api/errorHandler.js'
+import { getDashboard as getDashboardApi } from '@/api/user/dashboardApi.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 import { getActivePortfolio } from '@/services/portfolioService.js'
 import { getTodayDailyQuest } from '@/services/dailyQuestService.js'
 

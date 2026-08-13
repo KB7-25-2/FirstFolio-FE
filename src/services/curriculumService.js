@@ -2,7 +2,7 @@ import {
   confirmCurriculumDraft,
   fetchCurriculumDraft,
   updateCurriculumDraft,
-} from '@/api/curriculumApi.js'
+} from '@/api/user/curriculumApi.js'
 
 const unwrap = (response) => response.data?.data ?? response.data
 

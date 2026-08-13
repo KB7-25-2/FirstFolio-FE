@@ -1,9 +1,9 @@
-import { ApiError } from '@/api/errorHandler.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 import {
   saveLevelTestAttemptAnswers,
   startLevelTestAttempt,
   submitLevelTestAttempt,
-} from '@/api/levelTestApi.js'
+} from '@/api/user/levelTestApi.js'
 
 const SESSION_KEY = 'level_test_api_session'
 

@@ -7,7 +7,7 @@ const { getUserCurriculum } = vi.hoisted(() => ({
   getUserCurriculum: vi.fn(),
 }))
 
-vi.mock('@/api/curriculumApi.js', async (importOriginal) => {
+vi.mock('@/api/user/curriculumApi.js', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,

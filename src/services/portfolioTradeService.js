@@ -5,7 +5,7 @@ import {
   getPurchasableProducts,
   getFinancialProductDetail,
   resetPortfolio as resetPortfolioApi,
-} from '@/api/portfolioApi.js'
+} from '@/api/user/portfolioApi.js'
 import {
   mapPortfolioDetailResponse,
   mapFinancialProductsResponse,
