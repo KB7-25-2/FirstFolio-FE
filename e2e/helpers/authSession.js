@@ -189,7 +189,9 @@ export const seedOnboardingSession = async (page, onboardingStep, options = {}) 
 }
 
 /**
- * 홈 StudyNote·학습 E2E용 — dashboard / curriculum / continue
+ * 홈 StudyNote용 dashboard만 stub.
+ * GET /curriculum · /learning/continue 는 intercept 하지 않는다.
+ * 학습 E2E는 studyService in-memory mock(채권 포함, 시나리오 수료 시 상태 갱신)을 써야 한다.
  * @param {import('@playwright/test').Page} page
  */
 export const mockHomeStudyApis = async (page) => {
@@ -209,59 +211,6 @@ export const mockHomeStudyApis = async (page) => {
           },
           upcoming_events: [],
           latest_news: [],
-        },
-      }),
-    })
-  })
-
-  await page.route(/\/curriculum(?:\?|$)/, async (route) => {
-    if (route.request().method() !== 'GET') return route.continue()
-    const url = route.request().url()
-    if (url.includes('/curriculums/')) return route.continue()
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        data: {
-          items: [
-            {
-              curriculum_item_id: 501,
-              main_chapter_id: 1,
-              title: '포트폴리오 기초',
-              chapter_type: 'FOUNDATION',
-              display_order: 1,
-              status: 'COMPLETED',
-              progress_percent: 100,
-            },
-            {
-              curriculum_item_id: 502,
-              main_chapter_id: 2,
-              title: '예·적금',
-              chapter_type: 'CORE',
-              display_order: 2,
-              status: 'ACTIVE',
-              progress_percent: 50,
-            },
-          ],
-        },
-      }),
-    })
-  })
-
-  await page.route('**/learning/continue', async (route) => {
-    if (route.request().method() !== 'GET') return route.continue()
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        data: {
-          curriculum_item_id: 502,
-          main_chapter_id: 2,
-          sub_chapter_id: 103,
-          content_version_id: 303,
-          last_page_id: 'page-2',
-          progress_percent: 50,
-          route: '/learning/sub-chapters/103?page=page-2',
         },
       }),
     })
