@@ -7,7 +7,7 @@ const { logoutApiMock, getIdTokenMock, signOutFirebaseMock, getTokenMock } = vi.
   getTokenMock: vi.fn(),
 }))
 
-vi.mock('@/api/authApi.js', () => ({
+vi.mock('@/api/user/authApi.js', () => ({
   signUp: vi.fn(),
   login: vi.fn(),
   logout: logoutApiMock,

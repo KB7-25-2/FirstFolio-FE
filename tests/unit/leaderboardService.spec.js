@@ -8,12 +8,12 @@ import {
   LeaderboardApiError,
 } from '@/services/leaderboardService.js'
 
-vi.mock('@/api/leaderboardApi.js', () => ({
+vi.mock('@/api/user/leaderboardApi.js', () => ({
   getLeaderboard: vi.fn(),
 }))
 
-import { getLeaderboard as getLeaderboardApi } from '@/api/leaderboardApi.js'
-import { ApiError } from '@/api/errorHandler.js'
+import { getLeaderboard as getLeaderboardApi } from '@/api/user/leaderboardApi.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 
 describe('leaderboardService (unit)', () => {
   beforeEach(() => {

@@ -3,7 +3,7 @@ import {
   redeemGifticon,
   getRedemptionHistory,
   getGifticonOrderDetail,
-} from '@/api/gifticonApi.js'
+} from '@/api/user/gifticonApi.js'
 import {
   mapGifticonsResponse,
   mapRedemptionResult,

@@ -159,6 +159,16 @@ const router = createRouter({
                 navTab: 'portfolios',
               },
             },
+            {
+              path: 'history',
+              name: 'portfolio-history',
+              component: () => import('@/views/portfolio/TransactionHistoryView.vue'),
+              meta: {
+                title: '거래 내역',
+                subtitle: '매수·매도·이자·만기 등 자산 이벤트 이력을 확인하세요',
+                navTab: 'portfolios',
+              },
+            },
           ],
         },
         {
@@ -166,6 +176,25 @@ const router = createRouter({
           name: 'point-market',
           component: PointMarketView,
           meta: { navTab: 'point-market' },
+        },
+      ],
+    },
+    {
+      path: '/admin',
+      component: () => import('@/components/admin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        {
+          path: '',
+          name: 'admin-dashboard',
+          component: () => import('@/views/admin/AdminDashboardView.vue'),
+          meta: { title: '대시보드' },
+        },
+        {
+          path: 'curriculum',
+          name: 'admin-curriculum',
+          component: () => import('@/views/admin/AdminCurriculumView.vue'),
+          meta: { title: '커리큘럼' },
         },
       ],
     },

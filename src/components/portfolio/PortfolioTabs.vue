@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 const TABS = [
   { name: 'portfolio-holdings', label: '현재 자산' },
   { name: 'portfolio-purchase', label: '상품 구매' },
+  { name: 'portfolio-history', label: '거래 내역' },
   { name: 'portfolio-time-compression', label: '시간 압축' },
 ]
 

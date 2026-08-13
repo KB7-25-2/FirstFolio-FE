@@ -1,6 +1,6 @@
 /**
- * 자산군 유형
- * @typedef {'DEPOSIT_SAVINGS' | 'STOCK' | 'BOND' | 'OTHER'} AssetType
+ * 자산군 유형 (OpenAPI Allocation.assetType)
+ * @typedef {'DEPOSIT_SAVINGS' | 'BOND' | 'STOCK' | 'FUND' | 'OTHER'} AssetType
  */
 
 /**
@@ -17,29 +17,34 @@
  * @property {string} [reason]
  * @property {string} [totalAssets] 금액 문자열
  * @property {string} [profitLoss] 금액 문자열
+ * @property {number} [profitRate] 손익률(%)
  * @property {AssetAllocation[]} [allocation]
  */
 
 /**
- * 일일 퀘스트 섹션
+ * 일일 퀘스트 섹션 (OpenAPI DailyQuestSummaryResponse)
  * @typedef {object} DashboardDailyQuest
+ * @property {boolean} [available]
+ * @property {'NOT_IMPLEMENTED' | string} [reason]
  * @property {'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED'} status
  * @property {number} answeredCount
  * @property {number} totalCount
  */
 
 /**
- * 학습 요약 섹션
+ * 학습 요약 섹션 (OpenAPI LearningSummaryResponse)
  * @typedef {object} DashboardLearning
- * @property {number} mainChapterId
- * @property {number} subChapterId
- * @property {number} progressPercent
+ * @property {boolean} [available]
+ * @property {'NOT_STARTED' | string} [reason]
+ * @property {number} [mainChapterId]
+ * @property {number} [subChapterId]
+ * @property {number} [progressPercent]
  */
 
 /**
- * 다가오는 이벤트
+ * 다가오는 이벤트 (OpenAPI UpcomingEventResponse)
  * @typedef {object} DashboardUpcomingEvent
- * @property {string} type
+ * @property {'INTEREST' | 'DIVIDEND' | 'MATURITY' | string} type
  * @property {string} scheduledAt
  */
 

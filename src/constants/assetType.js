@@ -10,6 +10,12 @@
 //       quantityUnit은 채권에 한해 표시용으로 남겨둔다(구매 예상수량 미리보기 등).
 // sellActionLabel: 예·적금은 "해지", 채권·주식은 "매도", 펀드는 "환매" — 금융 도메인 관례 용어.
 // buyActionLabel: 예·적금은 "가입", 나머지는 "매수".
+//
+// 2026-08-12(#75): 매매 수수료 0.015%. 주식·펀드(MARKET)만 붙고, 예·적금·채권(SUBSCRIPTION)은 0.
+// 매수 수수료는 체결액 "밖"에서 추가로 나간다(현금 차감 = 체결액 + 수수료) — 그래서 "전액 매수"
+// 버튼이 잔액을 그대로 채우면 수수료분만큼 모자라 422 INSUFFICIENT_SIMULATION_CASH가 날 수 있다.
+// (FE_CHANGE_GUIDE_TRADE_COSTS 2번, API_DOCS "잔액을 전부 넣는 매수는 거부될 수 있다")
+export const MARKET_BUY_FEE_RATE = 0.00015
 export const ASSET_TYPE_META = {
   DEPOSIT_SAVINGS: {
     label: '예금',
