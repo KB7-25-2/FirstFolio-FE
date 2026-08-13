@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import ProductListItem from '@/components/portfolio/ProductListItem.vue'
 import BuyProductModal from '@/components/portfolio/BuyProductModal.vue'
+import TradeResultModal from '@/components/portfolio/TradeResultModal.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 import { ASSET_TYPE_META } from '@/constants/assetType.js'
 
@@ -20,6 +21,7 @@ const activeFilter = ref('ALL')
 const buyTargetProduct = ref(null)
 const isBuying = ref(false)
 const buyError = ref(null)
+const tradeResult = ref(null) // 거래 완료 모달에 넘길 값(상품명·자산군 포함)
 
 onMounted(() => {
   store.fetchPurchasableProducts()
@@ -71,7 +73,13 @@ const handleBuyConfirm = async (amount) => {
   buyError.value = null
 
   try {
-    await store.buyProduct(buyTargetProduct.value, amount)
+    const result = await store.buyProduct(buyTargetProduct.value, amount)
+    // mapTradeResult엔 상품명이 없어서(응답 자체에 없음) 방금 산 product에서 채워 넣는다.
+    tradeResult.value = {
+      ...result,
+      productName: buyTargetProduct.value.displayName,
+      assetType: buyTargetProduct.value.assetType,
+    }
     buyTargetProduct.value = null
   } catch (err) {
     buyError.value = err.message || '구매 처리 중 문제가 발생했어요. 다시 시도해주세요.'
@@ -79,12 +87,15 @@ const handleBuyConfirm = async (amount) => {
     isBuying.value = false
   }
 }
+
+const closeTradeResult = () => {
+  tradeResult.value = null
+}
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
-    <!-- 고정: 칩 · 잔액 -->
-    <div class="shrink-0 space-y-3">
+  <div class="flex flex-col gap-3">
+    <ScrollReveal>
       <div class="flex gap-2 overflow-x-auto pb-1">
         <button
           v-for="filter in FILTERS"
@@ -101,45 +112,39 @@ const handleBuyConfirm = async (amount) => {
           {{ filter.label }}
         </button>
       </div>
+    </ScrollReveal>
 
-      <p v-if="store.summary" class="font-serif text-xs text-[rgba(41,33,26,0.55)]">
+    <ScrollReveal v-if="store.summary">
+      <p class="font-serif text-xs text-[rgba(41,33,26,0.55)]">
         구매 가능 현금
         <span class="font-bold text-[#2c1810]"
           >{{ store.summary.cashBalance.toLocaleString('ko-KR') }}원</span
         >
       </p>
+    </ScrollReveal>
 
-      <p v-if="store.error" class="font-serif text-sm text-[#c0433f]">{{ store.error }}</p>
-    </div>
+    <p v-if="store.error" class="font-serif text-sm text-[#c0433f]">{{ store.error }}</p>
 
-    <!-- 스크롤: 칩 아래 리스트만 -->
-    <div
-      data-scroll-reveal-root
-      class="nav-scroll-pad hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain"
-    >
-      <ScrollReveal v-if="filteredProducts.length">
-        <div
-          class="rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] shadow-[0_4px_12px_rgba(44,24,16,0.1)]"
-        >
-          <ul class="divide-y divide-[rgba(193,127,36,0.15)]">
-            <ProductListItem
-              v-for="product in filteredProducts"
-              :key="product.productId"
-              :product="product"
-              :is-held="heldProductIds.has(product.productId)"
-              @buy="openBuyModal"
-            />
-          </ul>
-        </div>
-      </ScrollReveal>
+    <ScrollReveal v-if="filteredProducts.length">
+      <div
+        class="rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] shadow-[0_4px_12px_rgba(44,24,16,0.1)]"
+      >
+        <ul class="divide-y divide-[rgba(193,127,36,0.15)]">
+          <ProductListItem
+            v-for="product in filteredProducts"
+            :key="product.productId"
+            :product="product"
+            :is-held="heldProductIds.has(product.productId)"
+            @buy="openBuyModal"
+          />
+        </ul>
+      </div>
+    </ScrollReveal>
 
-      <p v-else-if="store.isLoading" class="font-serif text-sm text-[rgba(41,33,26,0.45)]">
-        불러오는 중…
-      </p>
-      <p v-else class="font-serif text-sm text-[rgba(41,33,26,0.45)]">
-        해당 자산군의 상품이 없어요.
-      </p>
-    </div>
+    <p v-else-if="store.isLoading" class="font-serif text-sm text-[rgba(41,33,26,0.45)]">
+      불러오는 중…
+    </p>
+    <p v-else class="font-serif text-sm text-[rgba(41,33,26,0.45)]">해당 자산군의 상품이 없어요.</p>
 
     <BuyProductModal
       v-if="buyTargetProduct && store.summary"
@@ -150,5 +155,7 @@ const handleBuyConfirm = async (amount) => {
       @close="closeBuyModal"
       @confirm="handleBuyConfirm"
     />
+
+    <TradeResultModal v-if="tradeResult" :result="tradeResult" @close="closeTradeResult" />
   </div>
 </template>
