@@ -9,7 +9,9 @@ import {
   getQuizQuestions,
   getScenario,
   getSubChapterContent,
+  gradeQuizAttemptAnswer,
   saveLessonProgress,
+  startSubChapterQuizAttempt,
   submitQuizAttempt,
   submitScenarioAttempt,
 } from '@/services/studyService.js'
@@ -28,6 +30,7 @@ export const useStudyStore = defineStore('study', () => {
 
   /** 소단원 퀴즈 세션 */
   const quizSubChapterId = ref(null)
+  const quizAttemptId = ref(null)
   const quizQuestions = ref([])
   const quizIndex = ref(0)
   const quizSelectedKey = ref(null)
@@ -35,6 +38,8 @@ export const useStudyStore = defineStore('study', () => {
   const quizUiStatus = ref('IN_PROGRESS')
   /** @type {import('vue').Ref<Record<number, string>>} questionId → selectedKey */
   const quizAnswers = ref({})
+  /** @type {import('vue').Ref<Record<number, object>>} questionId → grading */
+  const quizGradeByQuestionId = ref({})
   const quizFinished = ref(false)
   const quizAttemptResult = ref(null)
 
@@ -195,7 +200,7 @@ export const useStudyStore = defineStore('study', () => {
    */
   const fetchLessonContent = async (subChapterId, preferredPageId = null) => {
     const meta = await fetchSubChapterContent(subChapterId)
-    const { data } = await getLessonPages(meta.contentUrl)
+    const { data } = await getLessonPages(meta.contentUrl, meta.lesson)
     const pages = (data.pages ?? []).slice().sort((a, b) => a.order - b.order)
     lessonPages.value = pages
     lessonQuizQuestionIds.value = data.subChapterQuiz?.questionIds ?? []
@@ -233,7 +238,10 @@ export const useStudyStore = defineStore('study', () => {
     const lastPageId = pageId ?? currentPageId.value
     if (!subChapterId || !lastPageId) return null
 
-    const { data } = await saveLessonProgress(subChapterId, { lastPageId })
+    const { data } = await saveLessonProgress(subChapterId, {
+      lastPageId,
+      contentVersionId: currentContent.value?.contentVersionId,
+    })
     if (currentContent.value?.progress) {
       currentContent.value.progress.lastPageId = data.lastPageId
       currentContent.value.progress.status = data.status
@@ -271,6 +279,15 @@ export const useStudyStore = defineStore('study', () => {
     clearQuizSession()
     quizSubChapterId.value = subChapterId
 
+    const attempt = await startSubChapterQuizAttempt(subChapterId)
+    if (attempt?.data?.questions?.length) {
+      quizAttemptId.value = attempt.data.attemptId
+      quizQuestions.value = attempt.data.questions
+      quizIndex.value = 0
+      resetQuizQuestionUi()
+      return
+    }
+
     if (
       !lessonQuizQuestionIds.value.length ||
       currentContent.value?.subChapterId !== subChapterId
@@ -295,7 +312,7 @@ export const useStudyStore = defineStore('study', () => {
     quizUiStatus.value = 'SELECTED'
   }
 
-  const submitCurrentQuizQuestion = () => {
+  const submitCurrentQuizQuestion = async () => {
     const question = quizCurrentQuestion.value
     if (!question || quizUiStatus.value !== 'SELECTED' || !quizSelectedKey.value) return false
 
@@ -303,6 +320,23 @@ export const useStudyStore = defineStore('study', () => {
       ...quizAnswers.value,
       [question.questionId]: quizSelectedKey.value,
     }
+
+    if (quizAttemptId.value != null) {
+      const { data: graded } = await gradeQuizAttemptAnswer(
+        quizAttemptId.value,
+        question.questionId,
+        quizSelectedKey.value,
+      )
+      quizGradeByQuestionId.value = {
+        ...quizGradeByQuestionId.value,
+        [question.questionId]: graded,
+      }
+      question.correctAnswerJson = graded.correctAnswer
+      question.explanation = graded.explanation
+      quizUiStatus.value = graded.isCorrect ? 'CORRECT' : 'WRONG'
+      return true
+    }
+
     const correctKey = question.correctAnswerJson?.key
     quizUiStatus.value = quizSelectedKey.value === correctKey ? 'CORRECT' : 'WRONG'
     return true
@@ -335,18 +369,53 @@ export const useStudyStore = defineStore('study', () => {
     const subChapterId = quizSubChapterId.value
     if (!subChapterId || !quizQuestions.value.length) return null
 
-    const answers = quizQuestions.value.map((q) => ({
-      questionId: q.questionId,
-      selectedKey: quizAnswers.value[q.questionId] ?? '',
-    }))
+    if (quizAttemptId.value != null && Object.keys(quizGradeByQuestionId.value).length) {
+      const grades = quizQuestions.value.map((q) => quizGradeByQuestionId.value[q.questionId])
+      const correctCount = grades.filter((g) => g?.isCorrect).length
+      const totalCount = quizQuestions.value.length
+      const last = grades[grades.length - 1]
+      const pointsGranted = last?.reward?.points ?? 0
+      const data = {
+        subChapterId,
+        totalCount,
+        correctCount,
+        quizScore:
+          last?.attempt?.score ?? (totalCount ? Math.round((correctCount / totalCount) * 100) : 0),
+        pointsGranted,
+        wrongAnswers: grades
+          .filter((g) => g && !g.isCorrect)
+          .map((g) => ({
+            questionId: g.questionId,
+            selectedKey: g.selectedKey,
+            correctKey: g.correctAnswer?.key,
+          })),
+        gradedAnswers: grades.filter(Boolean).map((g) => ({
+          questionId: g.questionId,
+          selectedKey: g.selectedKey,
+          isCorrect: g.isCorrect,
+        })),
+      }
+      quizAttemptResult.value = data
+      if (data.pointsGranted > 0) {
+        const userStore = useUserStore()
+        await userStore.addPoints(data.pointsGranted)
+      }
+    } else {
+      const answers = quizQuestions.value.map((q) => ({
+        questionId: q.questionId,
+        selectedKey: quizAnswers.value[q.questionId] ?? '',
+      }))
 
-    const { data } = await submitQuizAttempt({ subChapterId, answers })
-    quizAttemptResult.value = data
+      const { data } = await submitQuizAttempt({ subChapterId, answers })
+      quizAttemptResult.value = data
 
-    if (data.pointsGranted > 0) {
-      const userStore = useUserStore()
-      await userStore.addPoints(data.pointsGranted)
+      if (data.pointsGranted > 0) {
+        const userStore = useUserStore()
+        await userStore.addPoints(data.pointsGranted)
+      }
     }
+
+    const data = quizAttemptResult.value
 
     if (currentContent.value?.subChapterId === subChapterId && currentContent.value.progress) {
       currentContent.value.progress.status = 'COMPLETED'
@@ -355,7 +424,7 @@ export const useStudyStore = defineStore('study', () => {
     }
 
     const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
-    if (item) {
+    if (item && data) {
       item.status = 'COMPLETED'
       item.quizScore = data.quizScore
       item.completedAt = item.completedAt ?? new Date().toISOString()
@@ -372,11 +441,13 @@ export const useStudyStore = defineStore('study', () => {
 
   const clearQuizSession = () => {
     quizSubChapterId.value = null
+    quizAttemptId.value = null
     quizQuestions.value = []
     quizIndex.value = 0
     quizSelectedKey.value = null
     quizUiStatus.value = 'IN_PROGRESS'
     quizAnswers.value = {}
+    quizGradeByQuestionId.value = {}
     quizFinished.value = false
     quizAttemptResult.value = null
   }
@@ -568,6 +639,7 @@ export const useStudyStore = defineStore('study', () => {
     isLoading,
     error,
     quizSubChapterId,
+    quizAttemptId,
     quizQuestions,
     quizIndex,
     quizSelectedKey,

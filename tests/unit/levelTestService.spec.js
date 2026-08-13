@@ -8,7 +8,7 @@ const { startLevelTestAttempt, saveLevelTestAttemptAnswers, submitLevelTestAttem
   }),
 )
 
-vi.mock('@/api/levelTestApi.js', () => ({
+vi.mock('@/api/user/levelTestApi.js', () => ({
   startLevelTestAttempt,
   saveLevelTestAttemptAnswers,
   submitLevelTestAttempt,
@@ -67,6 +67,36 @@ describe('levelTestService', () => {
     })
     expect(data.savedAnswers).toEqual([{ questionId: 1001, selectedChoiceIds: ['A'] }])
     expect(getStoredLevelTestSession().answers).toEqual({ 1001: ['A'] })
+  })
+
+  it('응시 시작 응답의 camelCase 문항도 매핑한다', async () => {
+    startLevelTestAttempt.mockResolvedValue({
+      data: {
+        data: {
+          attemptId: 2002,
+          status: 'IN_PROGRESS',
+          questionCount: 1,
+          questions: [
+            {
+              questionId: 1002,
+              displayOrder: 1,
+              questionType: 'SINGLE_CHOICE',
+              generationType: 'HUMAN',
+              prompt: '질문',
+              scenario: null,
+              choices: [{ key: 'A', label: '예' }],
+              savedAnswer: { key: 'A' },
+            },
+          ],
+          answers: [],
+        },
+      },
+    })
+
+    const { data } = await startLevelTest()
+    expect(data.attemptId).toBe(2002)
+    expect(data.questions[0].optionsJson[0]).toEqual({ key: 'A', label: '예' })
+    expect(data.savedAnswers).toEqual([{ questionId: 1002, selectedChoiceIds: ['A'] }])
   })
 
   it('답안을 실제 API 계약의 answer.key 형식으로 저장한다', async () => {
