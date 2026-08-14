@@ -191,6 +191,35 @@ export const seedOnboardingSession = async (page, onboardingStep, options = {}) 
 }
 
 /**
+ * 홈 StudyNote용 dashboard만 stub.
+ * GET /curriculum · /learning/continue 는 intercept 하지 않는다.
+ * 학습 E2E는 studyService in-memory mock(채권 포함, 시나리오 수료 시 상태 갱신)을 써야 한다.
+ * @param {import('@playwright/test').Page} page
+ */
+export const mockHomeStudyApis = async (page) => {
+  await page.route('**/dashboard', async (route) => {
+    if (route.request().method() !== 'GET') return route.continue()
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          portfolio: { available: false, reason: 'NOT_STARTED' },
+          daily_quest: { status: 'ASSIGNED', answered_count: 0, total_count: 5 },
+          learning: {
+            main_chapter_id: 2,
+            sub_chapter_id: 103,
+            progress_percent: 50,
+          },
+          upcoming_events: [],
+          latest_news: [],
+        },
+      }),
+    })
+  })
+}
+
+/**
  * 온보딩 완료(HOME) 사용자 — /home·학습·뉴스 등 인증 필요 E2E용
  * @param {import('@playwright/test').Page} page
  */
@@ -199,6 +228,7 @@ export const seedHomeSession = async (page) => {
     levelTestCompleted: true,
     curriculumConfirmed: true,
   })
+  await mockHomeStudyApis(page)
 }
 
 /**

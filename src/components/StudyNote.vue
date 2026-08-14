@@ -35,21 +35,16 @@ onMounted(async () => {
         studyStore.fetchCurriculum(),
         studyStore.fetchLearningProgress(dashLearning.mainChapterId),
       ])
-      if (learningContinueRoute.value) {
-        studyStore.continuePosition = {
-          ...(studyStore.continuePosition ?? {}),
-          mainChapterId: dashLearning.mainChapterId,
-          subChapterId: dashLearning.subChapterId ?? null,
-          progressPercent: dashLearning.progressPercent ?? 0,
-          route: learningContinueRoute.value,
-        }
+      await studyStore.fetchContinuePosition()
+      if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
+        return
       }
     } catch (err) {
       studyStore.error = err?.message || '학습 현황을 불러오지 못했습니다.'
     } finally {
       studyStore.isLoading = false
     }
-    return
+    studyStore.error = null
   }
 
   await studyStore.fetchStudyNote()
@@ -59,7 +54,7 @@ const noteLoading = computed(
   () => isLoading.value || (dashboardLoading.value && !learningItems.value.length),
 )
 const noteError = computed(() => {
-  if (learning.value?.available === false) {
+  if (learning.value?.available === false && !learningItems.value.length && !noteLoading.value) {
     return learning.value.reason === 'NOT_STARTED'
       ? '아직 시작한 학습이 없습니다.'
       : learning.value.reason || '이어갈 학습이 없습니다.'
@@ -67,7 +62,8 @@ const noteError = computed(() => {
   return error.value || dashboardError.value
 })
 
-const effectiveContinueRoute = computed(() => learningContinueRoute.value || continueRoute.value)
+/** 이어하기 API route(page 쿼리 포함) 우선, dashboard 요약 경로는 폴백 */
+const effectiveContinueRoute = computed(() => continueRoute.value || learningContinueRoute.value)
 
 const ruledOffsets = computed(() => Array.from({ length: 10 }, (_, index) => 48 + index * 22))
 
