@@ -67,8 +67,8 @@ export const mockOnboardingApis = async (page) => {
               prompt: '금리가 오르면 예금 이자는?',
               scenario: null,
               choices: [
-                { id: 'A', text: '대체로 늘어난다' },
-                { id: 'B', text: '대체로 줄어든다' },
+                { key: 'A', label: '대체로 늘어난다' },
+                { key: 'B', label: '대체로 줄어든다' },
               ],
             },
           ],
@@ -127,7 +127,7 @@ export const mockOnboardingApis = async (page) => {
     })
   })
 
-  await page.route('**/curriculums/draft', async (route) => {
+  await page.route('**/curriculum/draft', async (route) => {
     const items = [foundation, recommended]
     await route.fulfill({
       status: 200,
@@ -145,7 +145,7 @@ export const mockOnboardingApis = async (page) => {
     })
   })
 
-  await page.route('**/curriculums/confirm', async (route) => {
+  await page.route('**/curriculum/confirm', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -170,6 +170,8 @@ export const seedOnboardingSession = async (page, onboardingStep, options = {}) 
       sessionStorage.clear()
       localStorage.setItem('access_token', token)
       sessionStorage.setItem('onboarding_step', step)
+      // 학습 E2E는 예·적금 진행 중 mock 유지 (홈 기초 가이드 기본값과 분리)
+      sessionStorage.setItem('mock_learning_profile', 'mid-curriculum')
 
       if (levelTestCompleted) {
         localStorage.setItem('level_test_state', JSON.stringify({ completed: true, attempt: null }))

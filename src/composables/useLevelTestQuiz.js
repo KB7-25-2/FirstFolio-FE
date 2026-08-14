@@ -38,7 +38,8 @@ export const useLevelTestQuiz = () => {
   const actionError = ref('')
 
   onMounted(async () => {
-    if (levelTestStore.attempt?.status === 'IN_PROGRESS') return
+    // 세션에 예전(id/text) 매핑이 남아 있으면 선택지가 비어 보이므로
+    // 항상 start API로 복원·재매핑한다.
     try {
       await levelTestStore.start()
     } catch (err) {

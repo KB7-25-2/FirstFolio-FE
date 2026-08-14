@@ -5,7 +5,7 @@ import {
   getPurchasableProducts,
   getFinancialProductDetail,
   resetPortfolio as resetPortfolioApi,
-} from '@/api/portfolioApi.js'
+} from '@/api/user/portfolioApi.js'
 import {
   mapPortfolioDetailResponse,
   mapFinancialProductsResponse,
@@ -13,7 +13,50 @@ import {
   mapTradeResult,
   mapTransactionsResponse,
 } from '@/mappers/portfolioMapper.js'
-import { getAssetTypeMeta } from '@/constants/assetType.js'
+import { CASH_META, getAssetTypeMeta } from '@/constants/assetType.js'
+import {
+  INITIAL_SIMULATION_CASH,
+  hasGrantedSimulationCash,
+  setGrantedSimulationCash,
+} from '@/utils/foundationGrant.js'
+
+/** 기초 수료 직후 지급된 초기 포트폴리오 (DEV/mock) */
+let mockGrantedPortfolio = null
+
+const buildFreshGrantSummary = () => ({
+  totalAssetValue: INITIAL_SIMULATION_CASH,
+  cashBalance: INITIAL_SIMULATION_CASH,
+  profitLossAmount: 0,
+  profitRate: null,
+  goalAchievementRate: 0,
+  allocations: [
+    {
+      label: CASH_META.label,
+      color: CASH_META.color,
+      ratio: 100,
+      valuationAmount: INITIAL_SIMULATION_CASH,
+    },
+  ],
+  holdings: [],
+  aiFeedback: '모의투자금 3천만 원으로 내 포트폴리오를 구성해 보세요.',
+  valuedAt: null,
+})
+
+/**
+ * 포트폴리오 기초 수료 후 모의투자금 30,000,000원 지급 (목업)
+ * @returns {Promise<object>}
+ */
+export const grantInitialSimulationCash = async () => {
+  mockGrantedPortfolio = buildFreshGrantSummary()
+  setGrantedSimulationCash(true)
+  return structuredClone(mockGrantedPortfolio)
+}
+
+/** 테스트·프로필 전환용 */
+export const __resetGrantedSimulationCash = () => {
+  mockGrantedPortfolio = null
+  setGrantedSimulationCash(false)
+}
 
 // ============================================================
 // 상품 목록 / 상세 (FUNC-031, FUNC-032)
@@ -37,8 +80,20 @@ export const getProductDetail = async (productId) => {
 // ============================================================
 
 export const getCurrentPortfolio = async ({ productsById = {} } = {}) => {
-  const { data } = await getPortfolioSummary()
-  return mapPortfolioDetailResponse(data.data ?? data, productsById)
+  try {
+    const { data } = await getPortfolioSummary()
+    return mapPortfolioDetailResponse(data.data ?? data, productsById)
+  } catch (err) {
+    // 기초 수료 직후 API 포트폴리오가 아직 없을 때 지급 mock으로 복구
+    if (mockGrantedPortfolio && hasGrantedSimulationCash()) {
+      return structuredClone(mockGrantedPortfolio)
+    }
+    if (hasGrantedSimulationCash()) {
+      mockGrantedPortfolio = buildFreshGrantSummary()
+      return structuredClone(mockGrantedPortfolio)
+    }
+    throw err
+  }
 }
 
 // FUNC-034: 거래·자산 이벤트 이력.

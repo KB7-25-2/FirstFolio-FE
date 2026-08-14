@@ -14,6 +14,8 @@ export const useUserStore = defineStore('user', () => {
 
   const nickname = computed(() => profile.value?.nickname ?? '')
   const email = computed(() => profile.value?.email ?? '')
+  const roleCode = computed(() => profile.value?.roleCode ?? '')
+  const isAdmin = computed(() => roleCode.value === 'ADMIN')
   const newsletterOptIn = computed(() => profile.value?.newsletterOptIn ?? false)
   const pointBalance = computed(() => profile.value?.pointBalance ?? 0)
   const pointBalanceDisplay = computed(() => pointBalance.value.toLocaleString('ko-KR'))
@@ -83,6 +85,8 @@ export const useUserStore = defineStore('user', () => {
     error,
     nickname,
     email,
+    roleCode,
+    isAdmin,
     newsletterOptIn,
     pointBalance,
     pointBalanceDisplay,

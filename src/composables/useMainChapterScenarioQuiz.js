@@ -2,11 +2,13 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
+import { usePortfolioStore } from '@/store/portfolioStore.js'
 
 export const useMainChapterScenarioQuiz = () => {
   const route = useRoute()
   const router = useRouter()
   const studyStore = useStudyStore()
+  const portfolioStore = usePortfolioStore()
 
   const {
     scenarioDetail,
@@ -20,11 +22,14 @@ export const useMainChapterScenarioQuiz = () => {
     scenarioIsGraded,
     scenarioCorrectCount,
     scenarioAttemptResult,
+    pendingFoundationUnlock,
   } = storeToRefs(studyStore)
 
   const isLoading = ref(false)
   const error = ref(null)
   const isCompleting = ref(false)
+  const showUnlockCeremony = ref(false)
+  const isGranting = ref(false)
 
   const mainChapterId = computed(() => Number(route.params.mainChapterId))
 
@@ -188,9 +193,42 @@ export const useMainChapterScenarioQuiz = () => {
 
   /** 수료 후 로드맵으로 — 커리큘럼 ACTIVE/COMPLETED 반영 확인 */
   const goToRoadmap = () => {
+    if (pendingFoundationUnlock.value) {
+      showUnlockCeremony.value = true
+      return
+    }
     studyStore.clearScenarioSession()
     router.push({ name: 'learning' })
   }
+
+  const dismissUnlockCeremony = () => {
+    showUnlockCeremony.value = false
+    studyStore.clearFoundationUnlock()
+    studyStore.clearScenarioSession()
+    router.push({ name: 'home' })
+  }
+
+  const confirmUnlockCeremony = async () => {
+    if (isGranting.value) return
+    isGranting.value = true
+    try {
+      await portfolioStore.grantFoundationCash()
+      studyStore.clearFoundationUnlock()
+      studyStore.clearScenarioSession()
+      showUnlockCeremony.value = false
+      await router.push({ name: 'portfolio-purchase' })
+    } catch (err) {
+      error.value = err?.message || '모의투자금 지급에 실패했습니다.'
+    } finally {
+      isGranting.value = false
+    }
+  }
+
+  watch(pendingFoundationUnlock, (pending) => {
+    if (pending && scenarioPhase.value === 'RESULT') {
+      showUnlockCeremony.value = true
+    }
+  })
 
   return {
     mainChapterId,
@@ -229,5 +267,10 @@ export const useMainChapterScenarioQuiz = () => {
     retryScenario,
     goToMainChapter,
     goToRoadmap,
+    showUnlockCeremony,
+    isGranting,
+    confirmUnlockCeremony,
+    dismissUnlockCeremony,
+    pendingFoundationUnlock,
   }
 }

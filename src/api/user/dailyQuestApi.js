@@ -4,13 +4,12 @@ import apiClient from '@/api/index.js'
 export const getToday = () => apiClient.get('/daily-quests/today')
 
 /**
- * PUT /daily-quests/today/answers — 문항별 답안 중간 저장
- * @param {{
- *   daily_quest_item_id: number,
- *   user_answer_json: { selected_key?: string, selected_keys?: string[] }
- * }} body
+ * PUT /daily-quests/today/items/{dailyQuestItemId}/answer
+ * @param {number} dailyQuestItemId
+ * @param {{ answer: { key: string } }} body
  */
-export const saveAnswer = (body) => apiClient.put('/daily-quests/today/answers', body)
+export const saveAnswer = (dailyQuestItemId, body) =>
+  apiClient.put(`/daily-quests/today/items/${dailyQuestItemId}/answer`, body)
 
 /** POST /daily-quests/today/submit — 최종 제출·채점 (body 없음) */
 export const submitToday = () => apiClient.post('/daily-quests/today/submit')

@@ -1,9 +1,9 @@
-import { ApiError } from '@/api/errorHandler.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 import {
   saveLevelTestAttemptAnswers,
   startLevelTestAttempt,
   submitLevelTestAttempt,
-} from '@/api/levelTestApi.js'
+} from '@/api/user/levelTestApi.js'
 
 const SESSION_KEY = 'level_test_api_session'
 
@@ -12,6 +12,13 @@ export class LevelTestApiError extends ApiError {
     super(message, status, data, code)
     this.name = 'LevelTestApiError'
   }
+}
+
+const pick = (obj, ...keys) => {
+  for (const key of keys) {
+    if (obj?.[key] !== undefined && obj?.[key] !== null) return obj[key]
+  }
+  return undefined
 }
 
 const readSession = () => {
@@ -29,63 +36,90 @@ const writeSession = (patch) => {
 
 const unwrap = (response) => response.data?.data ?? response.data
 
-const mapQuestion = (raw) => ({
-  questionId: raw.question_id,
-  questionKey: raw.question_key ?? String(raw.question_id),
-  questionType: raw.question_type,
-  generationType: raw.generation_type,
-  prompt: raw.prompt,
-  scenario: raw.scenario ?? null,
-  optionsJson: (raw.choices ?? []).map((choice) => ({
-    key: choice.id,
-    label: choice.text,
-  })),
-  mainChapterId: raw.main_chapter?.main_chapter_id,
-  assetType: raw.main_chapter?.asset_type,
-  displayOrder: raw.display_order,
-})
+/** OpenAPI QuizChoiceResponse: key/label (구 id/text 호환) */
+const mapChoice = (choice) => {
+  if (choice == null) return { key: '', label: '' }
+  if (typeof choice === 'string') return { key: choice, label: choice }
+  return {
+    key: String(pick(choice, 'key', 'id') ?? ''),
+    label: String(pick(choice, 'label', 'text') ?? ''),
+  }
+}
 
-const mapSavedAnswer = (raw) => {
-  const questionId = raw.question_id ?? raw.questionId
-  const key = raw.answer?.key ?? raw.saved_answer?.key ?? raw.savedAnswer?.key
+const mapQuestion = (raw) => {
+  const questionId = pick(raw, 'questionId', 'question_id')
+  const saved = raw.savedAnswer ?? raw.saved_answer
+  const mainChapter = raw.mainChapter ?? raw.main_chapter ?? {}
+  const rawChoices = raw.choices ?? raw.optionsJson ?? raw.options_json ?? []
+  return {
+    questionId,
+    questionKey: pick(raw, 'questionKey', 'question_key') ?? String(questionId),
+    questionType: pick(raw, 'questionType', 'question_type'),
+    generationType: pick(raw, 'generationType', 'generation_type'),
+    prompt: raw.prompt,
+    scenario: raw.scenario ?? null,
+    optionsJson: (Array.isArray(rawChoices) ? rawChoices : []).map(mapChoice),
+    mainChapterId: pick(mainChapter, 'mainChapterId', 'main_chapter_id'),
+    assetType: pick(mainChapter, 'assetType', 'asset_type'),
+    displayOrder: pick(raw, 'displayOrder', 'display_order'),
+    savedAnswerKey: saved?.key ?? null,
+  }
+}
+
+const mapSavedAnswer = (raw, fallbackQuestionId) => {
+  const questionId = pick(raw, 'questionId', 'question_id') ?? fallbackQuestionId
+  const key = raw.answer?.key ?? raw.saved_answer?.key ?? raw.savedAnswer?.key ?? raw.key ?? null
   return {
     questionId,
     selectedChoiceIds: key ? [String(key)] : [],
   }
 }
 
-const mapAttempt = (raw) => ({
-  attemptId: raw.attempt_id,
-  status: raw.status,
-  questionCount: raw.question_count,
-  questions: (raw.questions ?? []).map(mapQuestion),
-  savedAnswers: (raw.answers ?? []).map(mapSavedAnswer),
-  updatedAt: null,
-})
+const mapAttempt = (raw) => {
+  const questions = (raw.questions ?? []).map(mapQuestion)
+  const fromAnswers = (raw.answers ?? [])
+    .map((row, index) => mapSavedAnswer(row, questions[index]?.questionId))
+    .filter((row) => row.questionId != null && row.selectedChoiceIds.length)
+  const fromQuestions = questions
+    .filter((q) => q.savedAnswerKey)
+    .map((q) => ({
+      questionId: q.questionId,
+      selectedChoiceIds: [String(q.savedAnswerKey)],
+    }))
+
+  return {
+    attemptId: pick(raw, 'attemptId', 'attempt_id'),
+    status: raw.status,
+    questionCount: pick(raw, 'questionCount', 'question_count'),
+    questions,
+    savedAnswers: fromAnswers.length ? fromAnswers : fromQuestions,
+    updatedAt: pick(raw, 'updatedAt', 'updated_at') ?? null,
+  }
+}
 
 const mapSubmitResult = (raw) => ({
-  attemptId: raw.attempt_id,
+  attemptId: pick(raw, 'attemptId', 'attempt_id'),
   status: raw.status,
-  results: (raw.question_results ?? []).map((result) => ({
-    questionId: result.question_id,
-    mainChapterId: result.main_chapter_id,
-    assetType: result.asset_type,
-    isCorrect: result.is_correct,
+  results: (raw.questionResults ?? raw.question_results ?? []).map((result) => ({
+    questionId: pick(result, 'questionId', 'question_id'),
+    mainChapterId: pick(result, 'mainChapterId', 'main_chapter_id'),
+    assetType: pick(result, 'assetType', 'asset_type'),
+    isCorrect: pick(result, 'isCorrect', 'is_correct'),
   })),
-  chapterResults: (raw.chapter_results ?? []).map((result) => ({
-    mainChapterId: result.main_chapter_id,
-    assetType: result.asset_type,
-    totalCount: result.total_count,
-    correctCount: result.correct_count,
-    allCorrect: result.all_correct,
+  chapterResults: (raw.chapterResults ?? raw.chapter_results ?? []).map((result) => ({
+    mainChapterId: pick(result, 'mainChapterId', 'main_chapter_id'),
+    assetType: pick(result, 'assetType', 'asset_type'),
+    totalCount: pick(result, 'totalCount', 'total_count'),
+    correctCount: pick(result, 'correctCount', 'correct_count'),
+    allCorrect: pick(result, 'allCorrect', 'all_correct'),
   })),
   recommendations: (raw.recommendations ?? []).map((item) => ({
-    mainChapterId: item.main_chapter_id,
-    sourceType: item.source_type,
+    mainChapterId: pick(item, 'mainChapterId', 'main_chapter_id'),
+    sourceType: pick(item, 'sourceType', 'source_type'),
   })),
-  cartCandidates: (raw.cart_candidates ?? []).map((item) => ({
-    mainChapterId: item.main_chapter_id,
-    assetType: item.asset_type,
+  cartCandidates: (raw.cartCandidates ?? raw.cart_candidates ?? []).map((item) => ({
+    mainChapterId: pick(item, 'mainChapterId', 'main_chapter_id'),
+    assetType: pick(item, 'assetType', 'asset_type'),
   })),
 })
 
@@ -99,7 +133,6 @@ export const getStoredLevelTestSession = () => {
   }
 }
 
-// 별도 상태 조회 API가 없으므로 현재 브라우저 세션에 저장된 서버 응답만 확인한다.
 export const getLevelTestStatus = async () => ({
   data: { completed: Boolean(readSession().submitResult) },
 })
@@ -120,6 +153,7 @@ export const saveLevelTestAnswers = async (attemptId, payload) => {
   const answerItems = payload?.answers ?? []
   const body = {
     answers: answerItems.map((item) => ({
+      // 라이브 BE: question_id (snake_case)
       question_id: item.questionId,
       answer: { key: item.selectedChoiceIds?.[0] },
     })),
@@ -129,7 +163,7 @@ export const saveLevelTestAnswers = async (attemptId, payload) => {
 
   // 응답에 저장된 답안이 있으면 그 값을 신뢰. 없으면 요청 페이로드를 확정분으로 사용.
   const responseAnswers = (raw.answers ?? raw.saved_answers ?? [])
-    .map(mapSavedAnswer)
+    .map((row) => mapSavedAnswer(row))
     .filter((item) => item.questionId != null && item.selectedChoiceIds.length)
   const savedAnswers =
     responseAnswers.length > 0
@@ -142,12 +176,12 @@ export const saveLevelTestAnswers = async (attemptId, payload) => {
           }))
 
   const data = {
-    attemptId: raw.attempt_id ?? raw.attemptId,
-    savedAnswerCount: raw.saved_answer_count ?? raw.savedAnswerCount ?? savedAnswers.length,
-    answeredCount: raw.answered_count ?? raw.answeredCount,
-    totalCount: raw.total_count ?? raw.totalCount,
+    attemptId: pick(raw, 'attemptId', 'attempt_id'),
+    savedAnswerCount: pick(raw, 'savedAnswerCount', 'saved_answer_count') ?? savedAnswers.length,
+    answeredCount: pick(raw, 'answeredCount', 'answered_count'),
+    totalCount: pick(raw, 'totalCount', 'total_count'),
     status: raw.status,
-    updatedAt: raw.updated_at ?? raw.updatedAt,
+    updatedAt: pick(raw, 'updatedAt', 'updated_at'),
     savedAnswers,
   }
 
