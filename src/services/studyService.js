@@ -1164,6 +1164,19 @@ export const getCurriculum = async () => {
 }
 
 /**
+ * GET /learning/sub-chapters/{id}/progress 응답 매핑
+ * @param {object} raw
+ */
+const mapSubChapterProgress = (raw) => ({
+  subChapterId: Number(pickField(raw, 'subChapterId', 'sub_chapter_id')),
+  contentVersionId: pickField(raw, 'contentVersionId', 'content_version_id') ?? null,
+  lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? null,
+  status: /** @type {LearningProgressStatus} */ (pickField(raw, 'status') ?? 'NOT_STARTED'),
+  startedAt: pickField(raw, 'startedAt', 'started_at') ?? null,
+  completedAt: pickField(raw, 'completedAt', 'completed_at') ?? null,
+})
+
+/**
  * GET /learning/main-chapters/{id}/sub-chapters → LearningProgressItem
  * @param {object} raw
  * @param {number} mainChapterId
@@ -1200,8 +1213,27 @@ const mapSubChapterListItem = (raw, mainChapterId, index) => {
 }
 
 /**
- * 대단원 소단원 목록 조회
+ * @param {LearningProgressItem & { contentAvailable?: boolean, description?: string }} item
+ * @param {object | null} progressRaw
+ */
+const mergeProgressIntoItem = (item, progressRaw) => {
+  if (!progressRaw) return item
+  const progress = mapSubChapterProgress(progressRaw)
+  return {
+    ...item,
+    contentVersionId: progress.contentVersionId,
+    lastPageId: progress.lastPageId,
+    status: progress.status,
+    startedAt: progress.startedAt,
+    completedAt: progress.completedAt,
+    updatedAt: progress.completedAt ?? progress.startedAt ?? item.updatedAt,
+  }
+}
+
+/**
+ * 대단원 소단원 목록 + 각 소단원 진도 조회
  * GET /learning/main-chapters/{mainChapterId}/sub-chapters
+ * GET /learning/sub-chapters/{subChapterId}/progress
  * @param {number} mainChapterId
  * @returns {Promise<{ data: { items: LearningProgressItem[] } }>}
  * @throws {StudyApiError} MAIN_CHAPTER_NOT_FOUND
@@ -1209,9 +1241,22 @@ const mapSubChapterListItem = (raw, mainChapterId, index) => {
 export const getLearningProgress = async (mainChapterId) => {
   try {
     const raw = unwrap(await getSubChaptersApi(mainChapterId))
-    const items = (raw?.items ?? [])
+    const baseItems = (raw?.items ?? [])
       .map((item, index) => mapSubChapterListItem(item, mainChapterId, index))
       .sort((a, b) => a.order - b.order)
+
+    const items = await Promise.all(
+      baseItems.map(async (item) => {
+        if (!item.subChapterId) return item
+        try {
+          const progressRaw = unwrap(await getSubChapterProgressApi(item.subChapterId))
+          return mergeProgressIntoItem(item, progressRaw)
+        } catch {
+          return item
+        }
+      }),
+    )
+
     return { data: { items } }
   } catch (error) {
     if (error instanceof StudyApiError) throw error
