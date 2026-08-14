@@ -38,6 +38,15 @@ export const isOnboardingRoute = (to) =>
   to.matched.some((record) => record.meta.onboarding === true) || to.path.startsWith('/onboarding')
 
 /**
+ * 학습 화면에서 확정 커리큘럼 수정 (HOME 사용자도 접근 허용)
+ * @param {import('vue-router').RouteLocationNormalized} to
+ */
+export const isCurriculumEditRoute = (to) =>
+  (to.name === ONBOARDING_ROUTE_NAMES.curriculum ||
+    to.name === ONBOARDING_ROUTE_NAMES.curriculumConfirm) &&
+  to.query?.mode === 'edit'
+
+/**
  * POST /auth/login 응답 onboarding_step 기준 진입 경로
  * @param {object} params
  * @param {OnboardingStep | string | undefined} [params.onboardingStep]
@@ -71,7 +80,7 @@ const resolveGuardByApiStep = (onboardingStep, to) => {
   const onboarding = isOnboardingRoute(to)
 
   if (onboardingStep === 'HOME') {
-    if (onboarding) return { path: '/home' }
+    if (onboarding && !isCurriculumEditRoute(to)) return { path: '/home' }
     return true
   }
 
@@ -113,7 +122,7 @@ const resolveGuardByLocalState = (to, { levelTestCompleted, curriculumConfirmed 
   }
 
   if (levelTestCompleted && onboarding) {
-    if (curriculumConfirmed) {
+    if (curriculumConfirmed && !isCurriculumEditRoute(to)) {
       return { path: '/home' }
     }
     if (PRE_TEST_ROUTE_NAMES.has(to.name)) {

@@ -36,14 +36,21 @@ const writeSession = (patch) => {
 
 const unwrap = (response) => response.data?.data ?? response.data
 
-const mapChoice = (choice) => ({
-  key: pick(choice, 'key', 'id'),
-  label: pick(choice, 'label', 'text'),
-})
+/** OpenAPI QuizChoiceResponse: key/label (구 id/text 호환) */
+const mapChoice = (choice) => {
+  if (choice == null) return { key: '', label: '' }
+  if (typeof choice === 'string') return { key: choice, label: choice }
+  return {
+    key: String(pick(choice, 'key', 'id') ?? ''),
+    label: String(pick(choice, 'label', 'text') ?? ''),
+  }
+}
 
 const mapQuestion = (raw) => {
   const questionId = pick(raw, 'questionId', 'question_id')
   const saved = raw.savedAnswer ?? raw.saved_answer
+  const mainChapter = raw.mainChapter ?? raw.main_chapter ?? {}
+  const rawChoices = raw.choices ?? raw.optionsJson ?? raw.options_json ?? []
   return {
     questionId,
     questionKey: pick(raw, 'questionKey', 'question_key') ?? String(questionId),
@@ -51,13 +58,9 @@ const mapQuestion = (raw) => {
     generationType: pick(raw, 'generationType', 'generation_type'),
     prompt: raw.prompt,
     scenario: raw.scenario ?? null,
-    optionsJson: (raw.choices ?? []).map(mapChoice),
-    mainChapterId: pick(
-      raw.mainChapter ?? raw.main_chapter ?? {},
-      'mainChapterId',
-      'main_chapter_id',
-    ),
-    assetType: pick(raw.mainChapter ?? raw.main_chapter ?? {}, 'assetType', 'asset_type'),
+    optionsJson: (Array.isArray(rawChoices) ? rawChoices : []).map(mapChoice),
+    mainChapterId: pick(mainChapter, 'mainChapterId', 'main_chapter_id'),
+    assetType: pick(mainChapter, 'assetType', 'asset_type'),
     displayOrder: pick(raw, 'displayOrder', 'display_order'),
     savedAnswerKey: saved?.key ?? null,
   }
@@ -65,10 +68,10 @@ const mapQuestion = (raw) => {
 
 const mapSavedAnswer = (raw, fallbackQuestionId) => {
   const questionId = pick(raw, 'questionId', 'question_id') ?? fallbackQuestionId
-  const key = raw.answer?.key ?? raw.key ?? null
+  const key = raw.answer?.key ?? raw.saved_answer?.key ?? raw.savedAnswer?.key ?? raw.key ?? null
   return {
     questionId,
-    selectedChoiceIds: key ? [key] : [],
+    selectedChoiceIds: key ? [String(key)] : [],
   }
 }
 
@@ -79,7 +82,10 @@ const mapAttempt = (raw) => {
     .filter((row) => row.questionId != null && row.selectedChoiceIds.length)
   const fromQuestions = questions
     .filter((q) => q.savedAnswerKey)
-    .map((q) => ({ questionId: q.questionId, selectedChoiceIds: [q.savedAnswerKey] }))
+    .map((q) => ({
+      questionId: q.questionId,
+      selectedChoiceIds: [String(q.savedAnswerKey)],
+    }))
 
   return {
     attemptId: pick(raw, 'attemptId', 'attempt_id'),
@@ -154,17 +160,34 @@ export const saveLevelTestAnswers = async (attemptId, payload) => {
   }
   const response = await saveLevelTestAttemptAnswers(attemptId, body)
   const raw = unwrap(response)
+
+  // 응답에 저장된 답안이 있으면 그 값을 신뢰. 없으면 요청 페이로드를 확정분으로 사용.
+  const responseAnswers = (raw.answers ?? raw.saved_answers ?? [])
+    .map((row) => mapSavedAnswer(row))
+    .filter((item) => item.questionId != null && item.selectedChoiceIds.length)
+  const savedAnswers =
+    responseAnswers.length > 0
+      ? responseAnswers
+      : answerItems
+          .filter((item) => item.questionId != null && item.selectedChoiceIds?.length)
+          .map((item) => ({
+            questionId: Number(item.questionId),
+            selectedChoiceIds: [...item.selectedChoiceIds],
+          }))
+
   const data = {
     attemptId: pick(raw, 'attemptId', 'attempt_id'),
-    savedAnswerCount: pick(raw, 'savedAnswerCount', 'saved_answer_count'),
+    savedAnswerCount: pick(raw, 'savedAnswerCount', 'saved_answer_count') ?? savedAnswers.length,
     answeredCount: pick(raw, 'answeredCount', 'answered_count'),
     totalCount: pick(raw, 'totalCount', 'total_count'),
     status: raw.status,
     updatedAt: pick(raw, 'updatedAt', 'updated_at'),
+    savedAnswers,
   }
+
   const currentAnswers = readSession().answers ?? {}
   const answers = { ...currentAnswers }
-  answerItems.forEach((item) => {
+  savedAnswers.forEach((item) => {
     answers[item.questionId] = [...item.selectedChoiceIds]
   })
   writeSession({ answers })

@@ -7,7 +7,12 @@ import {
   resolvePostAuthPath,
 } from '@/router/onboardingRedirect.js'
 
-const route = (name, path = '/') => ({ name, path, matched: [{ meta: {} }] })
+const route = (name, path = '/', query = {}) => ({
+  name,
+  path,
+  query,
+  matched: [{ meta: {} }],
+})
 
 describe('onboardingRedirect (unit)', () => {
   beforeEach(() => {
@@ -95,6 +100,16 @@ describe('onboardingRedirect (unit)', () => {
       ).toEqual({ name: ONBOARDING_ROUTE_NAMES.curriculum })
     })
 
+    it('API HOME이면 home 접근을 허용한다', () => {
+      expect(
+        resolveOnboardingGuardTarget(route('home', '/home'), {
+          onboardingStep: 'HOME',
+          levelTestCompleted: true,
+          curriculumConfirmed: true,
+        }),
+      ).toBe(true)
+    })
+
     it('API HOME + 온보딩 접근 시 home으로 보낸다', () => {
       expect(
         resolveOnboardingGuardTarget(route(ONBOARDING_ROUTE_NAMES.intro, '/onboarding/intro'), {
@@ -103,6 +118,19 @@ describe('onboardingRedirect (unit)', () => {
           curriculumConfirmed: true,
         }),
       ).toEqual({ path: '/home' })
+    })
+
+    it('API HOME + 커리큘럼 수정(mode=edit)은 허용한다', () => {
+      expect(
+        resolveOnboardingGuardTarget(
+          route(ONBOARDING_ROUTE_NAMES.curriculum, '/onboarding/curriculum', { mode: 'edit' }),
+          {
+            onboardingStep: 'HOME',
+            levelTestCompleted: true,
+            curriculumConfirmed: true,
+          },
+        ),
+      ).toBe(true)
     })
 
     it('mock fallback: 미완료 사용자가 home 접근 시 intro로 보낸다', () => {

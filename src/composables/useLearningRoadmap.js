@@ -1,10 +1,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import { useStudyStore } from '@/store/studyStore.js'
-import { getLearningProgress } from '@/services/studyService.js'
 import { getMainChapterDisplay } from '@/constants/mainChapterDisplay.js'
-import { withScheduleStatus } from '@/utils/scheduleStatus.js'
 
 /**
  * 대단원 × 소단원 목차(체크리스트) 로드맵
@@ -13,7 +10,6 @@ export const useLearningRoadmap = () => {
   const studyStore = useStudyStore()
   const router = useRouter()
   const route = useRoute()
-  const { curriculumItems } = storeToRefs(studyStore)
 
   const isLoading = ref(false)
   const error = ref(null)
@@ -41,70 +37,18 @@ export const useLearningRoadmap = () => {
   /** @type {import('vue').Ref<RoadmapStage[]>} */
   const stages = ref([])
 
-  const withDisplay = (item) => ({
-    ...item,
-    ...getMainChapterDisplay(item.mainChapterId),
+  const withDisplay = (stage) => ({
+    ...stage,
+    ...getMainChapterDisplay(stage.mainChapterId),
   })
-
-  const orderedChapters = computed(() => {
-    const items = curriculumItems.value.slice().sort((a, b) => a.displayOrder - b.displayOrder)
-    return items.map(withDisplay)
-  })
-
-  const buildStageFromItems = (chapter, items) => {
-    const withStatus = withScheduleStatus(items)
-    let periods = withStatus.filter((row) => row.entryType !== 'SCENARIO_QUIZ')
-    const scenarioItem = withStatus.find((row) => row.entryType === 'SCENARIO_QUIZ') ?? null
-
-    if (chapter.status === 'LOCKED') {
-      periods = periods.map((row) => ({ ...row, scheduleStatus: 'LOCKED' }))
-    }
-
-    const lessonsDone =
-      chapter.status !== 'LOCKED' &&
-      periods.length > 0 &&
-      periods.every((row) => row.status === 'COMPLETED')
-    const scenarioReady =
-      lessonsDone && Boolean(scenarioItem) && scenarioItem.status !== 'COMPLETED'
-
-    return {
-      mainChapterId: chapter.mainChapterId,
-      curriculumItemId: chapter.curriculumItemId,
-      title: chapter.title,
-      status: chapter.status,
-      progressPercent: chapter.progressPercent ?? 0,
-      description: chapter.description ?? '',
-      accent: chapter.accent,
-      icon: chapter.icon,
-      chapterType: chapter.chapterType,
-      displayOrder: chapter.displayOrder,
-      periods,
-      scenarioReady,
-      scenarioTitle: scenarioItem?.title ?? '대단원 실전 퀴즈',
-      scenarioSubtitle: scenarioItem?.periodSubtitle ?? '배운 내용을 실전 상황에서 점검해요',
-    }
-  }
 
   const loadStages = async () => {
     isLoading.value = true
     error.value = null
     actionError.value = null
     try {
-      await studyStore.fetchCurriculum()
-      const chapters = orderedChapters.value
-      /** @type {RoadmapStage[]} */
-      const nextStages = []
-
-      for (const chapter of chapters) {
-        try {
-          const { data } = await getLearningProgress(chapter.mainChapterId)
-          nextStages.push(buildStageFromItems(chapter, data.items ?? []))
-        } catch {
-          nextStages.push(buildStageFromItems(chapter, []))
-        }
-      }
-
-      stages.value = nextStages
+      const { stages: nextStages } = await studyStore.fetchRoadmap()
+      stages.value = (nextStages ?? []).map(withDisplay)
     } catch (err) {
       if (err?.code === 'CURRICULUM_NOT_FOUND') {
         error.value = '확정된 커리큘럼이 없습니다.'
