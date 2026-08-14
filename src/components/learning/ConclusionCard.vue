@@ -22,7 +22,7 @@ defineProps({
       <p class="mt-2 font-serif text-[14px] font-bold text-[#29211a]">
         {{ formula }}
       </p>
-      <p v-if="note" class="mt-1 font-pen text-[18px] text-[#212b5c]">
+      <p v-if="note" class="mt-1 font-serif font-bold text-[18px] text-[#212b5c]">
         {{ note }}
       </p>
     </div>

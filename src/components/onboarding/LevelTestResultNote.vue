@@ -19,7 +19,9 @@ defineProps({
       <p class="font-serif text-[10px] tracking-wide text-[rgba(139,100,60,0.55)]">
         RESULT &nbsp;·&nbsp; 커리큘럼 규칙
       </p>
-      <h2 class="mt-1.5 font-pen text-[28px] leading-none text-[#212b5c]">금융 기초 진단 결과</h2>
+      <h2 class="mt-1.5 font-serif text-[20px] leading-snug font-bold text-[#212b5c]">
+        금융 기초 진단 결과
+      </h2>
 
       <div
         class="mt-5 overflow-hidden rounded border-[0.5px] border-[rgba(184,173,148,0.45)] bg-[#fffdf8]"

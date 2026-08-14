@@ -2,6 +2,7 @@
  * 커리큘럼 초안(온보딩 담기) 타입
  *
  * @typedef {'REQUIRED' | 'LEVEL_TEST_WRONG' | 'CART'} CurriculumDraftSourceType
+ * REQUIRED와 CART는 서버의 FOUNDATION, USER_ADDED를 UI 용어로 변환한 값이다.
  *
  * @typedef {object} CurriculumDraftItem
  * @property {number} mainChapterId
@@ -28,7 +29,6 @@
  * @typedef {object} CurriculumConfirmResult
  * @property {'CONFIRMED'} status
  * @property {CurriculumConfirmItem[]} items
- * @property {string} confirmedAt
  */
 
 export {}

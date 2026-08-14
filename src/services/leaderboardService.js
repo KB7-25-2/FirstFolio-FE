@@ -9,8 +9,8 @@
  * @typedef {import('@/types/leaderboard.js').LeaderboardSnapshot} LeaderboardSnapshot
  */
 
-import { getLeaderboard as getLeaderboardApi } from '@/api/leaderboardApi.js'
-import { ApiError } from '@/api/errorHandler.js'
+import { getLeaderboard as getLeaderboardApi } from '@/api/user/leaderboardApi.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 
 /** @type {Record<string, string>} */
 const LEADERBOARD_ERROR_MESSAGES = {

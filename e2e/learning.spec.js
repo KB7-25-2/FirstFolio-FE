@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { seedHomeSession } from './helpers/authSession.js'
+import { primaryNav, seedHomeSession } from './helpers/authSession.js'
 
 /**
  * 학습 플로우 E2E (이슈 G 수동 스모크 대응)
@@ -45,8 +45,7 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
     await finishLessonToQuiz(page)
     await completeSubChapterQuiz(page)
 
-    await expect(page).toHaveURL(/\/learning\/main-chapters\/2/)
-    await expect(page.getByRole('heading', { name: '학습 시간표' })).toBeVisible()
+    await expectMainChapterRoadmap(page, 2)
 
     const interestRow = page.locator('button').filter({ hasText: '금리의 이해' })
     await expect(interestRow).toContainText('완료')
@@ -64,12 +63,12 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
       await expect(page).toHaveURL(/\/learning\/sub-chapters\//)
       await finishLessonToQuiz(page)
       await completeSubChapterQuiz(page)
-      await expect(page).toHaveURL(/\/learning\/main-chapters\/2/)
+      await expectMainChapterRoadmap(page, 2)
     }
 
     const scenarioCta = page.locator('button').filter({ hasText: '예금 실전 퀴즈' })
     await expect(scenarioCta).toBeVisible({ timeout: 10_000 })
-    await expect(scenarioCta).toContainText('시작')
+    await expect(scenarioCta).toBeEnabled()
     await scenarioCta.click()
 
     await expect(page).toHaveURL(/\/learning\/main-chapters\/2\/scenario-quiz/)
@@ -81,20 +80,28 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
     await completeScenarioQuiz(page)
 
     await expect(page).toHaveURL(/\/learning\/?$/)
-    await expect(page.getByRole('heading', { name: '학습 로드맵' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '예·적금' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '채권' })).toBeVisible()
-    await expect(page.getByRole('button', { name: /진행 중.*채권/ })).toBeVisible()
+    await expect(
+      page.locator('button').filter({ hasText: '채권' }).filter({ hasText: '진행 중' }).first(),
+    ).toBeVisible()
 
-    await page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }).click()
+    await primaryNav(page).getByRole('button', { name: '홈', exact: true }).click()
     await expect(page).toHaveURL(/\/home/)
 
     const continueBtn = page.getByRole('button', { name: '이어서 →' })
     await expect(continueBtn).toBeVisible({ timeout: 15_000 })
     await continueBtn.click()
-    await expect(page).toHaveURL(/\/learning\/main-chapters\/3/)
+    await expect(page).toHaveURL(/\/learning\/sub-chapters\/201|mainChapterId=3/)
   })
 })
+
+/** 퀴즈 수료 후 해당 대단원 목차(로드맵)로 돌아왔는지 */
+async function expectMainChapterRoadmap(page, mainChapterId) {
+  await expect(page).toHaveURL(/\/learning\/?(\?|$)/)
+  await expect(page).toHaveURL(new RegExp(`mainChapterId=${mainChapterId}`))
+  await expect(page.getByRole('heading', { name: '예·적금' })).toBeVisible({ timeout: 15_000 })
+}
 
 /** 강좌 마지막 페이지까지 이동 후 퀴즈 진입 */
 async function finishLessonToQuiz(page) {

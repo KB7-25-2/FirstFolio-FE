@@ -13,7 +13,7 @@
  * @property {number} curriculumItemId
  * @property {number} mainChapterId
  * @property {string} title
- * @property {ChapterType} chapterType
+ * @property {ChapterType | 'ASSET' | string} chapterType
  * @property {number} displayOrder
  * @property {CurriculumItemStatus} status
  * @property {string | null} completedAt
@@ -62,8 +62,9 @@
  * @property {string} title
  * @property {number} contentVersionId
  * @property {string} schemaVersion
- * @property {string} contentUrl
- * @property {string} expiresAt
+ * @property {string | null} [contentUrl]
+ * @property {import('@/types/study.js').SubChapterLessonJson | null} [lesson]
+ * @property {string | null} [expiresAt]
  * @property {{ status: LearningProgressStatus, lastPageId: string | null, completedAt: string | null }} progress
  */
 

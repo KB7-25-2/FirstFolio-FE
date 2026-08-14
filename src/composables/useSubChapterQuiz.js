@@ -145,7 +145,7 @@ export const useSubChapterQuiz = () => {
       return
     }
 
-    studyStore.submitCurrentQuizQuestion()
+    await studyStore.submitCurrentQuizQuestion()
   }
 
   const goToMainChapter = async () => {

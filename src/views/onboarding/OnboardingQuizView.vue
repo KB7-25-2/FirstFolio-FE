@@ -35,14 +35,18 @@ const scorePerQuestion = computed(() =>
 
 <template>
   <div class="cork-board mx-auto flex mobile-frame flex-col overflow-hidden">
-    <LearningLayout immersive bleed-header>
+    <LearningLayout immersive>
       <template #header>
-        <LearningPageHeader title="시험지" subtitle="FIRSTFOLIO · DIAGNOSIS">
+        <LearningPageHeader
+          variant="quiz"
+          title="시험지"
+          :subtitle="subject"
+          eyebrow="FIRSTFOLIO · DIAGNOSIS"
+          :progress-current="questionNumber"
+          :progress-total="questionTotal"
+        >
           <template #badge>
-            <span
-              class="chalk-header__stamp rotate-3 rounded px-2 py-0.5 font-pen text-[12px]"
-              :class="statusBadge.class"
-            >
+            <span class="learning-header__badge font-serif text-[11px]" :class="statusBadge.class">
               {{ statusBadge.label }}
             </span>
           </template>
@@ -82,7 +86,7 @@ const scorePerQuestion = computed(() =>
             />
           </div>
 
-          <p class="mt-8 font-pen text-[15px] text-[rgba(33,43,92,0.75)]">
+          <p class="mt-8 font-serif text-[15px] text-[rgba(33,43,92,0.75)]">
             보기 번호를 골라 답을 쓰세요
           </p>
         </QuizExamPaper>

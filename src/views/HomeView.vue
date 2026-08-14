@@ -1,7 +1,8 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/store/userStore.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 import { formatKoreanDate } from '@/utils/date.js'
 import PortfolioSummary from '@/components/PortfolioSummary.vue'
 import StudyNote from '@/components/StudyNote.vue'
@@ -9,9 +10,14 @@ import PointShopNote from '@/components/PointShopNote.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 
 const userStore = useUserStore()
+const dashboardStore = useDashboardStore()
 const { greeting } = storeToRefs(userStore)
 
 const todayLabel = computed(() => formatKoreanDate())
+
+onMounted(() => {
+  dashboardStore.fetchDashboard()
+})
 </script>
 
 <template>
@@ -30,7 +36,7 @@ const todayLabel = computed(() => formatKoreanDate())
           </p>
         </div>
         <span
-          class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.4)] bg-[rgba(193,127,36,0.08)] px-2.5 py-1 font-pen text-[12px] whitespace-nowrap text-[var(--nav-active-primary)]"
+          class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.4)] bg-[rgba(193,127,36,0.08)] px-2.5 py-1 font-serif text-[12px] whitespace-nowrap text-[var(--nav-active-primary)]"
         >
           오늘 출석 완료
         </span>

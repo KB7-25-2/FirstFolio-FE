@@ -51,7 +51,7 @@ const rowClass = {
     @click="$emit('select')"
   >
     <span
-      class="flex size-9 shrink-0 items-center justify-center rounded font-pen text-[18px]"
+      class="flex size-9 shrink-0 items-center justify-center rounded font-serif font-bold text-[18px]"
       :class="numClass[scheduleStatus] ?? numClass.LOCKED"
     >
       {{ order }}

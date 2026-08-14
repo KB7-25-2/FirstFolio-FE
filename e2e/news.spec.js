@@ -33,9 +33,8 @@ test.describe('데일리 금융 뉴스 스크랩 (UI)', () => {
 
     await firstCard.click()
 
-    const dialog = page.getByRole('dialog')
+    const dialog = page.getByRole('dialog').filter({ hasText: 'AI 요약' })
     await expect(dialog).toBeVisible()
-    await expect(dialog.getByText('AI 요약')).toBeVisible()
     await expect(dialog.getByRole('button', { name: /원문 보러가기/ })).toBeVisible()
 
     await dialog.getByRole('button', { name: '닫기', exact: true }).click()

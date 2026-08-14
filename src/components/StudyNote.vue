@@ -2,18 +2,68 @@
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useStudyStore } from '@/store/studyStore.js'
 import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
 
+const dashboardStore = useDashboardStore()
 const studyStore = useStudyStore()
 const router = useRouter()
 const { chapterTitle, learningItems, continueRoute, isLoading, error } = storeToRefs(studyStore)
+const {
+  learning,
+  learningContinueRoute,
+  isLoading: dashboardLoading,
+  error: dashboardError,
+} = storeToRefs(dashboardStore)
 
-onMounted(() => {
-  studyStore.fetchStudyNote()
+onMounted(async () => {
+  try {
+    await dashboardStore.fetchDashboard()
+  } catch {
+    // dashboard 실패 시에도 학습 노트는 study 경로로 폴백
+  }
+
+  const dashLearning = learning.value
+  if (dashLearning && dashLearning.available !== false && dashLearning.mainChapterId != null) {
+    studyStore.isLoading = true
+    studyStore.error = null
+    try {
+      await Promise.all([
+        studyStore.fetchCurriculum(),
+        studyStore.fetchLearningProgress(dashLearning.mainChapterId),
+      ])
+      await studyStore.fetchContinuePosition()
+      if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
+        return
+      }
+    } catch (err) {
+      studyStore.error = err?.message || '학습 현황을 불러오지 못했습니다.'
+    } finally {
+      studyStore.isLoading = false
+    }
+    studyStore.error = null
+  }
+
+  await studyStore.fetchStudyNote()
 })
+
+const noteLoading = computed(
+  () => isLoading.value || (dashboardLoading.value && !learningItems.value.length),
+)
+const noteError = computed(() => {
+  if (learning.value?.available === false && !learningItems.value.length && !noteLoading.value) {
+    return learning.value.reason === 'NOT_STARTED'
+      ? '아직 시작한 학습이 없습니다.'
+      : learning.value.reason || '이어갈 학습이 없습니다.'
+  }
+  return error.value || dashboardError.value
+})
+
+/** 이어하기 API route(page 쿼리 포함) 우선, dashboard 요약 경로는 폴백 */
+const effectiveContinueRoute = computed(() => continueRoute.value || learningContinueRoute.value)
 
 const ruledOffsets = computed(() => Array.from({ length: 10 }, (_, index) => 48 + index * 22))
 
@@ -88,11 +138,11 @@ const resolveContinueLocation = (routePath) => {
 
 const onContinue = (event) => {
   event.stopPropagation()
-  if (!continueRoute.value) {
+  if (!effectiveContinueRoute.value) {
     router.push({ name: 'learning' })
     return
   }
-  router.push(resolveContinueLocation(continueRoute.value))
+  router.push(resolveContinueLocation(effectiveContinueRoute.value))
 }
 
 const goReviewLesson = (event) => {
@@ -150,17 +200,17 @@ const goLearning = () => {
         </div>
         <div class="relative flex min-h-[260px] flex-col gap-1 px-4 py-3">
           <BaseLoading
-            v-if="isLoading"
+            v-if="noteLoading"
             class="py-10 text-center"
             tone="onLight"
             size="xs"
             message="학습 현황을 불러오는 중…"
           />
           <div
-            v-else-if="error"
+            v-else-if="noteError"
             class="py-10 text-center font-serif text-xs text-[var(--study-total)]"
           >
-            {{ error }}
+            {{ noteError }}
           </div>
 
           <template v-else>
@@ -168,7 +218,9 @@ const goLearning = () => {
               현재 학습 현황
             </p>
             <header class="flex h-9 items-end gap-2">
-              <h2 class="min-w-0 flex-1 font-pen text-[26px] leading-none text-[#212b5c]">
+              <h2
+                class="min-w-0 flex-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]"
+              >
                 {{ chapterTitle || '학습 현황' }}
               </h2>
             </header>
@@ -181,7 +233,7 @@ const goLearning = () => {
               :aria-label="`${reviewLesson.title} 복습하기`"
               @click="goReviewLesson"
             >
-              <p class="font-pen text-[16px] leading-none text-[#3d6b38]">
+              <p class="font-serif font-bold text-[16px] leading-none text-[#3d6b38]">
                 다시 한 번 복습해볼까요?
               </p>
               <div class="mt-2 flex items-center justify-between gap-2">
@@ -224,7 +276,7 @@ const goLearning = () => {
               >
                 <div class="flex w-8 shrink-0 items-start justify-center pt-1">
                   <span
-                    class="flex size-8 items-center justify-center rounded-full border-[0.5px] font-pen text-[15px] leading-none"
+                    class="flex size-8 items-center justify-center rounded-full border-[0.5px] font-serif text-[15px] leading-none"
                     :class="{
                       'border-[rgba(89,140,82,0.75)] bg-[#e8f5e4] text-[#598c52]':
                         node.role === 'prev',
@@ -259,7 +311,7 @@ const goLearning = () => {
                       {{ node.roleLabel }}
                     </span>
                     <button
-                      v-if="node.role === 'current' && continueRoute"
+                      v-if="node.role === 'current' && effectiveContinueRoute"
                       type="button"
                       class="shrink-0 rounded bg-[rgba(89,140,82,0.9)] px-2 py-1 font-serif text-[10px] font-bold whitespace-nowrap text-white transition-transform duration-150 hover:scale-[1.02] active:scale-[0.97]"
                       @click.stop="onContinue"

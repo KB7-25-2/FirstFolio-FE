@@ -64,7 +64,7 @@ const earnedScore = computed(() => props.correctCount * props.scorePerQuestion)
               </p>
               <p class="mt-1 font-serif text-[18px] font-black text-[#29211a]">시험 결과</p>
 
-              <p class="mt-5 font-pen text-[36px] leading-none text-[#212b5c]">
+              <p class="mt-5 font-serif font-bold text-[36px] leading-none text-[#212b5c]">
                 {{ correctCount }}
                 <span class="text-[22px] text-[rgba(33,43,92,0.45)]">/ {{ totalCount }}</span>
               </p>

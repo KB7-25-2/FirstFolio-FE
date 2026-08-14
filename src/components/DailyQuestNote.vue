@@ -118,7 +118,7 @@ const goDailyQuest = () => {
               >
                 연속
               </span>
-              <span class="font-pen text-[13px] leading-none text-[var(--study-quest-continue)]">
+              <span class="font-serif text-[13px] leading-none text-[var(--study-quest-continue)]">
                 {{ streakDays }}일
               </span>
             </span>
@@ -153,7 +153,9 @@ const goDailyQuest = () => {
           <div>
             <div class="flex items-end justify-between gap-2">
               <p class="font-serif text-[10px] font-bold text-[rgba(139,100,60,0.75)]">진행도</p>
-              <p class="font-pen text-[16px] leading-none text-[var(--study-quest-continue)]">
+              <p
+                class="font-serif font-bold text-[16px] leading-none text-[var(--study-quest-continue)]"
+              >
                 {{ progressLabel || `0/${totalCount || 5}` }}
               </p>
             </div>
@@ -178,14 +180,14 @@ const goDailyQuest = () => {
           >
             <div>
               <p class="font-serif text-[9px] text-[rgba(139,100,60,0.7)]">{{ scoreHint }}</p>
-              <p class="mt-0.5 font-pen text-[22px] leading-none text-[#3d1f08]">
+              <p class="mt-0.5 font-serif font-bold text-[18px] leading-none text-[#3d1f08]">
                 {{ scoreDisplay }}
-                <span class="font-serif text-[11px] font-bold">점</span>
+                <span class="font-serif text-[10px] font-bold">점</span>
               </p>
             </div>
             <div class="text-right">
               <p class="font-serif text-[9px] text-[rgba(139,100,60,0.7)]">내 순위</p>
-              <p class="mt-0.5 font-pen text-[22px] leading-none text-[#3d1f08]">
+              <p class="mt-0.5 font-serif font-bold text-[18px] leading-none text-[#3d1f08]">
                 {{ rankDisplay }}
               </p>
             </div>

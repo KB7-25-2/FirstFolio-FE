@@ -125,7 +125,7 @@ const isMe = (item) =>
               </p>
             </div>
             <div class="shrink-0 text-right">
-              <p class="font-pen text-[28px] leading-none text-[rgba(193,127,36,0.95)]">
+              <p class="font-serif font-bold text-[28px] leading-none text-[rgba(193,127,36,0.95)]">
                 {{ myRank.rank }}
               </p>
               <p class="mt-1 font-serif text-[12px] font-bold text-[#f5edd9]">
@@ -155,7 +155,7 @@ const isMe = (item) =>
               :class="isMe(item) ? 'bg-[rgba(196,92,42,0.12)]' : ''"
             >
               <span
-                class="w-7 shrink-0 text-center font-pen text-[20px] leading-none"
+                class="w-7 shrink-0 text-center font-serif font-bold text-[20px] leading-none"
                 :class="rankToneClass(item.rank)"
               >
                 {{ item.rank }}

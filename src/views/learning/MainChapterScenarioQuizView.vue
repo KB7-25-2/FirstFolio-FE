@@ -56,10 +56,10 @@ const {
         </button>
         <div class="min-w-0 flex-1 text-center">
           <p class="font-serif text-[17px] font-black text-[#f5edd9]">{{ chapterTitle }}</p>
-          <p class="font-pen text-[13px] text-[rgba(245,237,217,0.55)]">{{ chapterSubtitle }}</p>
+          <p class="font-serif text-[13px] text-[rgba(245,237,217,0.55)]">{{ chapterSubtitle }}</p>
         </div>
         <span
-          class="rounded-[2px] border-[0.5px] border-[#c17f24] px-2 py-1 font-pen text-[12px] text-[#c17f24]"
+          class="rounded-[2px] border-[0.5px] border-[#c17f24] px-2 py-1 font-serif text-[12px] text-[#c17f24]"
         >
           {{ stampLabel }}
         </span>

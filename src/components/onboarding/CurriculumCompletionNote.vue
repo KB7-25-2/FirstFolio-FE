@@ -14,7 +14,7 @@ import MemoPin from '@/components/MemoPin.vue'
       <h2 class="font-serif text-[16px] leading-snug font-black text-[#29211a]">
         나만의 금융 커리큘럼을 만들었어요
       </h2>
-      <p class="mt-2 font-pen text-[17px] leading-snug text-[#8b643c]">
+      <p class="mt-2 font-serif font-bold text-[17px] leading-snug text-[#8b643c]">
         포트폴리오 기초는 필수예요. 오답 추천과 장바구니 추가분으로 순서를 정해 학습해요.
       </p>
     </section>

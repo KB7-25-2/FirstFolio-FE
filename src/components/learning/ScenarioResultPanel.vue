@@ -44,7 +44,7 @@ defineEmits(['confirm'])
       <div class="h-px flex-1 bg-[rgba(139,100,60,0.28)]" />
     </div>
 
-    <p class="mt-5 font-pen text-[28px] leading-tight text-[#212b5c]">축하합니다</p>
+    <p class="mt-5 font-serif font-bold text-[28px] leading-tight text-[#212b5c]">축하합니다</p>
     <p class="mt-3 max-w-[280px] font-serif text-[13px] leading-[20px] text-[#7a5230]">
       {{ congratsMessage }}
     </p>

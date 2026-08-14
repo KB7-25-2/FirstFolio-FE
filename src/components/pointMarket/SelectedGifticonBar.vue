@@ -24,12 +24,17 @@ const isInsufficient = computed(() => remainingAfter.value < 0)
 
 <template>
   <div
-    class="flex items-center justify-between gap-3 rounded-2xl border-[0.5px] border-white/10 bg-[#14161f] p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.3)]"
+    class="flex items-center justify-between gap-3 rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#fff8ec] p-3 shadow-[0_-4px_16px_rgba(0,0,0,0.18)]"
   >
     <div class="min-w-0">
-      <p class="truncate text-xs text-[#9aa1b0]">선택한 상품</p>
-      <p class="truncate text-sm font-bold text-white">{{ gifticon.displayName }}</p>
-      <p class="text-xs" :class="isInsufficient ? 'text-[#ff8f8a]' : 'text-[#9aa1b0]'">
+      <p class="truncate font-serif text-xs text-[rgba(41,33,26,0.45)]">선택한 상품</p>
+      <p class="truncate font-serif text-sm font-bold text-[#2c1810]">
+        {{ gifticon.displayName }}
+      </p>
+      <p
+        class="font-serif text-xs"
+        :class="isInsufficient ? 'text-[#c0433f]' : 'text-[rgba(41,33,26,0.55)]'"
+      >
         {{ gifticon.pricePoints.toLocaleString('ko-KR') }}원 · 교환 후
         {{ Math.max(remainingAfter, 0).toLocaleString('ko-KR') }}P
       </p>
@@ -37,7 +42,7 @@ const isInsufficient = computed(() => remainingAfter.value < 0)
 
     <button
       type="button"
-      class="flex shrink-0 flex-col items-center gap-0.5 rounded-2xl bg-gradient-to-r from-[#7B61FF] to-[#4FD8EF] px-5 py-2 text-white disabled:opacity-40"
+      class="flex shrink-0 flex-col items-center gap-0.5 rounded-[3px] bg-[#c17f24] px-5 py-2 font-serif text-[#fff8ec] disabled:opacity-40"
       :disabled="isInsufficient || isSubmitting"
       @click="$emit('redeem')"
     >

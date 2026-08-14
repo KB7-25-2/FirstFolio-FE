@@ -100,12 +100,20 @@ export const mapFinancialProductDetail = (raw) => ({
 
 // 거래 응답 원본 → 화면용 모델. 매수형(주식·펀드)은 요청 금액과 실제 체결 금액이 다를 수 있어
 // (수량 내림 처리로 단수 절사) requestedAmount/amount를 둘 다 남겨서 "얼마만큼 체결됐는지" 보여줄 수 있게 한다.
+//
+// 2026-08-12 수수료·증권거래세 반영(#75·#76): fee_amount/tax_amount/net_cash_amount가 새로 붙었다.
+// "얼마 나갔는지/들어왔는지" 화면에 쓸 값은 amount(체결액)가 아니라 netCashAmount다 —
+// amount만 보여주면 cashBalance와 비교했을 때 수수료·세금만큼 안 맞는 것처럼 보인다.
+// fee_amount/tax_amount는 비용이 없는 거래에서도 null이 아니라 "0.00"으로 온다.
 export const mapTradeResult = (raw) => ({
   transactionId: raw.portfolio_transaction_id,
   transactionType: raw.transaction_type,
   productId: raw.product_id,
   requestedAmount: raw.requested_amount != null ? Number(raw.requested_amount) : null,
   amount: Number(raw.amount ?? 0),
+  feeAmount: Number(raw.fee_amount ?? 0),
+  taxAmount: Number(raw.tax_amount ?? 0),
+  netCashAmount: Number(raw.net_cash_amount ?? raw.amount ?? 0),
   quantity: raw.quantity != null ? Number(raw.quantity) : null,
   unitPrice: raw.unit_price != null ? Number(raw.unit_price) : null,
   status: raw.status,
@@ -239,6 +247,15 @@ export const mapPortfolioDetailResponse = (raw, productsById = {}) => {
 // FUNC-034 GET /portfolios/current/transactions — 거래·자산 이벤트 이력
 // ============================================================
 
+// amount는 이력 종류마다 의미가 다르다(2026-08-12 명세 정정, FE_CHANGE_GUIDE 4번):
+//   INTEREST — 이자소득세를 뗀 세후 지급액(= 현금 증감). 세전은 detail.gross_amount.
+//   MATURITY — 원금 그대로(비과세, = 현금 증감).
+//   BUY/SELL — 체결 금액일 뿐이다. 수수료·거래세가 안 빠져 있어 현금 증감과 다르다 —
+//              정확한 현금 증감이 필요하면 detail.net_cash_amount를 봐야 한다.
+// 이 목록의 amount를 그대로 합산해서 현금 변화를 재구성하면 안 된다.
+//
+// detail은 자유 형식 JSON이라(배당소득세·체결 대기 등 키가 계속 늘어날 예정) 그대로 통과시킨다 —
+// 여기서 특정 키를 꺼내 스키마를 강제하면 새 키가 추가될 때마다 깨진다.
 export const mapTransaction = (raw) => ({
   transactionId: raw.portfolio_transaction_id,
   transactionType: raw.transaction_type,
@@ -257,42 +274,3 @@ export const mapTransactionsResponse = (raw) => ({
   items: (raw.items ?? []).map(mapTransaction),
   nextCursor: raw.next_cursor ?? null,
 })
-
-// ============================================================
-// 로컬 전용 — 목데이터 초기화, 판매/구매 후 재계산
-// (이미 우리 내부 모델 모양인 데이터를 다룬다. 실제 API 원본 파싱과는 무관.)
-// ============================================================
-
-// 목데이터/판매·구매로 바뀐 내부 상태에 빠진 필드가 있으면 기본값을 채운다.
-const normalizeLocalHolding = (holding) => ({
-  ...holding,
-  valuationAmount: holding.valuationAmount ?? holding.principalAmount ?? 0,
-  status: holding.status ?? 'ACTIVE',
-  valuationBasis: holding.valuationBasis ?? 'PRINCIPAL',
-  isPriceUnavailable: holding.isPriceUnavailable ?? false,
-})
-
-// 내부 모델(summary)을 받아서 totalAssetValue/allocations 같은 파생값을 다시 계산한다.
-// 목데이터 최초 로드, 판매/구매 후 재계산 둘 다 여기를 거친다.
-export const normalizeLocalSummary = (summary) => {
-  const holdings = (summary.holdings ?? []).map(normalizeLocalHolding)
-  const cashBalance = summary.cashBalance ?? 0
-  const totalAssetValue =
-    summary.totalAssetValue ??
-    cashBalance +
-      holdings
-        .filter((holding) => holding.status === 'ACTIVE')
-        .reduce((sum, holding) => sum + (holding.valuationAmount ?? holding.principalAmount), 0)
-
-  return {
-    totalAssetValue,
-    cashBalance,
-    profitLossAmount: summary.profitLossAmount ?? 0,
-    profitRate: summary.profitRate ?? null,
-    goalAchievementRate: summary.goalAchievementRate ?? null,
-    allocations: computeAllocations(holdings, cashBalance, totalAssetValue),
-    holdings,
-    aiFeedback: summary.aiFeedback ?? null,
-    valuedAt: summary.valuedAt ?? null,
-  }
-}

@@ -26,6 +26,9 @@ const listRef = ref(null)
 /** 스크롤로 보이는 대단원 (상단 강조) */
 const focusStageIndex = ref(0)
 
+/** `scroll-mt-[3.75rem]` — 스크롤 스파이 마커와 scrollIntoView 오프셋을 맞춤 */
+const SCROLL_SPY_OFFSET = 60
+
 const orderLabel = (index) => String(index + 1).padStart(2, '0')
 
 const periodDomId = (stage, period) =>
@@ -99,21 +102,29 @@ const scrollToElement = (id, behavior = 'smooth') => {
 const scrollSpyLocked = ref(false)
 /** @type {ReturnType<typeof setTimeout> | null} */
 let scrollSpyUnlockTimer = null
+/** 프로그램matic 스크롤 직후 스파이 대신 유지할 대단원 인덱스 */
+let pendingFocusStageIndex = null
 
-const unlockScrollSpy = () => {
+const unlockScrollSpy = (runScrollSpy = true) => {
   scrollSpyLocked.value = false
   if (scrollSpyUnlockTimer != null) {
     clearTimeout(scrollSpyUnlockTimer)
     scrollSpyUnlockTimer = null
   }
-  updateFocusFromScroll()
+  if (pendingFocusStageIndex != null) {
+    focusStageIndex.value = pendingFocusStageIndex
+    pendingFocusStageIndex = null
+    return
+  }
+  if (runScrollSpy) updateFocusFromScroll()
 }
 
-const lockScrollSpyTemporarily = (ms = 500) => {
+const lockScrollSpyTemporarily = (ms = 500, preserveFocusIndex = null) => {
   scrollSpyLocked.value = true
+  pendingFocusStageIndex = preserveFocusIndex
   if (scrollSpyUnlockTimer != null) clearTimeout(scrollSpyUnlockTimer)
   scrollSpyUnlockTimer = setTimeout(() => {
-    unlockScrollSpy()
+    unlockScrollSpy(preserveFocusIndex == null)
   }, ms)
 }
 
@@ -123,7 +134,7 @@ const updateFocusFromScroll = () => {
   const root = listRef.value
   if (!root || !stages.value.length) return
 
-  const marker = root.getBoundingClientRect().top + 56
+  const marker = root.getBoundingClientRect().top + SCROLL_SPY_OFFSET
   let current = 0
 
   for (let index = 0; index < stages.value.length; index += 1) {
@@ -141,11 +152,11 @@ const updateFocusFromScroll = () => {
 const jumpToStage = async (index) => {
   focusStageIndex.value = index
   selectStage(index)
-  lockScrollSpyTemporarily(550)
+  lockScrollSpyTemporarily(700, index)
   await nextTick()
   const stage = stages.value[index]
   if (!stage) {
-    unlockScrollSpy()
+    unlockScrollSpy(false)
     return
   }
   document
@@ -163,7 +174,7 @@ const focusCurrentPeriod = async () => {
   if (target) {
     if (target.stageIndex >= 0) {
       focusStageIndex.value = target.stageIndex
-      lockScrollSpyTemporarily(400)
+      lockScrollSpyTemporarily(400, target.stageIndex)
       if (target.stageIndex !== activeStageIndex.value) {
         selectStage(target.stageIndex)
         await nextTick()
@@ -174,7 +185,10 @@ const focusCurrentPeriod = async () => {
   }
 
   if (focusMainChapterId.value != null) {
-    lockScrollSpyTemporarily(400)
+    const chapterIndex = stages.value.findIndex(
+      (stage) => stage.mainChapterId === focusMainChapterId.value,
+    )
+    lockScrollSpyTemporarily(400, chapterIndex >= 0 ? chapterIndex : null)
     scrollToElement(`chapter-${focusMainChapterId.value}`, 'auto')
   }
 }
@@ -199,7 +213,7 @@ watch(
 </script>
 
 <template>
-  <LearningLayout content-class="!overflow-hidden">
+  <LearningLayout :pad-for-nav="false" content-class="!overflow-hidden">
     <BaseLoading v-if="isLoading" />
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
 
@@ -224,7 +238,7 @@ watch(
                 <p class="font-serif text-[10px] tracking-wide text-[rgba(139,100,60,0.55)]">
                   전체 진행
                 </p>
-                <p class="mt-1 font-pen text-[22px] leading-none text-[#212b5c]">
+                <p class="mt-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]">
                   {{ overall.done }}
                   <span class="text-[16px] text-[rgba(33,43,92,0.45)]"
                     >/ {{ overall.total }} 교시</span
@@ -262,11 +276,11 @@ watch(
         </LearningNotePaper>
       </div>
 
-      <!-- 스크롤: 대단원 × 소단원 목차 -->
+      <!-- 스크롤: 대단원 × 소단원 목차 (Navbar 오버레이 여백은 여기만) -->
       <div
         ref="listRef"
         data-scroll-reveal-root
-        class="hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pb-1"
+        class="nav-scroll-pad hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain"
         @scroll.passive="updateFocusFromScroll"
       >
         <div
@@ -279,10 +293,12 @@ watch(
               {{ focusStage.icon }}
             </span>
             <div class="min-w-0 flex-1">
-              <p class="font-pen text-[11px] leading-none text-[rgba(33,43,92,0.55)]">
+              <p class="font-serif text-[11px] leading-none text-[rgba(33,43,92,0.55)]">
                 {{ orderLabel(focusStageIndex) }} · {{ statusLabel(focusStage.status) }}
               </p>
-              <p class="mt-0.5 truncate font-pen text-[18px] leading-none text-[#212b5c]">
+              <p
+                class="mt-0.5 truncate font-serif font-bold text-[18px] leading-none text-[#212b5c]"
+              >
                 {{ focusStage.title }}
               </p>
             </div>
@@ -327,14 +343,14 @@ watch(
                     </span>
                     <div class="min-w-0 flex-1">
                       <div class="flex items-start justify-between gap-2">
-                        <p class="font-pen text-[13px] leading-none text-[rgba(33,43,92,0.5)]">
+                        <p class="font-serif text-[13px] leading-none text-[rgba(33,43,92,0.5)]">
                           {{ orderLabel(stageIndex) }} · {{ statusLabel(stage.status) }}
                         </p>
                         <p class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24]">
                           {{ periodDoneCount(stage) }}/{{ periodTotalCount(stage) }}
                         </p>
                       </div>
-                      <h2 class="mt-1 font-pen text-[22px] leading-none text-[#212b5c]">
+                      <h2 class="mt-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]">
                         {{ stage.title }}
                       </h2>
                       <p

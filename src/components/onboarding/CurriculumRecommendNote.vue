@@ -80,7 +80,9 @@ const onHandlePointerUp = (event) => {
           <p class="font-serif text-[10px] tracking-wide text-[rgba(139,100,60,0.55)]">
             학습 순서 편집
           </p>
-          <h2 class="mt-1 font-pen text-[28px] leading-none text-[#212b5c]">나의 커리큘럼</h2>
+          <h2 class="mt-1 font-serif text-[20px] leading-snug font-bold text-[#212b5c]">
+            나의 커리큘럼
+          </h2>
           <p class="mt-2 font-serif text-[11px] text-[rgba(139,100,60,0.7)]">
             {{ summaryLine }}
           </p>
