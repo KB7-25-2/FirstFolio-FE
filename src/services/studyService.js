@@ -1174,7 +1174,48 @@ const mapSubChapterProgress = (raw) => ({
   status: /** @type {LearningProgressStatus} */ (pickField(raw, 'status') ?? 'NOT_STARTED'),
   startedAt: pickField(raw, 'startedAt', 'started_at') ?? null,
   completedAt: pickField(raw, 'completedAt', 'completed_at') ?? null,
+  updated: pickField(raw, 'updated') ?? null,
 })
+
+/**
+ * PUT /learning/sub-chapters/{id}/progress 요청 status 정규화
+ * @param {LearningProgressStatus | undefined} status
+ */
+const normalizePutProgressStatus = (status) => {
+  if (status === 'COMPLETED') return 'COMPLETED'
+  return 'IN_PROGRESS'
+}
+
+/**
+ * @param {number} subChapterId
+ * @param {number | null | undefined} payloadVersionId
+ */
+const resolveContentVersionId = async (subChapterId, payloadVersionId) => {
+  if (payloadVersionId != null) return payloadVersionId
+  try {
+    const raw = unwrap(await getSubChapterProgressApi(subChapterId))
+    return pickField(raw, 'contentVersionId', 'content_version_id') ?? null
+  } catch {
+    return MOCK_SUB_CHAPTER_CONTENT[subChapterId]?.content_version_id ?? null
+  }
+}
+
+/**
+ * @param {object} raw
+ * @param {{ lastPageId: string | null, status: LearningProgressStatus }} fallback
+ */
+const mapSaveProgressResponse = (raw, fallback) => {
+  const progress = mapSubChapterProgress(raw)
+  return {
+    subChapterId: progress.subChapterId,
+    contentVersionId: progress.contentVersionId,
+    lastPageId: progress.lastPageId ?? fallback.lastPageId,
+    status: progress.status ?? fallback.status,
+    startedAt: progress.startedAt,
+    completedAt: progress.completedAt,
+    updated: progress.updated ?? true,
+  }
+}
 
 /**
  * GET /learning/main-chapters/{id}/sub-chapters → LearningProgressItem
@@ -1329,7 +1370,10 @@ const shouldFallbackStudyMock = (error) => {
     code === 'CONTENT_NOT_PUBLISHED' ||
     code === 'PREREQUISITE_REQUIRED' ||
     code === 'QUIZ_NOT_AVAILABLE' ||
-    code === 'SUB_CHAPTERS_INCOMPLETE'
+    code === 'SUB_CHAPTERS_INCOMPLETE' ||
+    code === 'CONTENT_VERSION_MISMATCH' ||
+    code === 'INVALID_PAGE_ID' ||
+    code === 'CONTENT_UNAVAILABLE'
   ) {
     return false
   }
@@ -1414,43 +1458,43 @@ export const getLessonPages = async (contentUrl, embeddedLesson = null) => {
 
 /**
  * 소단원 강좌 진도 저장
- * OpenAPI PUT: { contentVersionId, lastPageId, status }
+ * PUT /learning/sub-chapters/{subChapterId}/progress
  * @param {number} subChapterId
- * @param {{ lastPageId: string, status?: LearningProgressStatus, contentVersionId?: number }} payload
+ * @param {{ lastPageId?: string | null, status?: LearningProgressStatus, contentVersionId?: number }} payload
  */
 export const saveLessonProgress = async (subChapterId, payload) => {
-  const contentVersionId =
-    payload.contentVersionId ?? MOCK_SUB_CHAPTER_CONTENT[subChapterId]?.content_version_id
-  const lastPageId = payload.lastPageId
-  let status = payload.status ?? 'IN_PROGRESS'
-  if (status === 'NOT_STARTED') status = 'IN_PROGRESS'
-  if (lastPageId === 'page-final' && payload.status === 'COMPLETED') {
-    status = 'COMPLETED'
-  }
+  const lastPageId = payload.lastPageId ?? null
+  const status = normalizePutProgressStatus(payload.status)
 
-  if (contentVersionId != null) {
-    try {
-      const response = await putSubChapterProgressApi(subChapterId, {
-        contentVersionId,
-        lastPageId,
-        status: status === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS',
-      })
-      const raw = unwrap(response)
-      return {
-        data: {
-          lastPageId: pickField(raw, 'lastPageId', 'last_page_id') ?? lastPageId,
-          status: pickField(raw, 'status') ?? status,
-        },
-      }
-    } catch (error) {
-      const mapped = new StudyApiError(
-        error?.code ?? 'PROGRESS_SAVE_FAILED',
-        error?.message ?? '진도를 저장하지 못했습니다.',
-        error?.status ?? 500,
+  try {
+    const contentVersionId = await resolveContentVersionId(subChapterId, payload.contentVersionId)
+    if (contentVersionId == null) {
+      throw new StudyApiError(
+        'CONTENT_NOT_PUBLISHED',
+        '공개된 학습 콘텐츠 버전을 찾을 수 없습니다.',
+        404,
       )
-      if (!shouldFallbackStudyMock(mapped)) throw mapped
-      console.warn('[studyService] PUT progress 실패 — mock으로 대체합니다.', mapped)
     }
+
+    const response = await putSubChapterProgressApi(subChapterId, {
+      contentVersionId,
+      lastPageId,
+      status,
+    })
+    const raw = unwrap(response)
+    return {
+      data: mapSaveProgressResponse(raw, { lastPageId, status }),
+    }
+  } catch (error) {
+    if (error instanceof StudyApiError) throw error
+    const parsed = parseApiError(error)
+    const mapped = new StudyApiError(
+      parsed?.code ?? 'PROGRESS_SAVE_FAILED',
+      parsed?.message ?? '진도를 저장하지 못했습니다.',
+      parsed?.status ?? 500,
+    )
+    if (!shouldFallbackStudyMock(mapped)) throw mapped
+    console.warn('[studyService] PUT progress 실패 — mock으로 대체합니다.', mapped)
   }
 
   await delay(80)
@@ -1481,10 +1525,18 @@ export const saveLessonProgress = async (subChapterId, payload) => {
   recomputeContinuePosition()
 
   return {
-    data: {
-      lastPageId,
-      status,
-    },
+    data: mapSaveProgressResponse(
+      {
+        sub_chapter_id: subChapterId,
+        content_version_id: raw.content_version_id,
+        last_page_id: lastPageId,
+        status,
+        started_at: progressItem?.startedAt ?? null,
+        completed_at: progressItem?.completedAt ?? null,
+        updated: true,
+      },
+      { lastPageId, status },
+    ),
   }
 }
 

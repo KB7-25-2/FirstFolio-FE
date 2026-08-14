@@ -68,14 +68,12 @@ export const useSubChapterQuiz = () => {
   })
 
   const primaryLabel = computed(() => {
-    if (quizUiStatus.value === 'WRONG') return '다시 풀기'
     if (quizIsGraded.value) return quizIsLastQuestion.value ? '결과 보기' : '다음 문항 →'
     return '정답 제출'
   })
 
   const primaryEnabled = computed(() => {
     if (isCompleting.value || quizFinished.value) return false
-    if (quizUiStatus.value === 'WRONG') return true
     if (quizIsGraded.value) return true
     return quizUiStatus.value === 'SELECTED'
   })
@@ -123,11 +121,6 @@ export const useSubChapterQuiz = () => {
 
   const onPrimaryAction = async () => {
     if (quizFinished.value) return
-
-    if (quizUiStatus.value === 'WRONG') {
-      studyStore.retryCurrentQuizQuestion()
-      return
-    }
 
     if (quizIsGraded.value) {
       const finished = studyStore.goNextQuizQuestion()
