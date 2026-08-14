@@ -328,8 +328,20 @@
     background-color: var(--cork-base);
   }
 
-  .auth-splash__media {
+  .auth-splash__media,
+  .auth-splash__logo {
     pointer-events: none;
+  }
+
+  /* 스플래시 애니 ↔ 로고 크로스페이드 */
+  .auth-splash-cross-enter-active,
+  .auth-splash-cross-leave-active {
+    transition: opacity 0.48s ease;
+  }
+
+  .auth-splash-cross-enter-from,
+  .auth-splash-cross-leave-to {
+    opacity: 0;
   }
 
   .auth-splash-leave-active {
@@ -392,6 +404,11 @@
     }
 
     .auth-splash-leave-active {
+      transition: opacity 0.2s ease;
+    }
+
+    .auth-splash-cross-enter-active,
+    .auth-splash-cross-leave-active {
       transition: opacity 0.2s ease;
     }
 

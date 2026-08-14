@@ -16,7 +16,7 @@ const emit = defineEmits(['finished'])
 /** splash.webp 1회 재생 길이 */
 const SPLASH_DURATION_MS = 3920
 const SPLASH_TAIL_MS = 200
-/** 애니 종료 후 로고 홀드 */
+/** 로고 홀드 (페이드인 포함) */
 const LOGO_HOLD_MS = 1600
 const SPLASH_FAILSAFE_MS = 10000
 
@@ -64,7 +64,6 @@ const onError = () => {
     mediaSrc.value = splashGif
     return
   }
-  // gif도 실패하면 바로 로고
   showLogoThenFinish()
 }
 
@@ -92,29 +91,39 @@ onBeforeUnmount(() => {
     aria-live="polite"
     :aria-label="`${brand} 시작 화면`"
   >
-    <img
-      v-show="phase === 'anim'"
-      ref="mediaRef"
-      class="auth-splash__media block h-auto w-[min(58vw,220px)] max-h-[42dvh] select-none object-contain"
-      :src="mediaSrc"
-      :alt="brand"
-      width="220"
-      height="476"
-      decoding="async"
-      draggable="false"
-      @load="onLoad"
-      @error="onError"
-    />
+    <div
+      class="auth-splash__stage relative flex h-full w-full max-w-[var(--mobile-width)] items-center justify-center"
+    >
+      <Transition name="auth-splash-cross">
+        <img
+          v-if="phase === 'anim'"
+          ref="mediaRef"
+          key="anim"
+          class="auth-splash__media absolute max-h-[42dvh] w-[min(58vw,220px)] select-none object-contain"
+          :src="mediaSrc"
+          :alt="brand"
+          width="220"
+          height="476"
+          decoding="async"
+          draggable="false"
+          @load="onLoad"
+          @error="onError"
+        />
+      </Transition>
 
-    <img
-      v-show="phase === 'logo'"
-      class="auth-splash__logo block h-auto w-[min(72vw,280px)] select-none object-contain"
-      :src="brandLogo"
-      :alt="brand"
-      width="280"
-      height="280"
-      decoding="async"
-      draggable="false"
-    />
+      <Transition name="auth-splash-cross">
+        <img
+          v-if="phase === 'logo'"
+          key="logo"
+          class="auth-splash__logo absolute h-auto w-[min(72vw,280px)] select-none object-contain"
+          :src="brandLogo"
+          :alt="brand"
+          width="280"
+          height="280"
+          decoding="async"
+          draggable="false"
+        />
+      </Transition>
+    </div>
   </div>
 </template>
