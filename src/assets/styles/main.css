@@ -326,43 +326,10 @@
   /* 로그인 스플래시 → 폼 스태거 진입 */
   .auth-splash {
     background-color: var(--cork-base);
-    background-image:
-      radial-gradient(ellipse 90% 60% at 50% 35%, rgba(255, 253, 246, 0.7), transparent 62%),
-      radial-gradient(ellipse 50% 40% at 80% 90%, rgba(193, 127, 36, 0.12), transparent 55%);
   }
 
-  .auth-splash__glow {
-    position: absolute;
-    inset: 18% 12% auto;
-    height: 42%;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(193, 127, 36, 0.14), transparent 70%);
-    filter: blur(8px);
-    animation: auth-splash-glow 2.2s ease-in-out infinite alternate;
-  }
-
-  .auth-splash__eyebrow {
-    opacity: 0;
-    letter-spacing: 0.22em;
-    animation: auth-splash-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
-  }
-
-  .auth-splash__brand {
-    opacity: 0;
-    transform: translateY(14px) scale(0.96);
-    animation: auth-splash-brand 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.28s forwards;
-  }
-
-  .auth-splash__tagline {
-    opacity: 0;
-    transform: translateY(10px);
-    animation: auth-splash-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards;
-  }
-
-  .auth-splash__stamp {
-    opacity: 0;
-    transform: scale(0.85) rotate(-12deg);
-    animation: auth-splash-stamp 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) 0.9s forwards;
+  .auth-splash__media {
+    pointer-events: none;
   }
 
   .auth-splash-leave-active {
@@ -384,38 +351,6 @@
   .auth-stage--ready .auth-enter {
     animation: auth-login-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     animation-delay: calc(var(--auth-i, 0) * 120ms);
-  }
-
-  @keyframes auth-splash-rise {
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes auth-splash-brand {
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @keyframes auth-splash-stamp {
-    to {
-      opacity: 1;
-      transform: scale(1) rotate(-8deg);
-    }
-  }
-
-  @keyframes auth-splash-glow {
-    from {
-      opacity: 0.55;
-      transform: scale(0.96);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1.04);
-    }
   }
 
   @keyframes auth-login-enter {
@@ -450,11 +385,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .auth-splash__eyebrow,
-    .auth-splash__brand,
-    .auth-splash__tagline,
-    .auth-splash__stamp,
-    .auth-splash__glow,
     .auth-stage--ready .auth-enter {
       animation: none !important;
       opacity: 1 !important;
