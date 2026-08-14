@@ -43,19 +43,17 @@ export const useCurriculumRecommend = () => {
   })
 
   /**
-   * 조작마다 서버 반영 (snake_case body)
-   * — 초안: PUT /curriculum/draft { main_chapter_ids }
-   * — 확정 후/수정 모드: PUT /curriculum { main_chapter_ids }
+   * 조작마다 서버 반영
+   * — 초안만: PUT /curriculum/draft { main_chapter_ids }
+   * — 확정본 수정: 로컬만 변경, 확정 버튼에서 PUT /curriculum
    */
   const syncAfterEdit = () => {
+    if (isEditMode.value || confirmed.value) return Promise.resolve()
+
     syncChain = syncChain.then(async () => {
       actionError.value = ''
       try {
-        if (isEditMode.value || confirmed.value) {
-          await curriculumStore.updateConfirmed()
-        } else {
-          await curriculumStore.persistDraft()
-        }
+        await curriculumStore.persistDraft()
       } catch (err) {
         actionError.value = err?.message || '저장에 실패했습니다.'
       }

@@ -4,6 +4,7 @@ import { getUserCurriculum } from '@/api/user/curriculumApi.js'
 import { parseApiError } from '@/api/user/errorHandler.js'
 import {
   getContinuePosition as getContinuePositionApi,
+  getSubChapters as getSubChaptersApi,
   getSubChapterLesson as getSubChapterLessonApi,
   getSubChapterProgress as getSubChapterProgressApi,
   putSubChapterProgress as putSubChapterProgressApi,
@@ -1163,11 +1164,74 @@ export const getCurriculum = async () => {
 }
 
 /**
- * 대단원 소단원 학습 진행 목록 (목업 — 목록 API 확정 전)
+ * GET /learning/main-chapters/{id}/sub-chapters → LearningProgressItem
+ * @param {object} raw
+ * @param {number} mainChapterId
+ * @param {number} index
+ * @returns {LearningProgressItem & { contentAvailable?: boolean, description?: string }}
+ */
+const mapSubChapterListItem = (raw, mainChapterId, index) => {
+  const order = Number(pickField(raw, 'displayOrder', 'display_order') ?? index + 1)
+  const title = String(raw.title ?? '')
+  const description = raw.description != null ? String(raw.description) : ''
+  const subChapterId = Number(pickField(raw, 'subChapterId', 'sub_chapter_id'))
+  const contentAvailable = Boolean(pickField(raw, 'contentAvailable', 'content_available') ?? true)
+
+  return {
+    progressId: subChapterId,
+    userId: 0,
+    mainChapterId: Number(mainChapterId),
+    subChapterId,
+    contentVersionId: null,
+    lastPageId: null,
+    status: 'NOT_STARTED',
+    startedAt: null,
+    completedAt: null,
+    updatedAt: '',
+    order,
+    title,
+    shortLabel: title.slice(0, 8) || `${order}교시`,
+    periodSubtitle: description || `${order}교시`,
+    entryType: 'LESSON',
+    quizScore: null,
+    contentAvailable,
+    description,
+  }
+}
+
+/**
+ * 대단원 소단원 목록 조회
+ * GET /learning/main-chapters/{mainChapterId}/sub-chapters
  * @param {number} mainChapterId
  * @returns {Promise<{ data: { items: LearningProgressItem[] } }>}
+ * @throws {StudyApiError} MAIN_CHAPTER_NOT_FOUND
  */
 export const getLearningProgress = async (mainChapterId) => {
+  try {
+    const raw = unwrap(await getSubChaptersApi(mainChapterId))
+    const items = (raw?.items ?? [])
+      .map((item, index) => mapSubChapterListItem(item, mainChapterId, index))
+      .sort((a, b) => a.order - b.order)
+    return { data: { items } }
+  } catch (error) {
+    if (error instanceof StudyApiError) throw error
+    const parsed = parseApiError(error)
+    const mapped = new StudyApiError(
+      parsed?.code || 'SUB_CHAPTER_LIST_FAILED',
+      parsed?.message || '소단원 목록을 불러오지 못했습니다.',
+      parsed?.status || 500,
+    )
+    if (mapped.status === 404 || mapped.code === 'MAIN_CHAPTER_NOT_FOUND') {
+      throw new StudyApiError(
+        'MAIN_CHAPTER_NOT_FOUND',
+        mapped.message || '대단원을 찾을 수 없습니다.',
+        404,
+      )
+    }
+    if (!shouldFallbackStudyMock(mapped)) throw mapped
+    console.warn('[studyService] GET sub-chapters 실패 — mock으로 대체합니다.', mapped)
+  }
+
   await delay()
   const items = MOCK_LEARNING_PROGRESS.filter((item) => item.mainChapterId === mainChapterId)
   return { data: { items: structuredClone(items) } }
