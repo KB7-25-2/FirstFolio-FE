@@ -5,12 +5,20 @@ import { unwrap } from './studyResponseUtils.js'
 import { mapCurriculumItem, normalizeCurriculumStatuses } from './mappers/curriculumMapper.js'
 
 /**
+ * 학습 화면용 확정 커리큘럼 (GET /curriculum)
+ *
+ * - **용도**: StudyNote, 기초 가이드, 포트폴리오 잠금 등 **학습 진행 UI**
+ * - **매핑**: `chapterType`, 순차 학습용 `status`(ACTIVE/LOCKED/COMPLETED), `progressPercent`
+ *
+ * 온보딩·편집(`sourceType`, `removable`)은 `@/services/curriculumService.js`의
+ * `getConfirmedCurriculum` / `getCurriculumDraft`를 사용한다.
+ *
+ * 소단원 목록·진도는 `getLearningRoadmap`(권장) 또는 legacy `getLearningProgress`를 사용한다.
+ *
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
  */
 
 /**
- * 확정된 개인 커리큘럼 + 대단원별 진행 상태 조회
- * GET /curriculum
  * @returns {Promise<{ data: { items: CurriculumItem[] } }>}
  * @throws {StudyApiError} CURRICULUM_NOT_FOUND
  */

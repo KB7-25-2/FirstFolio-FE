@@ -8,6 +8,7 @@ import {
   mapRoadmapChapterItem,
   mapRoadmapSubChapter,
 } from '@/services/study/mappers/roadmapMapper.js'
+import { pickStageLearningItems } from '@/services/study/roadmapService.js'
 import {
   mapSubChapterListItem,
   mergeProgressIntoItem,
@@ -121,6 +122,35 @@ describe('roadmapMapper', () => {
 
     expect(stage.periods[0].scheduleStatus).toBe('LOCKED')
     expect(stage.scenarioReady).toBe(false)
+  })
+
+  it('pickStageLearningItems는 ACTIVE 대단원 periods를 반환한다', () => {
+    const chapter = mapRoadmapChapterItem({
+      curriculum_item_id: 502,
+      main_chapter_id: 2,
+      title: '예·적금',
+      chapter_type: 'CORE',
+      display_order: 2,
+      status: 'ACTIVE',
+      progress_percent: 50,
+    })
+    const subChapters = [
+      mapRoadmapSubChapter(
+        {
+          sub_chapter_id: 101,
+          title: '예금이란?',
+          display_order: 1,
+          progress_status: 'COMPLETED',
+          schedule_status: 'COMPLETED',
+        },
+        2,
+      ),
+    ]
+    const stages = [buildRoadmapStage(chapter, subChapters)]
+
+    const items = pickStageLearningItems(stages)
+    expect(items).toHaveLength(1)
+    expect(items[0].subChapterId).toBe(101)
   })
 })
 

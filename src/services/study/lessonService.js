@@ -37,7 +37,11 @@ const resolveContentVersionId = async (subChapterId, payloadVersionId) => {
 }
 
 /**
- * 대단원 소단원 목록 + 각 소단원 진도 조회
+ * 대단원 소단원 목록 + 각 소단원 진도 조회 (legacy N+1)
+ *
+ * 신규 화면·StudyNote는 `getLearningRoadmap` + `pickStageLearningItems` 사용을 권장한다.
+ * (GET sub-chapters + N × GET progress)
+ *
  * @param {number} mainChapterId
  * @returns {Promise<{ data: { items: LearningProgressItem[] } }>}
  */

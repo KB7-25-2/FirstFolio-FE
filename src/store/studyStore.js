@@ -4,13 +4,13 @@ import {
   getChapterGame,
   getContinuePosition,
   getCurriculum,
-  getLearningProgress,
   getLearningRoadmap,
   getLessonPages,
   getQuizQuestions,
   getScenario,
   getSubChapterContent,
   gradeQuizAttemptAnswer,
+  pickStageLearningItems,
   saveLessonProgress,
   startSubChapterQuizAttempt,
   submitQuizAttempt,
@@ -22,6 +22,8 @@ import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/founda
 export const useStudyStore = defineStore('study', () => {
   const curriculumItems = ref([])
   const learningItems = ref([])
+  /** @type {import('vue').Ref<Array<{ mainChapterId: number, status: string, periods: import('@/types/study.js').LearningProgressItem[] }>>} */
+  const roadmapStages = ref([])
   const continuePosition = ref(null)
   const currentContent = ref(null)
   const lessonPages = ref([])
@@ -183,18 +185,33 @@ export const useStudyStore = defineStore('study', () => {
     try {
       const { data } = await getLearningRoadmap()
       curriculumItems.value = data.curriculumItems
+      roadmapStages.value = data.stages
       return data
     } catch (err) {
       if (err?.code === 'CURRICULUM_NOT_FOUND') {
         curriculumItems.value = []
+        roadmapStages.value = []
       }
       throw err
     }
   }
 
-  const fetchLearningProgress = async (mainChapterId) => {
-    const { data } = await getLearningProgress(mainChapterId)
-    learningItems.value = data.items
+  const applyLearningItemsFromStage = (mainChapterId = null) => {
+    learningItems.value = pickStageLearningItems(roadmapStages.value, mainChapterId)
+  }
+
+  /**
+   * 로드맵 기반 소단원 진행 갱신 (legacy getLearningProgress 대체)
+   * @param {number} [mainChapterId]
+   */
+  const refreshLearningItems = async (mainChapterId) => {
+    await fetchRoadmap()
+    const targetId =
+      mainChapterId ??
+      activeCurriculumItem.value?.mainChapterId ??
+      roadmapStages.value.find((stage) => stage.status === 'ACTIVE')?.mainChapterId ??
+      null
+    applyLearningItemsFromStage(targetId)
   }
 
   const fetchContinuePosition = async () => {
@@ -494,7 +511,7 @@ export const useStudyStore = defineStore('study', () => {
       learningItems.value.find((row) => row.subChapterId === subChapterId)?.mainChapterId
     await fetchContinuePosition()
     if (mainChapterId) {
-      await fetchLearningProgress(mainChapterId)
+      await refreshLearningItems(mainChapterId)
     }
 
     return data
@@ -647,7 +664,8 @@ export const useStudyStore = defineStore('study', () => {
       item.completedAt = item.completedAt ?? new Date().toISOString()
     }
 
-    await Promise.all([fetchCurriculum(), fetchContinuePosition()])
+    await Promise.all([fetchRoadmap(), fetchContinuePosition()])
+    applyLearningItemsFromStage(mainChapterId)
 
     if (wasFoundationChapter && isFoundationCompletedFlag.value) {
       pendingFoundationUnlock.value = true
@@ -660,23 +678,28 @@ export const useStudyStore = defineStore('study', () => {
     pendingFoundationUnlock.value = false
   }
 
-  /** StudyNote용: 커리큘럼 + 소단원 목록 + 이어하기 */
-  const fetchStudyNote = async () => {
+  /** StudyNote용: 로드맵 + 이어하기 (소단원 N+1 호출 없음) */
+  const fetchStudyNote = async (options = {}) => {
     if (isLoading.value) return
 
     isLoading.value = true
     error.value = null
 
     try {
-      await Promise.all([fetchCurriculum(), fetchContinuePosition()])
+      await Promise.all([fetchRoadmap(), fetchContinuePosition()])
 
-      const active = activeCurriculumItem.value
-      if (!active) {
+      const mainChapterId =
+        options.mainChapterId ??
+        activeCurriculumItem.value?.mainChapterId ??
+        roadmapStages.value.find((stage) => stage.status === 'ACTIVE')?.mainChapterId ??
+        null
+
+      if (mainChapterId == null) {
         learningItems.value = []
         return
       }
 
-      await fetchLearningProgress(active.mainChapterId)
+      applyLearningItemsFromStage(mainChapterId)
     } catch (err) {
       error.value = err?.message || '학습 현황을 불러오지 못했습니다.'
     } finally {
@@ -693,6 +716,7 @@ export const useStudyStore = defineStore('study', () => {
   const clearStudy = () => {
     curriculumItems.value = []
     learningItems.value = []
+    roadmapStages.value = []
     continuePosition.value = null
     currentContent.value = null
     pendingFoundationUnlock.value = false
@@ -762,7 +786,8 @@ export const useStudyStore = defineStore('study', () => {
     scenarioCorrectCount,
     fetchCurriculum,
     fetchRoadmap,
-    fetchLearningProgress,
+    refreshLearningItems,
+    applyLearningItemsFromStage,
     fetchContinuePosition,
     fetchSubChapterContent,
     fetchLessonContent,

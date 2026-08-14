@@ -56,4 +56,20 @@ export const getLearningRoadmap = async () => {
   }
 }
 
+/**
+ * 로드맵 stage에서 소단원 진행 목록 추출
+ * @param {ReturnType<typeof buildRoadmapStage>[]} stages
+ * @param {number | null | undefined} [mainChapterId]
+ */
+export const pickStageLearningItems = (stages, mainChapterId = null) => {
+  if (!stages?.length) return []
+
+  const stage =
+    (mainChapterId != null ? stages.find((row) => row.mainChapterId === mainChapterId) : null) ??
+    stages.find((row) => row.status === 'ACTIVE') ??
+    stages[0]
+
+  return stage?.periods ?? []
+}
+
 export { buildRoadmapStage } from './mappers/roadmapMapper.js'

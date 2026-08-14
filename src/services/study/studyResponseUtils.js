@@ -10,6 +10,11 @@ export const pickField = (obj, ...keys) => {
   return undefined
 }
 
+/**
+ * DEV mock 폴백 정책 — GET /learning/continue 등 API 실패 시 in-memory mock 사용
+ * - PROD: 항상 false
+ * - DEV: 비즈니스 4xx(리소스 없음·선행 미충족 등)는 throw, 네트워크/5xx만 mock
+ */
 export const shouldFallbackStudyMock = (error) => {
   if (!import.meta.env.DEV) return false
   const code = error?.code

@@ -86,7 +86,12 @@ export const confirmCurriculum = async (payload) => {
   }
 }
 
-/** 확정된 개인 커리큘럼 조회 (GET /curriculum) */
+/** 확정된 개인 커리큘럼 조회 (GET /curriculum) — 온보딩·편집 화면용
+ *
+ * - **용도**: 커리큘럼 구성/수정(`curriculumStore`), `sourceType`·`removable` 포함
+ * - 학습 진행 UI(StudyNote, 로드맵)는 `@/services/studyService.js`의 `getCurriculum` /
+ *   `getLearningRoadmap`을 사용한다.
+ */
 export const getConfirmedCurriculum = async () => {
   const response = await getUserCurriculum()
   const raw = unwrap(response)

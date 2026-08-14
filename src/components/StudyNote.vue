@@ -31,11 +31,7 @@ onMounted(async () => {
     studyStore.isLoading = true
     studyStore.error = null
     try {
-      await Promise.all([
-        studyStore.fetchCurriculum(),
-        studyStore.fetchLearningProgress(dashLearning.mainChapterId),
-      ])
-      await studyStore.fetchContinuePosition()
+      await studyStore.fetchStudyNote({ mainChapterId: dashLearning.mainChapterId })
       if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
         return
       }

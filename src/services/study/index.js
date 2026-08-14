@@ -2,7 +2,7 @@ export { StudyApiError } from './studyApiError.js'
 
 export { getCurriculum } from './curriculumStudyService.js'
 
-export { getLearningRoadmap, buildRoadmapStage } from './roadmapService.js'
+export { getLearningRoadmap, buildRoadmapStage, pickStageLearningItems } from './roadmapService.js'
 
 export {
   getLearningProgress,

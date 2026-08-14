@@ -4,6 +4,7 @@ export {
   getCurriculum,
   buildRoadmapStage,
   getLearningRoadmap,
+  pickStageLearningItems,
   getLearningProgress,
   getSubChapterContent,
   getLessonPages,
