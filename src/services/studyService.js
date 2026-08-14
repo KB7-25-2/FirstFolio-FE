@@ -15,7 +15,6 @@ import {
   startMainChapterQuizAttempt as startMainChapterQuizAttemptApi,
   startSubChapterQuizAttempt as startSubChapterQuizAttemptApi,
 } from '@/api/user/quizApi.js'
-import { withScheduleStatus } from '@/utils/scheduleStatus.js'
 
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
@@ -141,7 +140,6 @@ const MOCK_CURRICULUM_RESPONSE = {
 
 /**
  * 시드: 예·적금(2) — 1~2교시 수료, 3교시(103) 진행 중, 시나리오 잠금
- * 그 외 대단원도 로드맵 표시용 소단원 mock 포함
  * @type {LearningProgressItem[]}
  */
 const MOCK_LEARNING_PROGRESS = [
@@ -345,563 +343,7 @@ const MOCK_LEARNING_PROGRESS = [
     entryType: 'SCENARIO_QUIZ',
     quizScore: null,
   },
-  // —— 채권(3) LOCKED ——
-  {
-    progressId: 301,
-    userId: 1,
-    mainChapterId: 3,
-    subChapterId: 201,
-    contentVersionId: 401,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 1,
-    title: '채권이란?',
-    shortLabel: '채권기초',
-    periodSubtitle: '1교시 · 빌려주는 투자의 개념',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 302,
-    userId: 1,
-    mainChapterId: 3,
-    subChapterId: 202,
-    contentVersionId: 402,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 2,
-    title: '금리와 채권 가격',
-    shortLabel: '가격관계',
-    periodSubtitle: '2교시 · 금리가 오르면?',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 303,
-    userId: 1,
-    mainChapterId: 3,
-    subChapterId: 203,
-    contentVersionId: 403,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 3,
-    title: '국채와 회사채',
-    shortLabel: '채권종류',
-    periodSubtitle: '3교시 · 누가 발행할까',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 304,
-    userId: 1,
-    mainChapterId: 3,
-    subChapterId: 204,
-    contentVersionId: 404,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 4,
-    title: '신용등급 읽기',
-    shortLabel: '신용등급',
-    periodSubtitle: '4교시 · 리스크 한눈에',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 305,
-    userId: 1,
-    mainChapterId: 3,
-    subChapterId: null,
-    contentVersionId: null,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 5,
-    title: '채권 실전 퀴즈',
-    shortLabel: '실전퀴즈',
-    periodSubtitle: '5교시 · 배운 내용 점검',
-    entryType: 'SCENARIO_QUIZ',
-    quizScore: null,
-  },
-  // —— 주식(4) LOCKED ——
-  {
-    progressId: 401,
-    userId: 1,
-    mainChapterId: 4,
-    subChapterId: 301,
-    contentVersionId: 501,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 1,
-    title: '주식이란?',
-    shortLabel: '주식기초',
-    periodSubtitle: '1교시 · 회사의 조각 소유하기',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 402,
-    userId: 1,
-    mainChapterId: 4,
-    subChapterId: 302,
-    contentVersionId: 502,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 2,
-    title: '시가총액과 주가',
-    shortLabel: '시가총액',
-    periodSubtitle: '2교시 · 숫자가 말하는 것',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 403,
-    userId: 1,
-    mainChapterId: 4,
-    subChapterId: 303,
-    contentVersionId: 503,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 3,
-    title: '차트 기초',
-    shortLabel: '차트',
-    periodSubtitle: '3교시 · 봉차트 읽기',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 404,
-    userId: 1,
-    mainChapterId: 4,
-    subChapterId: 304,
-    contentVersionId: 504,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 4,
-    title: '배당과 권리',
-    shortLabel: '배당',
-    periodSubtitle: '4교시 · 주주의 몫',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 405,
-    userId: 1,
-    mainChapterId: 4,
-    subChapterId: null,
-    contentVersionId: null,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 5,
-    title: '주식 실전 퀴즈',
-    shortLabel: '실전퀴즈',
-    periodSubtitle: '5교시 · 배운 내용 점검',
-    entryType: 'SCENARIO_QUIZ',
-    quizScore: null,
-  },
-  // —— 펀드(5) LOCKED ——
-  {
-    progressId: 501,
-    userId: 1,
-    mainChapterId: 5,
-    subChapterId: 401,
-    contentVersionId: 601,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 1,
-    title: '펀드란?',
-    shortLabel: '펀드기초',
-    periodSubtitle: '1교시 · 모아서 투자하기',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 502,
-    userId: 1,
-    mainChapterId: 5,
-    subChapterId: 402,
-    contentVersionId: 602,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 2,
-    title: 'ETF와 뮤추얼펀드',
-    shortLabel: '펀드종류',
-    periodSubtitle: '2교시 · 어떤 그릇에 담을까',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 503,
-    userId: 1,
-    mainChapterId: 5,
-    subChapterId: 403,
-    contentVersionId: 603,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 3,
-    title: '보수와 비용',
-    shortLabel: '비용',
-    periodSubtitle: '3교시 · 수수료가 먹는 수익',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 504,
-    userId: 1,
-    mainChapterId: 5,
-    subChapterId: 404,
-    contentVersionId: 604,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 4,
-    title: '적립식 투자',
-    shortLabel: '적립식',
-    periodSubtitle: '4교시 · 시간을 나누는 전략',
-    entryType: 'LESSON',
-    quizScore: null,
-  },
-  {
-    progressId: 505,
-    userId: 1,
-    mainChapterId: 5,
-    subChapterId: null,
-    contentVersionId: null,
-    lastPageId: null,
-    status: 'NOT_STARTED',
-    startedAt: null,
-    completedAt: null,
-    updatedAt: '2026-07-01T00:00:00',
-    order: 5,
-    title: '펀드 실전 퀴즈',
-    shortLabel: '실전퀴즈',
-    periodSubtitle: '5교시 · 배운 내용 점검',
-    entryType: 'SCENARIO_QUIZ',
-    quizScore: null,
-  },
 ]
-
-/** 소단원 콘텐츠 접근 정보 목업 (snake_case) — sub_chapter_id 키 */
-const MOCK_SUB_CHAPTER_CONTENT = {
-  101: {
-    sub_chapter_id: 101,
-    main_chapter_id: 2,
-    title: '예금의 기초',
-    content_version_id: 301,
-    schema_version: '1.0',
-    content_url: 'https://cdn.example.com/signed/sub-101.json',
-    expires_at: '2026-07-29T03:00:00Z',
-    progress: {
-      status: 'COMPLETED',
-      last_page_id: 'page-final',
-      completed_at: '2026-07-02T14:30:00',
-    },
-  },
-  102: {
-    sub_chapter_id: 102,
-    main_chapter_id: 2,
-    title: '예금의 종류',
-    content_version_id: 302,
-    schema_version: '1.0',
-    content_url: 'https://cdn.example.com/signed/sub-102.json',
-    expires_at: '2026-07-29T03:00:00Z',
-    progress: {
-      status: 'COMPLETED',
-      last_page_id: 'page-final',
-      completed_at: '2026-07-04T11:00:00',
-    },
-  },
-  103: {
-    sub_chapter_id: 103,
-    main_chapter_id: 2,
-    title: '금리의 이해',
-    content_version_id: 303,
-    schema_version: '1.0',
-    content_url: 'https://cdn.example.com/signed/sub-103.json',
-    expires_at: '2026-07-29T03:00:00Z',
-    progress: {
-      status: 'IN_PROGRESS',
-      last_page_id: 'page-2',
-      completed_at: null,
-    },
-  },
-  104: {
-    sub_chapter_id: 104,
-    main_chapter_id: 2,
-    title: '예금자 보호 제도',
-    content_version_id: 304,
-    schema_version: '1.0',
-    content_url: 'https://cdn.example.com/signed/sub-104.json',
-    expires_at: '2026-07-29T03:00:00Z',
-    progress: {
-      status: 'NOT_STARTED',
-      last_page_id: null,
-      completed_at: null,
-    },
-  },
-  105: {
-    sub_chapter_id: 105,
-    main_chapter_id: 2,
-    title: '저축 목표 세우기',
-    content_version_id: 305,
-    schema_version: '1.0',
-    content_url: 'https://cdn.example.com/signed/sub-105.json',
-    expires_at: '2026-07-29T03:00:00Z',
-    progress: {
-      status: 'NOT_STARTED',
-      last_page_id: null,
-      completed_at: null,
-    },
-  },
-}
-
-/** 금리의 이해(103) — Figma TextbookPage 다페이지 mock (명세 스키마 + FE 확장 블록) */
-const MOCK_PAGES_INTEREST = [
-  {
-    id: 'page-1',
-    order: 1,
-    title: '실질 금리란?',
-    blocks: [
-      {
-        type: 'text',
-        content:
-          '만화 속에서 토끼는 5%로 5만 원을 벌었지만,\n물가 3% 때문에 진짜 이득은 2만 원(2%)뿐이었어요.',
-      },
-      {
-        type: 'conclusion',
-        formula: '실질 금리 = 명목 금리 − 물가 상승률',
-        note: '5% − 3% = 2%',
-      },
-      {
-        type: 'definition',
-        term: '명목 금리',
-        body: '은행이 알려주는 겉보기 이자율.\n만화 속 5%가 바로 이것!',
-      },
-      {
-        type: 'definition',
-        term: '물가 상승률',
-        body: '물건 값이 오른 비율.\n태블릿이 100만 → 103만이 된 이유.',
-      },
-      {
-        type: 'definition',
-        term: '실질 금리',
-        body: '물가를 뺀 뒤, 내 주머니에\n진짜로 남는 이익.',
-      },
-    ],
-  },
-  {
-    id: 'page-2',
-    order: 2,
-    title: '예금과 적금',
-    blocks: [
-      {
-        type: 'text',
-        content: '같은 금리라도 예금과 적금의 이자 결과가\n달라질 수 있어요.',
-      },
-      {
-        type: 'conclusion',
-        formula: '예금 = 목돈 한 번에 · 적금 = 나눠 넣기',
-        note: '이자는 예치 기간만큼',
-      },
-      {
-        type: 'definition',
-        term: '정기 예금',
-        body: '목돈을 한 번에 맡기는 방식',
-      },
-      {
-        type: 'definition',
-        term: '정기 적금',
-        body: '매월 나눠 넣는 방식',
-      },
-      {
-        type: 'definition',
-        term: 'TIP',
-        body: '왜 이자가 다른지 더 알아보세요',
-      },
-      {
-        type: 'learn_more',
-        chipLabel: '더 알아보기',
-        chipSubtitle: '예금 vs 적금 이자',
-        modal: {
-          title: '💡 정기 예금 vs 정기 적금 이자, 왜 차이가 날까?',
-          example: '예시) 1,200만 원, 금리 10%',
-          body: '• 정기 예금: 1,200만 원 전체가 1년 내내 은행에 머무름 → 이자 120만 원\n\n• 정기 적금: 첫 달 100만 원은 12개월, 마지막 달 100만 원은 1개월만 머무름 → 실제 평균 금리는 절반 수준 (이자 65만 원)\n\n→ 적금 이자는 통장에 남아있는 기간만큼만 계산되기 때문입니다.',
-          footer: '예금 · 적금 이자 비교',
-        },
-      },
-    ],
-  },
-  {
-    id: 'page-3',
-    order: 3,
-    title: '단리와 복리',
-    blocks: [
-      {
-        type: 'text',
-        content: '이자가 원금에만 붙는지, 이자에도 이자가\n붙는지에 따라 결과가 달라져요.',
-      },
-      {
-        type: 'conclusion',
-        formula: '복리 = 이자에 이자가 붙는 방식',
-        note: '시간이 길수록 격차 ↑',
-      },
-      {
-        type: 'definition',
-        term: '단리',
-        body: '원금에만 이자가 붙는 계산',
-      },
-      {
-        type: 'definition',
-        term: '복리',
-        body: '원금+이자에 다시 이자가 붙는 계산',
-      },
-    ],
-  },
-  {
-    id: 'page-final',
-    order: 4,
-    title: '오늘 배운 것',
-    blocks: [
-      {
-        type: 'text',
-        content: '실질 금리와 예·적금, 단리·복리의\n차이를 기억해 두세요.',
-      },
-      {
-        type: 'conclusion',
-        formula: '금리의 의미를 이해하고 비교할 수 있다',
-        note: '퀴즈로 확인해요',
-      },
-    ],
-  },
-]
-
-/**
- * 명세 §1.2 형태 소단원 JSON 생성
- * @param {number} subChapterId
- * @param {LessonPage[]} pages
- * @param {number[]} questionIds
- * @returns {SubChapterLessonJson}
- */
-const buildLessonJson = (subChapterId, pages, questionIds) => ({
-  schemaVersion: '1.0',
-  subChapterId,
-  pages: pages.slice().sort((a, b) => a.order - b.order),
-  subChapterQuiz: {
-    questionIds: questionIds.slice(),
-  },
-})
-
-/**
- * 짧은 기본 강좌 페이지 (완료/미시작 소단원용)
- * @param {string} title
- * @param {string} [secondTitle]
- * @returns {LessonPage[]}
- */
-const buildDefaultPages = (title, secondTitle = '금융상품을 볼 때 확인할 항목') => [
-  {
-    id: 'page-1',
-    order: 1,
-    title,
-    blocks: [{ type: 'text', content: `${title}의 핵심을 알아봅니다.` }],
-  },
-  {
-    id: 'page-2',
-    order: 2,
-    title: secondTitle,
-    blocks: [
-      {
-        type: 'text',
-        content: '금리, 만기, 지급 주기와 위험도를 확인합니다.',
-      },
-    ],
-  },
-]
-
-/** content_url → 소단원 강좌 JSON (클라이언트가 URL 경로를 조합하지 않음) */
-const MOCK_LESSON_JSON_BY_URL = {
-  'https://cdn.example.com/signed/sub-101.json': buildLessonJson(
-    101,
-    [
-      {
-        id: 'page-1',
-        order: 1,
-        title: '예금과 적금의 차이',
-        blocks: [{ type: 'text', content: '예금과 적금의 차이를 알아봅니다.' }],
-      },
-      {
-        id: 'page-2',
-        order: 2,
-        title: '금융상품을 볼 때 확인할 항목',
-        blocks: [
-          {
-            type: 'text',
-            content: '금리, 만기, 지급 주기와 위험도를 확인합니다.',
-          },
-        ],
-      },
-    ],
-    [1001, 1002, 1003],
-  ),
-  'https://cdn.example.com/signed/sub-102.json': buildLessonJson(
-    102,
-    buildDefaultPages('예금의 종류'),
-    [1011, 1012, 1013],
-  ),
-  'https://cdn.example.com/signed/sub-103.json': buildLessonJson(
-    103,
-    MOCK_PAGES_INTEREST,
-    [1021, 1022, 1023],
-  ),
-  'https://cdn.example.com/signed/sub-104.json': buildLessonJson(
-    104,
-    buildDefaultPages('예금자 보호 제도'),
-    [1031, 1032, 1033],
-  ),
-  'https://cdn.example.com/signed/sub-105.json': buildLessonJson(
-    105,
-    buildDefaultPages('저축 목표 세우기'),
-    [1041, 1042, 1043],
-  ),
-}
 
 /** 이어하기 목업 — ACTIVE 대단원(예·적금). 진도 변경 시 recomputeContinuePosition으로 갱신 */
 let MOCK_CONTINUE_POSITION = {
@@ -1168,21 +610,8 @@ export const getCurriculum = async () => {
             )
           })()
 
-    // 실제 미확정(404)은 mock으로 가리지 않음. 네트워크 등은 DEV mock 폴백.
-    if (mapped.code === 'CURRICULUM_NOT_FOUND' || !shouldFallbackStudyMock(mapped)) {
-      throw mapped
-    }
-    console.warn('[studyService] GET curriculum 실패 — mock으로 대체합니다.', mapped)
+    throw mapped
   }
-
-  await delay()
-  const items = normalizeCurriculumStatuses(
-    structuredClone(MOCK_CURRICULUM_RESPONSE.data.items).map(mapCurriculumItem),
-  )
-  if (!items.length) {
-    throw new StudyApiError('CURRICULUM_NOT_FOUND', '확정된 커리큘럼이 없다.', 404)
-  }
-  return { data: { items } }
 }
 
 /**
@@ -1307,25 +736,6 @@ export const buildRoadmapStage = (chapter, subChapters, mainChapterQuiz = null) 
 }
 
 /**
- * @param {CurriculumItem & { description?: string }} chapter
- * @param {LearningProgressItem[]} progressItems
- */
-const buildRoadmapStageFromLegacyProgress = (chapter, progressItems) => {
-  const withStatus = withScheduleStatus(progressItems)
-  const periods = withStatus.filter((row) => row.entryType !== 'SCENARIO_QUIZ')
-  const scenarioItem = withStatus.find((row) => row.entryType === 'SCENARIO_QUIZ') ?? null
-  const lessonsDone =
-    chapter.status !== 'LOCKED' &&
-    periods.length > 0 &&
-    periods.every((row) => row.status === 'COMPLETED')
-  const mainChapterQuiz = {
-    available: lessonsDone && Boolean(scenarioItem),
-    status: scenarioItem?.status === 'COMPLETED' ? 'COMPLETED' : 'LOCKED',
-  }
-  return buildRoadmapStage(chapter, periods, mainChapterQuiz)
-}
-
-/**
  * 학습 로드맵 통합 조회
  * GET /learning/roadmap
  * @returns {Promise<{ data: { curriculumItems: CurriculumItem[], stages: ReturnType<typeof buildRoadmapStage>[] } }>}
@@ -1365,25 +775,8 @@ export const getLearningRoadmap = async () => {
         404,
       )
     }
-    if (!shouldFallbackStudyMock(mapped)) throw mapped
-    console.warn('[studyService] GET roadmap 실패 — mock으로 대체합니다.', mapped)
+    throw mapped
   }
-
-  const { data: curriculumData } = await getCurriculum()
-  const curriculumItems = curriculumData.items
-  /** @type {ReturnType<typeof buildRoadmapStage>[]} */
-  const stages = []
-
-  for (const chapter of curriculumItems) {
-    try {
-      const { data } = await getLearningProgress(chapter.mainChapterId)
-      stages.push(buildRoadmapStageFromLegacyProgress(chapter, data.items ?? []))
-    } catch {
-      stages.push(buildRoadmapStage(chapter, [], null))
-    }
-  }
-
-  return { data: { curriculumItems, stages } }
 }
 
 /**
@@ -1419,7 +812,7 @@ const resolveContentVersionId = async (subChapterId, payloadVersionId) => {
     const raw = unwrap(await getSubChapterProgressApi(subChapterId))
     return pickField(raw, 'contentVersionId', 'content_version_id') ?? null
   } catch {
-    return MOCK_SUB_CHAPTER_CONTENT[subChapterId]?.content_version_id ?? null
+    return null
   }
 }
 
@@ -1537,13 +930,8 @@ export const getLearningProgress = async (mainChapterId) => {
         404,
       )
     }
-    if (!shouldFallbackStudyMock(mapped)) throw mapped
-    console.warn('[studyService] GET sub-chapters 실패 — mock으로 대체합니다.', mapped)
+    throw mapped
   }
-
-  await delay()
-  const items = MOCK_LEARNING_PROGRESS.filter((item) => item.mainChapterId === mainChapterId)
-  return { data: { items: structuredClone(items) } }
 }
 
 /**
@@ -1585,20 +973,6 @@ const mapContinuePosition = (raw) => ({
 })
 
 /**
- * 직전 LESSON이 미완료면 선행 차단
- * @param {number} subChapterId
- */
-const isPrerequisiteBlocked = (subChapterId) => {
-  const raw = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
-  if (!raw) return false
-  const lessons = getLessonProgressForChapter(raw.main_chapter_id)
-  const index = lessons.findIndex((item) => item.subChapterId === subChapterId)
-  if (index <= 0) return false
-  const previous = lessons[index - 1]
-  return Boolean(previous && previous.status !== 'COMPLETED')
-}
-
-/**
  * 소단원 메타 + 공개 강좌 + 진도
  * OpenAPI: GET /learning/sub-chapters/{id} + GET …/progress
  * @param {number} subChapterId
@@ -1614,25 +988,14 @@ export const getSubChapterContent = async (subChapterId) => {
     const progressRaw = progressRes ? unwrap(progressRes) : null
     return { data: mapSubChapterContent(lessonRaw, progressRaw) }
   } catch (error) {
+    if (error instanceof StudyApiError) throw error
     const parsed = parseApiError(error)
-    const mapped = new StudyApiError(
-      parsed?.code ?? error?.code ?? 'SUB_CHAPTER_FETCH_FAILED',
-      parsed?.message ?? error?.message ?? '소단원을 불러오지 못했습니다.',
-      parsed?.status ?? error?.status ?? 500,
+    throw new StudyApiError(
+      parsed?.code ?? 'SUB_CHAPTER_FETCH_FAILED',
+      parsed?.message ?? '소단원을 불러오지 못했습니다.',
+      parsed?.status ?? 500,
     )
-    if (!shouldFallbackStudyMock(mapped)) throw mapped
-    console.warn('[studyService] GET sub-chapter 실패 — mock으로 대체합니다.', mapped)
   }
-
-  await delay()
-  if (isPrerequisiteBlocked(subChapterId)) {
-    throw new StudyApiError('PREREQUISITE_REQUIRED', '선행 학습이 필요하다.', 403)
-  }
-  const raw = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
-  if (!raw) {
-    throw new StudyApiError('SUB_CHAPTER_NOT_FOUND', '공개 소단원을 찾을 수 없다.', 404)
-  }
-  return { data: mapSubChapterContent(structuredClone(raw)) }
 }
 
 /**
@@ -1646,18 +1009,12 @@ export const getLessonPages = async (contentUrl, embeddedLesson = null) => {
     return { data: structuredClone(embeddedLesson) }
   }
   if (embeddedLesson && typeof embeddedLesson === 'object') {
-    // lesson 노드가 pages를 직접 감싸지 않고 루트일 수 있음
     if (Array.isArray(embeddedLesson.pages) || embeddedLesson.subChapterQuiz) {
       return { data: structuredClone(embeddedLesson) }
     }
   }
 
-  await delay()
-  const payload = contentUrl ? MOCK_LESSON_JSON_BY_URL[contentUrl] : null
-  if (!payload) {
-    throw new StudyApiError('CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.', 404)
-  }
-  return { data: structuredClone(payload) }
+  throw new StudyApiError('CONTENT_NOT_FOUND', '학습 페이지를 찾을 수 없다.', 404)
 }
 
 /**
@@ -1697,50 +1054,7 @@ export const saveLessonProgress = async (subChapterId, payload) => {
       parsed?.message ?? '진도를 저장하지 못했습니다.',
       parsed?.status ?? 500,
     )
-    if (!shouldFallbackStudyMock(mapped)) throw mapped
-    console.warn('[studyService] PUT progress 실패 — mock으로 대체합니다.', mapped)
-  }
-
-  await delay(80)
-  const raw = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
-  if (!raw) {
-    throw new StudyApiError('SUB_CHAPTER_NOT_FOUND', '공개 소단원을 찾을 수 없다.', 404)
-  }
-
-  raw.progress.last_page_id = lastPageId
-  raw.progress.status = status
-  if (status === 'COMPLETED' && !raw.progress.completed_at) {
-    raw.progress.completed_at = new Date().toISOString()
-  }
-
-  const progressItem = MOCK_LEARNING_PROGRESS.find((item) => item.subChapterId === subChapterId)
-  if (progressItem) {
-    progressItem.lastPageId = lastPageId
-    progressItem.status = status
-    progressItem.updatedAt = new Date().toISOString()
-    if (status === 'COMPLETED') {
-      progressItem.completedAt = progressItem.completedAt ?? new Date().toISOString()
-    } else if (!progressItem.startedAt) {
-      progressItem.startedAt = new Date().toISOString()
-    }
-    syncCurriculumProgressPercent(progressItem.mainChapterId)
-  }
-
-  recomputeContinuePosition()
-
-  return {
-    data: mapSaveProgressResponse(
-      {
-        sub_chapter_id: subChapterId,
-        content_version_id: raw.content_version_id,
-        last_page_id: lastPageId,
-        status,
-        started_at: progressItem?.startedAt ?? null,
-        completed_at: progressItem?.completedAt ?? null,
-        updated: true,
-      },
-      { lastPageId, status },
-    ),
+    throw mapped
   }
 }
 
@@ -2045,14 +1359,12 @@ export const startSubChapterQuizAttempt = async (subChapterId) => {
     const response = await startSubChapterQuizAttemptApi(subChapterId)
     return { data: mapQuizAttemptStart(unwrap(response)) }
   } catch (error) {
-    const mapped = new StudyApiError(
-      error?.code ?? parseApiError(error)?.code ?? 'QUIZ_START_FAILED',
-      error?.message ?? '퀴즈를 시작하지 못했습니다.',
-      error?.status ?? 500,
+    const parsed = parseApiError(error)
+    throw new StudyApiError(
+      parsed?.code ?? 'QUIZ_START_FAILED',
+      parsed?.message ?? '퀴즈를 시작하지 못했습니다.',
+      parsed?.status ?? 500,
     )
-    if (!shouldFallbackStudyMock(mapped)) throw mapped
-    console.warn('[studyService] POST quiz-attempts 실패 — mock 문항으로 대체합니다.', mapped)
-    return null
   }
 }
 
@@ -2167,13 +1479,7 @@ export const submitQuizAttempt = async (payload) => {
     progressItem.lastPageId = progressItem.lastPageId ?? 'page-final'
   }
 
-  const content = MOCK_SUB_CHAPTER_CONTENT[subChapterId]
-  if (content) {
-    content.progress.status = 'COMPLETED'
-    content.progress.completed_at = content.progress.completed_at ?? new Date().toISOString()
-  }
-
-  const mainChapterId = progressItem?.mainChapterId ?? content?.main_chapter_id
+  const mainChapterId = progressItem?.mainChapterId
   if (mainChapterId) {
     syncCurriculumProgressPercent(mainChapterId)
     if (areAllLessonsCompleted(mainChapterId)) {

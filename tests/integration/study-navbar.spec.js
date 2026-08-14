@@ -3,15 +3,29 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-const { getUserCurriculum } = vi.hoisted(() => ({
-  getUserCurriculum: vi.fn(),
-}))
+const { getUserCurriculum, getSubChapters, getSubChapterProgress, getContinuePositionApi } =
+  vi.hoisted(() => ({
+    getUserCurriculum: vi.fn(),
+    getSubChapters: vi.fn(),
+    getSubChapterProgress: vi.fn(),
+    getContinuePositionApi: vi.fn(),
+  }))
 
 vi.mock('@/api/user/curriculumApi.js', async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
     getUserCurriculum,
+  }
+})
+
+vi.mock('@/api/user/studyApi.js', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getSubChapters,
+    getSubChapterProgress,
+    getContinuePosition: getContinuePositionApi,
   }
 })
 
@@ -50,6 +64,42 @@ describe('studyService + studyStore (integration)', () => {
         },
       },
     })
+
+    getContinuePositionApi.mockRejectedValue(new Error('network'))
+    getSubChapters.mockResolvedValue({
+      data: {
+        data: {
+          items: [
+            {
+              sub_chapter_id: 101,
+              title: '예금이란?',
+              display_order: 1,
+              description: '1교시',
+              content_available: true,
+            },
+            {
+              sub_chapter_id: 103,
+              title: '금리의 이해',
+              display_order: 3,
+              description: '3교시',
+              content_available: true,
+            },
+          ],
+        },
+      },
+    })
+    getSubChapterProgress.mockImplementation((subChapterId) =>
+      Promise.resolve({
+        data: {
+          data: {
+            sub_chapter_id: subChapterId,
+            content_version_id: 300 + subChapterId,
+            last_page_id: subChapterId === 103 ? 'page-2' : 'page-final',
+            status: subChapterId === 103 ? 'IN_PROGRESS' : 'COMPLETED',
+          },
+        },
+      }),
+    )
   })
 
   it('getCurriculum이 ACTIVE 대단원을 포함한다', async () => {
