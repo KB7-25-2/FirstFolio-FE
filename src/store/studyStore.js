@@ -5,6 +5,7 @@ import {
   getContinuePosition,
   getCurriculum,
   getLearningProgress,
+  getLearningRoadmap,
   getLessonPages,
   getQuizQuestions,
   getScenario,
@@ -170,6 +171,19 @@ export const useStudyStore = defineStore('study', () => {
     try {
       const { data } = await getCurriculum()
       curriculumItems.value = data.items
+    } catch (err) {
+      if (err?.code === 'CURRICULUM_NOT_FOUND') {
+        curriculumItems.value = []
+      }
+      throw err
+    }
+  }
+
+  const fetchRoadmap = async () => {
+    try {
+      const { data } = await getLearningRoadmap()
+      curriculumItems.value = data.curriculumItems
+      return data
     } catch (err) {
       if (err?.code === 'CURRICULUM_NOT_FOUND') {
         curriculumItems.value = []
@@ -747,6 +761,7 @@ export const useStudyStore = defineStore('study', () => {
     scenarioIsGraded,
     scenarioCorrectCount,
     fetchCurriculum,
+    fetchRoadmap,
     fetchLearningProgress,
     fetchContinuePosition,
     fetchSubChapterContent,

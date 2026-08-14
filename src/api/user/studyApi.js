@@ -30,3 +30,6 @@ export const putSubChapterProgress = (subChapterId, body) =>
 
 /** GET /learning/continue */
 export const getContinuePosition = () => apiClient.get('/learning/continue')
+
+/** GET /learning/roadmap — 커리큘럼·소단원·진도·대단원 퀴즈 통합 */
+export const getRoadmap = () => apiClient.get('/learning/roadmap')
