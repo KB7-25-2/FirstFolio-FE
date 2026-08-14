@@ -3,6 +3,8 @@ import {
   MOCK_LEARNING_PROGRESS,
   mockContinueStore,
 } from './studyMockData.js'
+import { mapCurriculumItem, normalizeCurriculumStatuses } from '../mappers/curriculumMapper.js'
+import { buildRoadmapStage } from '../mappers/roadmapMapper.js'
 
 export { mockContinueStore } from './studyMockData.js'
 
@@ -146,4 +148,61 @@ export const recomputeContinuePosition = () => {
     progress_percent: activeChapter.progress_percent ?? 0,
     route: `/learning?mainChapterId=${mainChapterId}`,
   }
+}
+
+/**
+ * @param {import('@/types/study.js').LearningProgressItem} row
+ * @param {import('@/types/study.js').CurriculumItem} chapter
+ * @param {import('@/types/study.js').LearningProgressItem[]} lessons
+ * @returns {import('@/types/study.js').ScheduleStatus}
+ */
+const deriveMockScheduleStatus = (row, chapter, lessons) => {
+  if (chapter.status === 'LOCKED') return 'LOCKED'
+  if (row.status === 'COMPLETED') return 'COMPLETED'
+  if (row.status === 'IN_PROGRESS') return 'IN_PROGRESS'
+  const firstIncomplete = lessons.find((item) => item.status !== 'COMPLETED')
+  if (firstIncomplete && row.subChapterId === firstIncomplete.subChapterId) return 'NEXT'
+  return 'LOCKED'
+}
+
+/**
+ * DEV/E2E — in-memory mock에서 로드맵 응답 조립 (GET /learning/roadmap 폴백)
+ */
+export const buildMockLearningRoadmap = () => {
+  const curriculumItems = normalizeCurriculumStatuses(
+    MOCK_CURRICULUM_RESPONSE.data.items.map(mapCurriculumItem),
+  )
+
+  const stages = curriculumItems.map((chapter) => {
+    const lessons = getLessonProgressForChapter(chapter.mainChapterId)
+    const scenarioRow = MOCK_LEARNING_PROGRESS.find(
+      (item) => item.mainChapterId === chapter.mainChapterId && item.entryType === 'SCENARIO_QUIZ',
+    )
+
+    const periods = lessons.map((row) => ({
+      ...structuredClone(row),
+      scheduleStatus: deriveMockScheduleStatus(row, chapter, lessons),
+    }))
+
+    if (scenarioRow) {
+      periods.push({
+        ...structuredClone(scenarioRow),
+        scheduleStatus:
+          scenarioRow.status === 'COMPLETED'
+            ? 'COMPLETED'
+            : areAllLessonsCompleted(chapter.mainChapterId)
+              ? 'NEXT'
+              : 'LOCKED',
+      })
+    }
+
+    const mainChapterQuiz = {
+      available: areAllLessonsCompleted(chapter.mainChapterId),
+      status: scenarioRow?.status === 'COMPLETED' ? 'COMPLETED' : 'NOT_STARTED',
+    }
+
+    return buildRoadmapStage(chapter, periods, mainChapterQuiz)
+  })
+
+  return { curriculumItems, stages }
 }
