@@ -83,13 +83,38 @@ describe('levelTestService', () => {
       },
     })
 
-    await saveLevelTestAnswers(2001, {
+    const { data } = await saveLevelTestAnswers(2001, {
       answers: [{ questionId: 1001, selectedChoiceIds: ['B'] }],
     })
 
     expect(saveLevelTestAttemptAnswers).toHaveBeenCalledWith(2001, {
       answers: [{ question_id: 1001, answer: { key: 'B' } }],
     })
+    expect(data.savedAnswers).toEqual([{ questionId: 1001, selectedChoiceIds: ['B'] }])
+    expect(getStoredLevelTestSession().answers).toEqual({ 1001: ['B'] })
+  })
+
+  it('PUT 응답에 answers가 있으면 그 값을 세션에 확정 저장한다', async () => {
+    saveLevelTestAttemptAnswers.mockResolvedValue({
+      data: {
+        data: {
+          attempt_id: 2001,
+          saved_answer_count: 1,
+          answered_count: 1,
+          total_count: 8,
+          status: 'IN_PROGRESS',
+          updated_at: '2026-08-12T05:00:00Z',
+          answers: [{ question_id: 1001, answer: { key: 'A' } }],
+        },
+      },
+    })
+
+    const { data } = await saveLevelTestAnswers(2001, {
+      answers: [{ questionId: 1001, selectedChoiceIds: ['B'] }],
+    })
+
+    expect(data.savedAnswers).toEqual([{ questionId: 1001, selectedChoiceIds: ['A'] }])
+    expect(getStoredLevelTestSession().answers).toEqual({ 1001: ['A'] })
   })
 
   it('최종 제출의 문항·대단원 결과를 변환하고 세션에 보관한다', async () => {

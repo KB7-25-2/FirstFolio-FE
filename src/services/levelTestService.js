@@ -45,10 +45,14 @@ const mapQuestion = (raw) => ({
   displayOrder: raw.display_order,
 })
 
-const mapSavedAnswer = (raw) => ({
-  questionId: raw.question_id,
-  selectedChoiceIds: raw.answer?.key ? [raw.answer.key] : [],
-})
+const mapSavedAnswer = (raw) => {
+  const questionId = raw.question_id ?? raw.questionId
+  const key = raw.answer?.key ?? raw.saved_answer?.key ?? raw.savedAnswer?.key
+  return {
+    questionId,
+    selectedChoiceIds: key ? [String(key)] : [],
+  }
+}
 
 const mapAttempt = (raw) => ({
   attemptId: raw.attempt_id,
@@ -122,17 +126,34 @@ export const saveLevelTestAnswers = async (attemptId, payload) => {
   }
   const response = await saveLevelTestAttemptAnswers(attemptId, body)
   const raw = unwrap(response)
+
+  // 응답에 저장된 답안이 있으면 그 값을 신뢰. 없으면 요청 페이로드를 확정분으로 사용.
+  const responseAnswers = (raw.answers ?? raw.saved_answers ?? [])
+    .map(mapSavedAnswer)
+    .filter((item) => item.questionId != null && item.selectedChoiceIds.length)
+  const savedAnswers =
+    responseAnswers.length > 0
+      ? responseAnswers
+      : answerItems
+          .filter((item) => item.questionId != null && item.selectedChoiceIds?.length)
+          .map((item) => ({
+            questionId: Number(item.questionId),
+            selectedChoiceIds: [...item.selectedChoiceIds],
+          }))
+
   const data = {
-    attemptId: raw.attempt_id,
-    savedAnswerCount: raw.saved_answer_count,
-    answeredCount: raw.answered_count,
-    totalCount: raw.total_count,
+    attemptId: raw.attempt_id ?? raw.attemptId,
+    savedAnswerCount: raw.saved_answer_count ?? raw.savedAnswerCount ?? savedAnswers.length,
+    answeredCount: raw.answered_count ?? raw.answeredCount,
+    totalCount: raw.total_count ?? raw.totalCount,
     status: raw.status,
-    updatedAt: raw.updated_at,
+    updatedAt: raw.updated_at ?? raw.updatedAt,
+    savedAnswers,
   }
+
   const currentAnswers = readSession().answers ?? {}
   const answers = { ...currentAnswers }
-  answerItems.forEach((item) => {
+  savedAnswers.forEach((item) => {
     answers[item.questionId] = [...item.selectedChoiceIds]
   })
   writeSession({ answers })
