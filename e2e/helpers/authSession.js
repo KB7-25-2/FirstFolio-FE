@@ -1,6 +1,46 @@
+import { mockLearningApis } from './learningApiMock.js'
+
 /** @typedef {'LEVEL_TEST' | 'CURRICULUM' | 'HOME'} OnboardingStep */
 
 export const E2E_TOKEN = 'e2e-auth-token'
+
+/**
+ * 미스텁 `/api/*` 가 로컬 BE 401 → 로그인 리다이렉트 되는 것을 방지.
+ * `/src/api/**` 모듈 요청은 건드리지 않는다. 나중에 등록한 구체 라우트가 우선한다.
+ * @param {import('@playwright/test').Page} page
+ */
+export const mockUnhandledApiSafe = async (page) => {
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    async (route) => {
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'E2E_UNHANDLED', message: 'e2e unhandled api' } }),
+      })
+    },
+  )
+}
+
+/** POST /auth/login — ensureOnboardingStep 폴백용 */
+export const mockAuthLoginApi = async (page) => {
+  await page.route('**/auth/login', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue()
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          user: { user_id: 1, nickname: 'E2E테스트', role_code: 'USER' },
+          onboarding_step: 'HOME',
+        },
+      }),
+    })
+  })
+}
 
 /**
  * @param {import('@playwright/test').Page} page
@@ -162,6 +202,8 @@ export const mockOnboardingApis = async (page) => {
 export const seedOnboardingSession = async (page, onboardingStep, options = {}) => {
   const { levelTestCompleted = false, curriculumConfirmed = false, token = E2E_TOKEN } = options
 
+  await mockUnhandledApiSafe(page)
+  await mockAuthLoginApi(page)
   await mockUserProfileApi(page)
   await mockOnboardingApis(page)
   await page.addInitScript(
@@ -191,12 +233,13 @@ export const seedOnboardingSession = async (page, onboardingStep, options = {}) 
 }
 
 /**
- * 홈 StudyNote용 dashboard만 stub.
- * GET /curriculum · /learning/continue 는 intercept 하지 않는다.
- * 학습 E2E는 studyService in-memory mock(채권 포함, 시나리오 수료 시 상태 갱신)을 써야 한다.
+ * 홈 StudyNote·학습 플로우용 stub.
+ * roadmap/continue는 abort하여 studyService in-memory mock(DEV 폴백)을 사용한다.
  * @param {import('@playwright/test').Page} page
  */
 export const mockHomeStudyApis = async (page) => {
+  await mockLearningApis(page)
+
   await page.route('**/dashboard', async (route) => {
     if (route.request().method() !== 'GET') return route.continue()
     await route.fulfill({

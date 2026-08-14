@@ -16,6 +16,8 @@ import {
   submitQuizAttempt,
   submitScenarioAttempt,
 } from '@/services/studyService.js'
+import { StudyApiError } from '@/services/study/studyApiError.js'
+import { shouldFallbackStudyMock } from '@/services/study/studyResponseUtils.js'
 import { useUserStore } from '@/store/userStore.js'
 import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
 
@@ -333,7 +335,23 @@ export const useStudyStore = defineStore('study', () => {
     clearQuizSession()
     quizSubChapterId.value = subChapterId
 
-    const attempt = await startSubChapterQuizAttempt(subChapterId)
+    /** @type {{ data?: { attemptId?: number, questions?: unknown[] } } | null} */
+    let attempt = null
+    try {
+      attempt = await startSubChapterQuizAttempt(subChapterId)
+    } catch (error) {
+      const mapped =
+        error instanceof StudyApiError
+          ? error
+          : new StudyApiError(
+              error?.code ?? 'QUIZ_START_FAILED',
+              error?.message ?? '퀴즈를 시작하지 못했습니다.',
+              error?.status ?? 500,
+            )
+      if (!shouldFallbackStudyMock(mapped)) throw mapped
+      console.warn('[studyStore] quiz start 실패 — mock 문항으로 대체합니다.', mapped)
+    }
+
     if (attempt?.data?.questions?.length) {
       quizAttemptId.value = attempt.data.attemptId
       quizQuestions.value = attempt.data.questions

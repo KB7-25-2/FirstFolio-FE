@@ -125,6 +125,46 @@ describe('roadmapMapper', () => {
     expect(stage.scenarioReady).toBe(false)
   })
 
+  it('buildRoadmapStage는 LESSON이 모두 끝나면 시나리오 CTA를 연다', () => {
+    const chapter = mapRoadmapChapterItem({
+      curriculum_item_id: 502,
+      main_chapter_id: 2,
+      title: '예·적금',
+      chapter_type: 'CORE',
+      display_order: 2,
+      status: 'ACTIVE',
+      progress_percent: 100,
+    })
+    const lessons = [
+      mapRoadmapSubChapter(
+        {
+          sub_chapter_id: 103,
+          title: '금리의 이해',
+          display_order: 1,
+          progress_status: 'COMPLETED',
+          schedule_status: 'COMPLETED',
+        },
+        2,
+      ),
+    ]
+    const scenarioPeriod = {
+      ...lessons[0],
+      subChapterId: null,
+      title: '예금 실전 퀴즈',
+      entryType: 'SCENARIO_QUIZ',
+      status: 'NOT_STARTED',
+      scheduleStatus: 'NEXT',
+      order: 2,
+    }
+
+    const stage = buildRoadmapStage(chapter, [...lessons, scenarioPeriod], {
+      available: true,
+      status: 'NOT_STARTED',
+    })
+
+    expect(stage.scenarioReady).toBe(true)
+  })
+
   it('pickStageLearningItems는 ACTIVE 대단원 periods를 반환한다', () => {
     const chapter = mapRoadmapChapterItem({
       curriculum_item_id: 502,

@@ -99,10 +99,11 @@ export const buildRoadmapStage = (chapter, subChapters, mainChapterQuiz = null) 
     periods = periods.map((row) => ({ ...row, scheduleStatus: 'LOCKED' }))
   }
 
+  const lessonPeriods = periods.filter((row) => row.entryType !== 'SCENARIO_QUIZ')
   const lessonsDone =
     chapter.status !== 'LOCKED' &&
-    periods.length > 0 &&
-    periods.every((row) => row.status === 'COMPLETED')
+    lessonPeriods.length > 0 &&
+    lessonPeriods.every((row) => row.status === 'COMPLETED')
 
   const quiz = mainChapterQuiz ?? {}
   const quizStatus = pickField(quiz, 'status')
