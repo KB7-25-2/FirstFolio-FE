@@ -1,7 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
+
+const { getUserCurriculum } = vi.hoisted(() => ({
+  getUserCurriculum: vi.fn(),
+}))
+
+vi.mock('@/api/user/curriculumApi.js', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getUserCurriculum,
+  }
+})
+
 import { useStudyStore } from '@/store/studyStore.js'
 import { getCurriculum } from '@/services/studyService.js'
 import AppNavbar from '@/components/AppNavbar.vue'
@@ -9,12 +22,41 @@ import AppNavbar from '@/components/AppNavbar.vue'
 describe('studyService + studyStore (integration)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    getUserCurriculum.mockResolvedValue({
+      data: {
+        data: {
+          items: [
+            {
+              curriculum_item_id: 501,
+              main_chapter_id: 1,
+              title: '포트폴리오 기초',
+              chapter_type: 'FOUNDATION',
+              display_order: 1,
+              status: 'ACTIVE',
+              completed_at: '2026-06-20T12:00:00',
+              progress_percent: 100,
+            },
+            {
+              curriculum_item_id: 502,
+              main_chapter_id: 2,
+              title: '예·적금',
+              chapter_type: 'ASSET',
+              display_order: 2,
+              status: 'ACTIVE',
+              completed_at: null,
+              progress_percent: 50,
+            },
+          ],
+        },
+      },
+    })
   })
 
-  it('getCurriculum mock이 ACTIVE 대단원을 포함한다', async () => {
+  it('getCurriculum이 ACTIVE 대단원을 포함한다', async () => {
     const { data } = await getCurriculum()
     expect(data.items.length).toBeGreaterThan(0)
     expect(data.items.some((item) => item.status === 'ACTIVE')).toBe(true)
+    expect(getUserCurriculum).toHaveBeenCalled()
   })
 
   it('fetchStudyNote가 스토어에 학습 현황을 채운다', async () => {
