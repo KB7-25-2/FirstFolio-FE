@@ -4,6 +4,7 @@ import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import QuizExamPaper from '@/components/learning/QuizExamPaper.vue'
 import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
+import QuizOxChoices from '@/components/learning/QuizOxChoices.vue'
 import QuizFeedbackBlock from '@/components/learning/QuizFeedbackBlock.vue'
 import QuizResultModal from '@/components/learning/QuizResultModal.vue'
 import QuizGradeMark from '@/components/learning/QuizGradeMark.vue'
@@ -26,6 +27,7 @@ const {
   quizFinished,
   quizCorrectCount,
   quizAttemptResult,
+  isTrueFalse,
   optionsWithTone,
   primaryLabel,
   primaryEnabled,
@@ -94,7 +96,16 @@ const {
           </p>
         </div>
 
-        <div class="mt-5 flex flex-col gap-3">
+        <QuizOxChoices
+          v-if="isTrueFalse"
+          class="mt-5"
+          :choices="quizCurrentQuestion.optionsJson ?? []"
+          :option-variant="optionVariant"
+          :disabled="quizIsGraded || quizFinished"
+          @select="selectOption"
+        />
+
+        <div v-else class="mt-5 flex flex-col gap-3">
           <QuizChoiceOption
             v-for="opt in optionsWithTone"
             :key="opt.key"
@@ -121,7 +132,7 @@ const {
           :hint="feedbackHint"
         />
         <p v-else class="mt-8 font-serif text-[15px] text-[rgba(33,43,92,0.75)]">
-          보기 번호를 골라 답을 쓰세요
+          {{ isTrueFalse ? 'O 또는 X를 골라 답을 쓰세요' : '보기 번호를 골라 답을 쓰세요' }}
         </p>
       </QuizExamPaper>
     </LearningNotePaper>

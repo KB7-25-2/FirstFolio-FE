@@ -4,6 +4,7 @@ import LearningPageHeader from '@/components/learning/LearningPageHeader.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import QuizExamPaper from '@/components/learning/QuizExamPaper.vue'
 import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
+import QuizOxChoices from '@/components/learning/QuizOxChoices.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
 import { useLevelTestQuiz } from '@/composables/useLevelTestQuiz.js'
 import { computed } from 'vue'
@@ -16,6 +17,7 @@ const {
   examTitle,
   subject,
   statusBadge,
+  isTrueFalse,
   optionsWithTone,
   primaryLabel,
   primaryEnabled,
@@ -74,7 +76,15 @@ const scorePerQuestion = computed(() =>
             </p>
           </div>
 
-          <div class="mt-5 flex flex-col gap-3">
+          <QuizOxChoices
+            v-if="isTrueFalse"
+            class="mt-5"
+            :choices="currentQuestion.optionsJson ?? []"
+            :option-variant="optionVariant"
+            @select="selectOption"
+          />
+
+          <div v-else class="mt-5 flex flex-col gap-3">
             <QuizChoiceOption
               v-for="opt in optionsWithTone"
               :key="opt.key"
@@ -87,7 +97,7 @@ const scorePerQuestion = computed(() =>
           </div>
 
           <p class="mt-8 font-serif text-[15px] text-[rgba(33,43,92,0.75)]">
-            보기 번호를 골라 답을 쓰세요
+            {{ isTrueFalse ? 'O 또는 X를 골라 답을 쓰세요' : '보기 번호를 골라 답을 쓰세요' }}
           </p>
         </QuizExamPaper>
       </LearningNotePaper>

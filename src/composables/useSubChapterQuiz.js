@@ -31,6 +31,8 @@ export const useSubChapterQuiz = () => {
 
   const subChapterId = computed(() => Number(route.params.subChapterId))
 
+  const isTrueFalse = computed(() => quizCurrentQuestion.value?.questionType === 'TRUE_FALSE')
+
   const examTitle = computed(() => '금융 기초 퀴즈 시험')
   const subject = computed(() => currentContent.value?.title || `소단원 #${subChapterId.value}`)
 
@@ -160,6 +162,7 @@ export const useSubChapterQuiz = () => {
 
   return {
     subChapterId,
+    isTrueFalse,
     isLoading,
     error,
     examTitle,

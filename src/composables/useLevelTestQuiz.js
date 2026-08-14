@@ -54,6 +54,8 @@ export const useLevelTestQuiz = () => {
     return asset ? (ASSET_LABELS[asset] ?? asset) : '기초 진단'
   })
 
+  const isTrueFalse = computed(() => currentQuestion.value?.questionType === 'TRUE_FALSE')
+
   /** @type {import('vue').ComputedRef<'IN_PROGRESS' | 'SELECTED'>} */
   const quizUiStatus = computed(() => (currentSelectedKey.value ? 'SELECTED' : 'IN_PROGRESS'))
 
@@ -143,6 +145,7 @@ export const useLevelTestQuiz = () => {
     actionError,
     examTitle,
     subject,
+    isTrueFalse,
     quizUiStatus,
     statusBadge,
     optionsWithTone,
