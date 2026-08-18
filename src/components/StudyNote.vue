@@ -12,7 +12,15 @@ import MemoPin from '@/components/MemoPin.vue'
 const dashboardStore = useDashboardStore()
 const studyStore = useStudyStore()
 const router = useRouter()
-const { chapterTitle, learningItems, continueRoute, isLoading, error } = storeToRefs(studyStore)
+const {
+  chapterTitle,
+  learningItems,
+  continueRoute,
+  isLoading,
+  error,
+  scenarioQuizReady,
+  scenarioQuizItem,
+} = storeToRefs(studyStore)
 const {
   learning,
   learningContinueRoute,
@@ -176,6 +184,16 @@ const goReviewLesson = (event) => {
 
 const goLearning = () => {
   router.push({ name: 'learning' })
+}
+
+const goScenarioQuiz = (event) => {
+  event.stopPropagation()
+  const item = scenarioQuizItem.value
+  if (!item?.mainChapterId) return
+  router.push({
+    name: 'learning-scenario-quiz',
+    params: { mainChapterId: item.mainChapterId },
+  })
 }
 </script>
 
@@ -374,6 +392,29 @@ const goLearning = () => {
             <p v-else class="py-8 text-center font-serif text-[11px] text-[var(--study-muted)]">
               표시할 학습 구간이 없습니다
             </p>
+
+            <!-- 대단원 실전 퀴즈 CTA -->
+            <button
+              v-if="scenarioQuizReady"
+              type="button"
+              class="mt-3 w-full rounded-[4px] border-[0.5px] border-[rgba(33,43,92,0.35)] bg-[#eef0fc] px-3 py-2.5 text-left transition-transform duration-150 hover:scale-[1.01]"
+              aria-label="대단원 실전 퀴즈 시작"
+              @click.stop="goScenarioQuiz"
+            >
+              <p class="font-serif font-bold text-[15px] leading-none text-[#212b5c]">
+                실전 퀴즈에 도전해볼까요? 🎯
+              </p>
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <p class="font-serif text-[11px] text-[rgba(33,43,92,0.6)]">
+                  {{ scenarioQuizItem?.title || '대단원 실전 퀴즈' }}
+                </p>
+                <span
+                  class="shrink-0 rounded bg-[#212b5c] px-2 py-1 font-serif text-[10px] font-bold text-white"
+                >
+                  시작 →
+                </span>
+              </div>
+            </button>
           </template>
         </div>
       </section>
