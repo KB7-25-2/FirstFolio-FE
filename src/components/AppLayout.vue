@@ -84,11 +84,11 @@ const tabTransition = computed(() => (tabDir.value === 'next' ? 'nav-tab-next' :
     />
     <main class="relative z-0 min-h-0 flex-1 overflow-hidden">
       <RouterView v-slot="{ Component }">
-        <Transition :name="tabTransition" mode="out-in">
-          <KeepAlive :include="KEEP_ALIVE_TABS" :max="KEEP_ALIVE_TABS.length">
+        <KeepAlive :include="KEEP_ALIVE_TABS" :max="KEEP_ALIVE_TABS.length">
+          <Transition :name="tabTransition" mode="out-in">
             <component :is="Component" :key="tabCacheKey" class="h-full min-h-0" />
-          </KeepAlive>
-        </Transition>
+          </Transition>
+        </KeepAlive>
       </RouterView>
     </main>
     <div v-if="!hideNavbar" class="nav-dock pointer-events-none absolute inset-x-0 bottom-0 z-20">

@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import QuizExamPaper from '@/components/learning/QuizExamPaper.vue'
 import QuizChoiceOption from '@/components/learning/QuizChoiceOption.vue'
+import QuizOxChoices from '@/components/learning/QuizOxChoices.vue'
 import ScenarioClipboardQuestion from '@/components/learning/ScenarioClipboardQuestion.vue'
 import ScenarioChoiceOption from '@/components/learning/ScenarioChoiceOption.vue'
 import { useDailyQuestStore } from '@/store/dailyQuestStore.js'
@@ -15,6 +16,7 @@ const store = useDailyQuestStore()
 const {
   currentItem,
   currentSnapshot,
+  currentQuestionType,
   currentQuestionTypeLabel,
   isCurrentScenario,
   isCurrentObjective,
@@ -36,6 +38,8 @@ watch(
 )
 
 const scenarioNarrative = computed(() => currentSnapshot.value?.scenarioJson?.narrative || '')
+
+const isCurrentTrueFalse = computed(() => currentQuestionType.value === 'TRUE_FALSE')
 
 const optionsWithTone = computed(() => {
   const options = currentSnapshot.value?.optionsJson ?? []
@@ -124,7 +128,16 @@ const onSave = async () => {
           </p>
         </div>
 
-        <div class="mt-5 flex flex-col gap-3">
+        <QuizOxChoices
+          v-if="isCurrentTrueFalse"
+          class="mt-5"
+          :choices="currentSnapshot.optionsJson ?? []"
+          :option-variant="optionVariant"
+          :disabled="isSaving"
+          @select="onSelect"
+        />
+
+        <div v-else class="mt-5 flex flex-col gap-3">
           <QuizChoiceOption
             v-for="opt in optionsWithTone"
             :key="opt.key"

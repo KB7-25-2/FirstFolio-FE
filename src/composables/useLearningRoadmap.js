@@ -1,10 +1,8 @@
 import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
-import { getLearningProgress } from '@/services/studyService.js'
 import { getMainChapterDisplay } from '@/constants/mainChapterDisplay.js'
-import { withScheduleStatus } from '@/utils/scheduleStatus.js'
 import { getPersistedMainChapterId, persistRoadmapFocus } from '@/utils/learningRoadmapFocus.js'
 
 /**
@@ -12,9 +10,9 @@ import { getPersistedMainChapterId, persistRoadmapFocus } from '@/utils/learning
  */
 export const useLearningRoadmap = () => {
   const studyStore = useStudyStore()
+  const { roadmapStages, hasRoadmap: hasRoadmapInStore } = storeToRefs(studyStore)
   const router = useRouter()
   const route = useRoute()
-  const { curriculumItems } = storeToRefs(studyStore)
 
   /** 학습 로드맵 화면이 활성일 때만 라우트 쿼리와 동기화 (다른 탭에서도 route watch가 돌음) */
   const isRoadmapRouteActive = computed(
@@ -44,88 +42,36 @@ export const useLearningRoadmap = () => {
    * @property {string} scenarioSubtitle
    */
 
-  /** @type {import('vue').Ref<RoadmapStage[]>} */
-  const stages = ref([])
-
-  const withDisplay = (item) => ({
-    ...item,
-    ...getMainChapterDisplay(item.mainChapterId),
+  const withDisplay = (stage) => ({
+    ...stage,
+    ...getMainChapterDisplay(stage.mainChapterId),
   })
 
-  const orderedChapters = computed(() => {
-    const items = curriculumItems.value.slice().sort((a, b) => a.displayOrder - b.displayOrder)
-    return items.map(withDisplay)
-  })
+  /** store 로드맵 + 표시용 메타 (accent, icon 등) */
+  const stages = computed(() => roadmapStages.value.map(withDisplay))
 
-  const buildStageFromItems = (chapter, items) => {
-    const withStatus = withScheduleStatus(items)
-    let periods = withStatus.filter((row) => row.entryType !== 'SCENARIO_QUIZ')
-    const scenarioItem = withStatus.find((row) => row.entryType === 'SCENARIO_QUIZ') ?? null
+  const loadStages = async (options = {}) => {
+    const force = options.force ?? false
+    if (!force && hasRoadmapInStore.value) return
 
-    if (chapter.status === 'LOCKED') {
-      periods = periods.map((row) => ({ ...row, scheduleStatus: 'LOCKED' }))
-    }
-
-    const lessonsDone =
-      chapter.status !== 'LOCKED' &&
-      periods.length > 0 &&
-      periods.every((row) => row.status === 'COMPLETED')
-    const scenarioReady =
-      lessonsDone && Boolean(scenarioItem) && scenarioItem.status !== 'COMPLETED'
-
-    return {
-      mainChapterId: chapter.mainChapterId,
-      curriculumItemId: chapter.curriculumItemId,
-      title: chapter.title,
-      status: chapter.status,
-      progressPercent: chapter.progressPercent ?? 0,
-      description: chapter.description ?? '',
-      accent: chapter.accent,
-      icon: chapter.icon,
-      chapterType: chapter.chapterType,
-      displayOrder: chapter.displayOrder,
-      periods,
-      scenarioReady,
-      scenarioTitle: scenarioItem?.title ?? '대단원 실전 퀴즈',
-      scenarioSubtitle: scenarioItem?.periodSubtitle ?? '배운 내용을 실전 상황에서 점검해요',
-    }
-  }
-
-  const loadStages = async () => {
     isLoading.value = true
     error.value = null
     actionError.value = null
     try {
-      await studyStore.fetchCurriculum()
-      const chapters = orderedChapters.value
-      /** @type {RoadmapStage[]} */
-      const nextStages = []
-
-      for (const chapter of chapters) {
-        try {
-          const { data } = await getLearningProgress(chapter.mainChapterId)
-          nextStages.push(buildStageFromItems(chapter, data.items ?? []))
-        } catch {
-          nextStages.push(buildStageFromItems(chapter, []))
-        }
-      }
-
-      stages.value = nextStages
+      await (force ? studyStore.fetchRoadmap({ force: true }) : studyStore.ensureRoadmap())
     } catch (err) {
       if (err?.code === 'CURRICULUM_NOT_FOUND') {
         error.value = '확정된 커리큘럼이 없습니다.'
       } else {
         error.value = err?.message || '학습 로드맵을 불러오지 못했습니다.'
       }
-      stages.value = []
     } finally {
       isLoading.value = false
     }
   }
 
   onMounted(() => {
-    // KeepAlive 재활성화 시 재요청하지 않음 (포커스·스크롤 유지)
-    if (!stages.value.length) loadStages()
+    if (!hasRoadmapInStore.value) loadStages()
   })
 
   const statusLabel = (status) => {
@@ -252,7 +198,7 @@ export const useLearningRoadmap = () => {
     syncActiveFromQuery()
   })
 
-  const hasRoadmap = computed(() => stages.value.length > 0)
+  const hasRoadmap = computed(() => hasRoadmapInStore.value)
 
   return {
     isLoading,

@@ -31,6 +31,8 @@ export const useSubChapterQuiz = () => {
 
   const subChapterId = computed(() => Number(route.params.subChapterId))
 
+  const isTrueFalse = computed(() => quizCurrentQuestion.value?.questionType === 'TRUE_FALSE')
+
   const examTitle = computed(() => '금융 기초 퀴즈 시험')
   const subject = computed(() => currentContent.value?.title || `소단원 #${subChapterId.value}`)
 
@@ -68,14 +70,12 @@ export const useSubChapterQuiz = () => {
   })
 
   const primaryLabel = computed(() => {
-    if (quizUiStatus.value === 'WRONG') return '다시 풀기'
     if (quizIsGraded.value) return quizIsLastQuestion.value ? '결과 보기' : '다음 문항 →'
     return '정답 제출'
   })
 
   const primaryEnabled = computed(() => {
     if (isCompleting.value || quizFinished.value) return false
-    if (quizUiStatus.value === 'WRONG') return true
     if (quizIsGraded.value) return true
     return quizUiStatus.value === 'SELECTED'
   })
@@ -124,11 +124,6 @@ export const useSubChapterQuiz = () => {
   const onPrimaryAction = async () => {
     if (quizFinished.value) return
 
-    if (quizUiStatus.value === 'WRONG') {
-      studyStore.retryCurrentQuizQuestion()
-      return
-    }
-
     if (quizIsGraded.value) {
       const finished = studyStore.goNextQuizQuestion()
       if (finished) {
@@ -167,6 +162,7 @@ export const useSubChapterQuiz = () => {
 
   return {
     subChapterId,
+    isTrueFalse,
     isLoading,
     error,
     examTitle,

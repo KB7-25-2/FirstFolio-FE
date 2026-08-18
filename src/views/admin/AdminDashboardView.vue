@@ -9,7 +9,7 @@ const upcoming = [
   { label: '커리큘럼 (대단원·소단원)', phase: 'A1 · ready' },
   { label: '강좌 JSON 버전·게시', phase: 'A2' },
   { label: '퀴즈 문항 검수·게시', phase: 'A3' },
-  { label: '모의 금융상품', phase: 'A4' },
+  { label: '모의 금융상품', phase: 'A4 · ready' },
 ]
 </script>
 
