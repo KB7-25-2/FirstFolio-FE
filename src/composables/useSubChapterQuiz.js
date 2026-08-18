@@ -144,16 +144,17 @@ export const useSubChapterQuiz = () => {
   }
 
   const goToMainChapter = async () => {
-    const mainChapterId = currentContent.value?.mainChapterId
+    const mainChapterId =
+      currentContent.value?.mainChapterId ??
+      studyStore.learningItems.find((row) => row.subChapterId === subChapterId.value)?.mainChapterId
+
     studyStore.clearQuizSession()
-    if (mainChapterId) {
-      router.push({
-        name: 'learning',
-        query: { mainChapterId: String(mainChapterId) },
-      })
-      return
-    }
-    router.back()
+    studyStore.clearLesson()
+
+    await router.replace({
+      name: 'learning',
+      query: mainChapterId ? { mainChapterId: String(mainChapterId) } : undefined,
+    })
   }
 
   const giveUp = () => {

@@ -2,6 +2,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
+import { needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
 
 export const useLessonPlayer = () => {
   const route = useRoute()
@@ -86,6 +87,16 @@ export const useLessonPlayer = () => {
   watch(subChapterId, () => {
     loadContent()
   })
+
+  watch(
+    () => currentContent.value?.progress,
+    (progress) => {
+      if (needsQuizAttempt(progress)) {
+        needsQuiz.value = true
+      }
+    },
+    { deep: true },
+  )
 
   watch(currentPageId, (pageId) => {
     if (needsQuiz.value) return

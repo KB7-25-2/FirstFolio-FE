@@ -5,6 +5,10 @@ import {
 } from './studyMockData.js'
 import { mapCurriculumItem, normalizeCurriculumStatuses } from '../mappers/curriculumMapper.js'
 import { buildRoadmapStage } from '../mappers/roadmapMapper.js'
+import {
+  isSubChapterFullyCompletedFromItem,
+  needsQuizAttemptFromItem,
+} from '../mappers/subChapterMapper.js'
 
 export { mockContinueStore } from './studyMockData.js'
 
@@ -19,7 +23,7 @@ const getLessonProgressForChapter = (mainChapterId) =>
  */
 export const areAllLessonsCompleted = (mainChapterId) => {
   const lessons = getLessonProgressForChapter(mainChapterId)
-  return lessons.length > 0 && lessons.every((item) => item.status === 'COMPLETED')
+  return lessons.length > 0 && lessons.every(isSubChapterFullyCompletedFromItem)
 }
 
 /**
@@ -33,7 +37,7 @@ export const syncCurriculumProgressPercent = (mainChapterId) => {
   if (!item || item.status === 'COMPLETED') return
   const lessons = getLessonProgressForChapter(mainChapterId)
   if (!lessons.length) return
-  const done = lessons.filter((row) => row.status === 'COMPLETED').length
+  const done = lessons.filter(isSubChapterFullyCompletedFromItem).length
   item.progress_percent = Math.round((done / lessons.length) * 100)
 }
 
@@ -95,9 +99,23 @@ export const recomputeContinuePosition = () => {
     return
   }
 
+  const quizDue = lessons.find(needsQuizAttemptFromItem)
+  if (quizDue) {
+    mockContinueStore.data = {
+      curriculum_item_id: activeChapter.curriculum_item_id,
+      main_chapter_id: mainChapterId,
+      sub_chapter_id: quizDue.subChapterId,
+      content_version_id: quizDue.contentVersionId,
+      last_page_id: quizDue.lastPageId ?? null,
+      progress_percent: 100,
+      route: `/learning/sub-chapters/${quizDue.subChapterId}/quiz`,
+    }
+    return
+  }
+
   const inProgress = lessons.find((item) => item.status === 'IN_PROGRESS')
-  const incomplete = lessons.find((item) => item.status !== 'COMPLETED')
-  const targetLesson = inProgress ?? incomplete
+  const notStarted = lessons.find((item) => item.status === 'NOT_STARTED')
+  const targetLesson = inProgress ?? notStarted
 
   if (targetLesson) {
     const pageQuery = targetLesson.lastPageId ? `?page=${targetLesson.lastPageId}` : ''
@@ -158,9 +176,10 @@ export const recomputeContinuePosition = () => {
  */
 const deriveMockScheduleStatus = (row, chapter, lessons) => {
   if (chapter.status === 'LOCKED') return 'LOCKED'
-  if (row.status === 'COMPLETED') return 'COMPLETED'
+  if (isSubChapterFullyCompletedFromItem(row)) return 'COMPLETED'
+  if (needsQuizAttemptFromItem(row)) return 'IN_PROGRESS'
   if (row.status === 'IN_PROGRESS') return 'IN_PROGRESS'
-  const firstIncomplete = lessons.find((item) => item.status !== 'COMPLETED')
+  const firstIncomplete = lessons.find((item) => !isSubChapterFullyCompletedFromItem(item))
   if (firstIncomplete && row.subChapterId === firstIncomplete.subChapterId) return 'NEXT'
   return 'LOCKED'
 }

@@ -159,3 +159,30 @@ export const needsQuizAttempt = (progress) =>
  */
 export const isPeriodQuizDue = (period) =>
   period?.status === 'COMPLETED' && period?.scheduleStatus !== 'COMPLETED'
+
+/** @param {{ quiz?: object, quizProgress?: object, progress?: { quiz?: object }, quizScore?: number | null } | null | undefined} item */
+export const resolveItemQuizProgress = (item) => {
+  if (!item) return null
+  if (item.quiz) return item.quiz
+  if (item.quizProgress) return item.quizProgress
+  if (item.progress?.quiz) return item.progress.quiz
+  return null
+}
+
+/** @param {{ quiz?: object, quizProgress?: object, progress?: { quiz?: object }, quizScore?: number | null } | null | undefined} item */
+export const isQuizCompletedFromItem = (item) => {
+  const quiz = resolveItemQuizProgress(item)
+  if (quiz) return Boolean(quiz.completed)
+  return item?.quizScore != null
+}
+
+/** @param {{ entryType?: string, status?: LearningProgressStatus, quiz?: object, quizProgress?: object, progress?: { quiz?: object }, quizScore?: number | null } | null | undefined} item */
+export const needsQuizAttemptFromItem = (item) =>
+  item?.entryType !== 'SCENARIO_QUIZ' && isLessonCompleted(item) && !isQuizCompletedFromItem(item)
+
+/** @param {{ entryType?: string, status?: LearningProgressStatus, quiz?: object, quizProgress?: object, progress?: { quiz?: object }, quizScore?: number | null } | null | undefined} item */
+export const isSubChapterFullyCompletedFromItem = (item) => {
+  if (!item) return false
+  if (item.entryType === 'SCENARIO_QUIZ') return item.status === 'COMPLETED'
+  return isQuizCompletedFromItem(item)
+}
