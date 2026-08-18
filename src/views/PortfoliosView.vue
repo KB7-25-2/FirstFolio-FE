@@ -1,4 +1,6 @@
 <script setup>
+defineOptions({ name: 'PortfoliosView' })
+
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import PortfolioTabs from '@/components/portfolio/PortfolioTabs.vue'

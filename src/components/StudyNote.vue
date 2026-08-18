@@ -21,16 +21,29 @@ const {
 
 onMounted(async () => {
   try {
-    await dashboardStore.fetchDashboard()
+    await dashboardStore.ensureDashboard()
   } catch {
-    // dashboard 실패 시에도 학습 노트는 study 경로로 폴백
+    // dashboard 실패 시에도 학습 노트는 study store 경로로 폴백
   }
 
   const dashLearning = learning.value
-  if (dashLearning && dashLearning.available !== false && dashLearning.mainChapterId != null) {
+  const dashMainChapterId =
+    dashLearning && dashLearning.available !== false ? dashLearning.mainChapterId : null
+
+  // 로드맵·학습 노트가 store에 있으면 API 생략
+  if (studyStore.hasRoadmap) {
+    if (dashMainChapterId != null) {
+      studyStore.applyLearningItemsFromStage(dashMainChapterId)
+    }
+    if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
+      return
+    }
+  }
+
+  if (dashMainChapterId != null) {
     studyStore.error = null
     try {
-      await studyStore.fetchStudyNote({ mainChapterId: dashLearning.mainChapterId })
+      await studyStore.fetchStudyNote({ mainChapterId: dashMainChapterId })
       if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
         return
       }

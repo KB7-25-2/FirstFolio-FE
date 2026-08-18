@@ -1,4 +1,6 @@
 <script setup>
+defineOptions({ name: 'DailyView' })
+
 import { computed } from 'vue'
 import { formatKoreanDate } from '@/utils/date.js'
 import DailyQuestNote from '@/components/DailyQuestNote.vue'

@@ -1,15 +1,24 @@
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
 import { getMainChapterDisplay } from '@/constants/mainChapterDisplay.js'
+import { getPersistedMainChapterId, persistRoadmapFocus } from '@/utils/learningRoadmapFocus.js'
+import { isPeriodQuizDue, needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
 
 /**
  * 대단원 × 소단원 목차(체크리스트) 로드맵
  */
 export const useLearningRoadmap = () => {
   const studyStore = useStudyStore()
+  const { roadmapStages, hasRoadmap: hasRoadmapInStore } = storeToRefs(studyStore)
   const router = useRouter()
   const route = useRoute()
+
+  /** 학습 로드맵 화면이 활성일 때만 라우트 쿼리와 동기화 (다른 탭에서도 route watch가 돌음) */
+  const isRoadmapRouteActive = computed(
+    () => route.name === 'learning' || route.path === '/learning',
+  )
 
   const isLoading = ref(false)
   const error = ref(null)
@@ -34,35 +43,36 @@ export const useLearningRoadmap = () => {
    * @property {string} scenarioSubtitle
    */
 
-  /** @type {import('vue').Ref<RoadmapStage[]>} */
-  const stages = ref([])
-
   const withDisplay = (stage) => ({
     ...stage,
     ...getMainChapterDisplay(stage.mainChapterId),
   })
 
-  const loadStages = async () => {
+  /** store 로드맵 + 표시용 메타 (accent, icon 등) */
+  const stages = computed(() => roadmapStages.value.map(withDisplay))
+
+  const loadStages = async (options = {}) => {
+    const force = options.force ?? false
+    if (!force && hasRoadmapInStore.value) return
+
     isLoading.value = true
     error.value = null
     actionError.value = null
     try {
-      const { stages: nextStages } = await studyStore.fetchRoadmap()
-      stages.value = (nextStages ?? []).map(withDisplay)
+      await (force ? studyStore.fetchRoadmap({ force: true }) : studyStore.ensureRoadmap())
     } catch (err) {
       if (err?.code === 'CURRICULUM_NOT_FOUND') {
         error.value = '확정된 커리큘럼이 없습니다.'
       } else {
         error.value = err?.message || '학습 로드맵을 불러오지 못했습니다.'
       }
-      stages.value = []
     } finally {
       isLoading.value = false
     }
   }
 
   onMounted(() => {
-    loadStages()
+    if (!hasRoadmapInStore.value) loadStages()
   })
 
   const statusLabel = (status) => {
@@ -72,7 +82,8 @@ export const useLearningRoadmap = () => {
     return status
   }
 
-  const periodStatusLabel = (scheduleStatus) => {
+  const periodStatusLabel = (scheduleStatus, period = null) => {
+    if (period && isPeriodQuizDue(period)) return '퀴즈 필요'
     if (scheduleStatus === 'COMPLETED') return '완료'
     if (scheduleStatus === 'IN_PROGRESS') return '진행 중'
     if (scheduleStatus === 'NEXT') return '다음'
@@ -98,7 +109,17 @@ export const useLearningRoadmap = () => {
 
     try {
       await studyStore.fetchSubChapterContent(period.subChapterId)
-      const page = studyStore.currentContent?.progress?.lastPageId
+      const progress = studyStore.currentContent?.progress
+
+      if (needsQuizAttempt(progress)) {
+        router.push({
+          name: 'learning-quiz',
+          params: { subChapterId: period.subChapterId },
+        })
+        return
+      }
+
+      const page = progress?.lastPageId
       router.push({
         name: 'learning-lesson',
         params: { subChapterId: period.subChapterId },
@@ -133,14 +154,22 @@ export const useLearningRoadmap = () => {
   const activeStage = computed(() => stages.value[activeStageIndex.value] ?? null)
 
   const syncActiveFromQuery = () => {
-    const id = focusMainChapterId.value
-    if (!id || !stages.value.length) {
+    if (!isRoadmapRouteActive.value) return
+    if (!stages.value.length) return
+
+    // 스크롤/탭으로 갱신된 persist가 우선 (쿼리는 이전 select 값이 남아 있을 수 있음)
+    const id = getPersistedMainChapterId() ?? focusMainChapterId.value
+    if (!id) {
       const activeIdx = stages.value.findIndex((stage) => stage.status === 'ACTIVE')
       activeStageIndex.value = activeIdx >= 0 ? activeIdx : 0
+      const fallback = stages.value[activeStageIndex.value]
+      if (fallback) persistRoadmapFocus(activeStageIndex.value, fallback.mainChapterId)
       return
     }
     const index = stages.value.findIndex((stage) => stage.mainChapterId === id)
     activeStageIndex.value = index >= 0 ? index : 0
+    const stage = stages.value[activeStageIndex.value]
+    if (stage) persistRoadmapFocus(activeStageIndex.value, stage.mainChapterId)
   }
 
   const selectStage = (index) => {
@@ -148,20 +177,40 @@ export const useLearningRoadmap = () => {
     activeStageIndex.value = index
     const stage = stages.value[index]
     if (!stage) return
-    router.replace({
-      name: 'learning',
-      query: { mainChapterId: String(stage.mainChapterId) },
-    })
+    persistRoadmapFocus(index, stage.mainChapterId)
+    if (isRoadmapRouteActive.value) {
+      router.replace({
+        name: 'learning',
+        query: { mainChapterId: String(stage.mainChapterId) },
+      })
+    }
   }
 
-  watch([stages, focusMainChapterId, isLoading], async ([, , loading]) => {
-    if (loading) return
-    if (!stages.value.length) return
+  watch(
+    [stages, focusMainChapterId, isLoading, isRoadmapRouteActive],
+    async ([, , loading, active]) => {
+      if (!active || loading) return
+      if (!stages.value.length) return
+      syncActiveFromQuery()
+      await nextTick()
+    },
+  )
+
+  onActivated(() => {
+    if (!isRoadmapRouteActive.value) return
+    const persisted = getPersistedMainChapterId()
+    // 탭 복귀 시 URL 쿼리가 비었거나 스크롤 persist와 어긋나면 persist 기준으로 맞춤
+    if (persisted != null && focusMainChapterId.value !== persisted) {
+      router.replace({
+        name: 'learning',
+        query: { mainChapterId: String(persisted) },
+      })
+      return
+    }
     syncActiveFromQuery()
-    await nextTick()
   })
 
-  const hasRoadmap = computed(() => stages.value.length > 0)
+  const hasRoadmap = computed(() => hasRoadmapInStore.value)
 
   return {
     isLoading,
@@ -173,6 +222,7 @@ export const useLearningRoadmap = () => {
     hasRoadmap,
     statusLabel,
     periodStatusLabel,
+    isPeriodQuizDue,
     accentClass,
     openPeriod,
     startScenarioQuiz,

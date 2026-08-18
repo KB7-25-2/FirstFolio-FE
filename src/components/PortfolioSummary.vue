@@ -14,9 +14,8 @@ const { portfolio, allocationView, totalAssetsDisplay, isLoading, error, portfol
   storeToRefs(dashboardStore)
 
 onMounted(() => {
-  // HomeView에서 선조회; 미적재 시만 보완
-  if (!portfolio.value) {
-    dashboardStore.fetchDashboard()
+  if (!dashboardStore.hasDashboard) {
+    dashboardStore.ensureDashboard()
   }
 })
 

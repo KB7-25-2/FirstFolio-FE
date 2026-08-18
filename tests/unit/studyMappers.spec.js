@@ -13,8 +13,11 @@ import { buildMockLearningRoadmap } from '@/services/study/mock/studyMockEngine.
 import {
   mapSubChapterListItem,
   mergeProgressIntoItem,
+  mapSubChapterProgress,
+  needsQuizAttempt,
+  isPeriodQuizDue,
 } from '@/services/study/mappers/subChapterMapper.js'
-import { mapQuizAttemptStart } from '@/services/study/mappers/quizMapper.js'
+import { mapQuizAttemptStart, mapQuizAttemptQuestion } from '@/services/study/mappers/quizMapper.js'
 
 describe('curriculumMapper', () => {
   it('mapCurriculumItem은 ASSET을 CORE로 정규화한다', () => {
@@ -229,6 +232,32 @@ describe('subChapterMapper', () => {
       status: 'COMPLETED',
     })
   })
+
+  it('mapSubChapterProgress는 quiz 진행을 매핑한다', () => {
+    const progress = mapSubChapterProgress({
+      sub_chapter_id: 101,
+      status: 'COMPLETED',
+      quiz: {
+        completed: false,
+        active_attempt_id: 3001,
+        answered_count: 1,
+        total_count: 3,
+      },
+    })
+
+    expect(progress.quiz).toEqual({
+      completed: false,
+      activeAttemptId: 3001,
+      answeredCount: 1,
+      totalCount: 3,
+    })
+    expect(needsQuizAttempt(progress)).toBe(true)
+  })
+
+  it('isPeriodQuizDue는 강좌 완료·소단원 미완료를 퀴즈 필요로 본다', () => {
+    expect(isPeriodQuizDue({ status: 'COMPLETED', scheduleStatus: 'IN_PROGRESS' })).toBe(true)
+    expect(isPeriodQuizDue({ status: 'COMPLETED', scheduleStatus: 'COMPLETED' })).toBe(false)
+  })
 })
 
 describe('quizMapper', () => {
@@ -257,5 +286,26 @@ describe('quizMapper', () => {
     })
     expect(mapped.questions[0].questionId).toBe(1001)
     expect(mapped.questions[0].optionsJson[0].label).toBe('A')
+  })
+
+  it('mapQuizAttemptQuestion은 제출된 문항의 채점 결과를 포함한다', () => {
+    const mapped = mapQuizAttemptQuestion({
+      question_id: 1001,
+      question_type: 'SINGLE_CHOICE',
+      answered: true,
+      selected_key: 'B',
+      is_correct: false,
+      correct_answer: { key: 'A' },
+      explanation: '해설',
+      choices: [{ key: 'A', label: 'A' }],
+    })
+
+    expect(mapped).toMatchObject({
+      answered: true,
+      selectedKey: 'B',
+      isCorrect: false,
+      correctAnswerJson: { key: 'A' },
+      explanation: '해설',
+    })
   })
 })

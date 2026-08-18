@@ -91,8 +91,7 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
     test.setTimeout(90_000)
     await completeScenarioQuiz(page)
 
-    await expect(page).toHaveURL(/\/learning\/?$/)
-    await expect(page.getByRole('heading', { name: '예·적금' })).toBeVisible()
+    await expectMainChapterRoadmap(page, 2)
     await expect(page.getByRole('heading', { name: '채권' })).toBeVisible()
     await expect(
       page.locator('button').filter({ hasText: '채권' }).filter({ hasText: '진행 중' }).first(),
@@ -115,28 +114,41 @@ async function expectMainChapterRoadmap(page, mainChapterId) {
   await expect(page.getByRole('heading', { name: '예·적금' })).toBeVisible({ timeout: 15_000 })
 }
 
-/** 강좌 마지막 페이지까지 이동 후 퀴즈 진입 */
+/** 강좌 마지막 페이지까지 이동 후 퀴즈 진입 (완료 화면 CTA 포함) */
 async function finishLessonToQuiz(page) {
   await expect(page.getByText('학습 화면')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('불러오는 중…')).toHaveCount(0, { timeout: 15_000 })
   await expect(page.getByText('선행 학습이 필요합니다.')).toHaveCount(0)
 
-  const primary = page.getByRole('button', { name: /다음 컷 →|퀴즈 풀기 →/ })
-  await expect(primary).toBeEnabled({ timeout: 15_000 })
+  const quizCta = page.getByRole('button', { name: /퀴즈 풀기 →|퀴즈 이어하기 →/ })
+  const nextCut = page.getByRole('button', { name: '다음 컷 →' })
+  await expect(
+    page.getByRole('button', { name: /다음 컷 →|퀴즈 풀기 →|퀴즈 이어하기 →/ }),
+  ).toBeEnabled({
+    timeout: 15_000,
+  })
 
   for (let i = 0; i < 12; i += 1) {
-    const quizBtn = page.getByRole('button', { name: '퀴즈 풀기 →' })
-    if (await quizBtn.isVisible()) {
-      await expect(quizBtn).toBeEnabled()
-      await quizBtn.click()
-      await expect(page).toHaveURL(/\/quiz/)
-      return
+    if (await quizCta.isVisible()) {
+      await expect(quizCta).toBeEnabled()
+      await quizCta.click()
+      break
     }
-    const nextBtn = page.getByRole('button', { name: '다음 컷 →' })
-    await expect(nextBtn).toBeEnabled()
-    await nextBtn.click()
+    await expect(nextCut).toBeEnabled()
+    await nextCut.click()
+    if (i === 11) throw new Error('퀴즈 진입에 실패했다')
   }
-  throw new Error('퀴즈 진입에 실패했다')
+
+  const completedCopy = page.getByText('강좌를 모두 읽었어요')
+  const quizHeading = page.getByRole('heading', { name: '시험지' })
+  await expect(completedCopy.or(quizHeading)).toBeVisible({ timeout: 15_000 })
+
+  if (await completedCopy.isVisible()) {
+    await expect(quizCta).toBeEnabled()
+    await quizCta.click()
+  }
+
+  await expect(page).toHaveURL(/\/quiz/)
 }
 
 /** 소단원 퀴즈 전 문항 응시·결과 모달 → 시간표 */

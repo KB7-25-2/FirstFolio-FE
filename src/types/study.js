@@ -25,6 +25,15 @@
  */
 
 /**
+ * GET /learning/sub-chapters/{id}/progress — quiz
+ * @typedef {object} QuizProgress
+ * @property {boolean} completed
+ * @property {number | null} activeAttemptId
+ * @property {number} answeredCount
+ * @property {number} totalCount
+ */
+
+/**
  * 시간표 UI 상태 (목록 progress.status에서 파생)
  * @typedef {'COMPLETED' | 'IN_PROGRESS' | 'NEXT' | 'LOCKED'} ScheduleStatus
  */
@@ -65,7 +74,7 @@
  * @property {string | null} [contentUrl]
  * @property {import('@/types/study.js').SubChapterLessonJson | null} [lesson]
  * @property {string | null} [expiresAt]
- * @property {{ status: LearningProgressStatus, lastPageId: string | null, completedAt: string | null }} progress
+ * @property {{ status: LearningProgressStatus, lastPageId: string | null, completedAt: string | null, quiz?: QuizProgress | null }} progress
  */
 
 /**

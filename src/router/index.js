@@ -1,6 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { setupAuthGuard } from '@/router/guards.js'
 import AppLayout from '@/components/AppLayout.vue'
+import HomeView from '@/views/HomeView.vue'
+import DailyView from '@/views/DailyView.vue'
+import LearningShellView from '@/views/learning/LearningShellView.vue'
+import PortfoliosView from '@/views/PortfoliosView.vue'
+import PointMarketView from '@/views/PointMarketView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -61,13 +66,13 @@ const router = createRouter({
         {
           path: 'home',
           name: 'home',
-          component: () => import('@/views/HomeView.vue'),
+          component: HomeView,
           meta: { navTab: 'home' },
         },
         {
           path: 'daily',
           name: 'daily',
-          component: () => import('@/views/DailyView.vue'),
+          component: DailyView,
           meta: { navTab: 'daily' },
         },
         {
@@ -81,18 +86,8 @@ const router = createRouter({
           redirect: { name: 'daily-quest' },
         },
         {
-          path: 'daily-quest',
-          name: 'daily-quest',
-          component: () => import('@/views/DailyQuestView.vue'),
-          meta: { hideNavbar: true },
-        },
-        {
-          path: 'leaderboard',
-          redirect: { name: 'daily-quest' },
-        },
-        {
           path: 'learning',
-          component: () => import('@/views/learning/LearningShellView.vue'),
+          component: LearningShellView,
           meta: { navTab: 'learning' },
           children: [
             {
@@ -130,7 +125,7 @@ const router = createRouter({
         },
         {
           path: 'portfolios',
-          component: () => import('@/views/PortfoliosView.vue'),
+          component: PortfoliosView,
           redirect: { name: 'portfolio-holdings' },
           children: [
             {
@@ -179,7 +174,7 @@ const router = createRouter({
         {
           path: 'point-market',
           name: 'point-market',
-          component: () => import('@/views/PointMarketView.vue'),
+          component: PointMarketView,
           meta: { navTab: 'point-market' },
         },
       ],
