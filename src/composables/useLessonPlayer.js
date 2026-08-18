@@ -17,6 +17,8 @@ export const useLessonPlayer = () => {
   const learnMorePayload = ref(null)
   /** 강좌 COMPLETED 후 퀴즈 미응시 */
   const needsQuiz = ref(false)
+  /** 퀴즈 안내 화면에서 강좌 복습 중 (progress watch가 needsQuiz를 다시 켜지 않도록) */
+  const reviewingLesson = ref(false)
 
   const subChapterId = computed(() => Number(route.params.subChapterId))
   const pageCurrent = computed(() => pageIndex.value + 1)
@@ -59,6 +61,7 @@ export const useLessonPlayer = () => {
     isLoading.value = true
     error.value = null
     needsQuiz.value = false
+    reviewingLesson.value = false
     try {
       const preferred = typeof route.query.page === 'string' ? route.query.page : null
       const result = await studyStore.fetchLessonContent(subChapterId.value, preferred)
@@ -91,7 +94,7 @@ export const useLessonPlayer = () => {
   watch(
     () => currentContent.value?.progress,
     (progress) => {
-      if (needsQuizAttempt(progress)) {
+      if (needsQuizAttempt(progress) && !reviewingLesson.value) {
         needsQuiz.value = true
       }
     },
@@ -135,6 +138,7 @@ export const useLessonPlayer = () => {
       } catch {
         // 진도 저장 실패여도 퀴즈 CTA는 보여 준다
       }
+      reviewingLesson.value = false
       needsQuiz.value = true
       return
     }
@@ -146,6 +150,14 @@ export const useLessonPlayer = () => {
   const goPrevCut = async () => {
     if (isFirstPage.value) return
     await studyStore.goPrevPage()
+  }
+
+  const backToLesson = () => {
+    reviewingLesson.value = true
+    needsQuiz.value = false
+    const pageId =
+      studyStore.currentPageId ?? studyStore.lessonPages[studyStore.lessonPages.length - 1]?.id
+    if (pageId) syncPageQuery(pageId)
   }
 
   const stopLearning = () => {
@@ -181,6 +193,7 @@ export const useLessonPlayer = () => {
     onPrimaryAction,
     goPrevCut,
     goToQuiz,
+    backToLesson,
     stopLearning,
   }
 }
