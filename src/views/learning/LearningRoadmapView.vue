@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import LearningLayout from '@/components/learning/LearningLayout.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
@@ -220,13 +221,21 @@ watch(
     <div v-else-if="hasRoadmap" class="flex min-h-0 flex-1 flex-col gap-3">
       <!-- 고정: 소개 + 전체 진행 -->
       <div class="shrink-0 space-y-3">
-        <div>
-          <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
-            나만의 금융 커리큘럼
-          </p>
-          <p class="mt-0.5 font-serif text-[11px] text-[var(--cork-ink-muted)]">
-            대단원마다 소단원 진행을 확인하고 이어서 학습해요
-          </p>
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
+              나만의 금융 커리큘럼
+            </p>
+            <p class="mt-0.5 font-serif text-[11px] text-[var(--cork-ink-muted)]">
+              대단원마다 소단원 진행을 확인하고 이어서 학습해요
+            </p>
+          </div>
+          <RouterLink
+            :to="{ name: 'onboarding-curriculum', query: { mode: 'edit' } }"
+            class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24] underline-offset-2 hover:underline"
+          >
+            커리큘럼 수정
+          </RouterLink>
         </div>
 
         <p v-if="actionError" class="font-serif text-sm text-red-700">{{ actionError }}</p>

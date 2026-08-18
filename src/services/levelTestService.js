@@ -30,16 +30,21 @@ const writeSession = (patch) => {
 
 const unwrap = (response) => response.data?.data ?? response.data
 
-/** OpenAPI QuizChoiceResponse: key/label — 구버전 id/text 호환 */
-const mapChoice = (choice) => ({
-  key: String(pickField(choice, 'key', 'id') ?? ''),
-  label: String(pickField(choice, 'label', 'text') ?? ''),
-})
+/** OpenAPI QuizChoiceResponse: key/label — 구버전 id/text·문자열 호환 */
+const mapChoice = (choice) => {
+  if (choice == null) return { key: '', label: '' }
+  if (typeof choice === 'string') return { key: choice, label: choice }
+  return {
+    key: String(pickField(choice, 'key', 'id') ?? ''),
+    label: String(pickField(choice, 'label', 'text') ?? ''),
+  }
+}
 
 const mapQuestion = (raw) => {
   const mainChapter = pickField(raw, 'mainChapter', 'main_chapter') ?? {}
   const questionId = Number(pickField(raw, 'questionId', 'question_id'))
   const choices = pickField(raw, 'choices', 'optionsJson', 'options_json') ?? []
+  const saved = pickField(raw, 'savedAnswer', 'saved_answer')
 
   return {
     questionId,
@@ -63,11 +68,12 @@ const mapQuestion = (raw) => {
       const v = pickField(raw, 'displayOrder', 'display_order')
       return v == null ? null : Number(v)
     })(),
+    savedAnswerKey: pickField(saved, 'key') ?? null,
   }
 }
 
-const mapSavedAnswer = (raw) => {
-  const questionId = Number(pickField(raw, 'questionId', 'question_id'))
+const mapSavedAnswer = (raw, fallbackQuestionId) => {
+  const questionId = Number(pickField(raw, 'questionId', 'question_id') ?? fallbackQuestionId)
   const answer = pickField(raw, 'answer', 'savedAnswer', 'saved_answer')
   const key =
     pickField(answer, 'key') ??
@@ -79,16 +85,27 @@ const mapSavedAnswer = (raw) => {
   }
 }
 
-const mapAttempt = (raw) => ({
-  attemptId: Number(pickField(raw, 'attemptId', 'attempt_id')),
-  status: pickField(raw, 'status'),
-  questionCount: Number(pickField(raw, 'questionCount', 'question_count') ?? 0),
-  questions: (pickField(raw, 'questions') ?? []).map(mapQuestion),
-  savedAnswers: (pickField(raw, 'answers', 'savedAnswers', 'saved_answers') ?? []).map(
-    mapSavedAnswer,
-  ),
-  updatedAt: pickField(raw, 'updatedAt', 'updated_at') ?? null,
-})
+const mapAttempt = (raw) => {
+  const questions = (pickField(raw, 'questions') ?? []).map(mapQuestion)
+  const fromAnswers = (pickField(raw, 'answers', 'savedAnswers', 'saved_answers') ?? [])
+    .map((row, index) => mapSavedAnswer(row, questions[index]?.questionId))
+    .filter((row) => row.questionId != null && row.selectedChoiceIds.length)
+  const fromQuestions = questions
+    .filter((q) => q.savedAnswerKey)
+    .map((q) => ({
+      questionId: q.questionId,
+      selectedChoiceIds: [String(q.savedAnswerKey)],
+    }))
+
+  return {
+    attemptId: Number(pickField(raw, 'attemptId', 'attempt_id')),
+    status: pickField(raw, 'status'),
+    questionCount: Number(pickField(raw, 'questionCount', 'question_count') ?? 0),
+    questions,
+    savedAnswers: fromAnswers.length ? fromAnswers : fromQuestions,
+    updatedAt: pickField(raw, 'updatedAt', 'updated_at') ?? null,
+  }
+}
 
 const mapSubmitResult = (raw) => ({
   attemptId: Number(pickField(raw, 'attemptId', 'attempt_id')),
@@ -154,17 +171,36 @@ export const saveLevelTestAnswers = async (attemptId, payload) => {
   }
   const response = await saveLevelTestAttemptAnswers(attemptId, body)
   const raw = unwrap(response)
+
+  // 응답에 저장된 답안이 있으면 그 값을 신뢰. 없으면 요청 페이로드를 확정분으로 사용.
+  const responseAnswers = (raw.answers ?? raw.saved_answers ?? [])
+    .map((row) => mapSavedAnswer(row))
+    .filter((item) => item.questionId != null && item.selectedChoiceIds.length)
+  const savedAnswers =
+    responseAnswers.length > 0
+      ? responseAnswers
+      : answerItems
+          .filter((item) => item.questionId != null && item.selectedChoiceIds?.length)
+          .map((item) => ({
+            questionId: Number(item.questionId),
+            selectedChoiceIds: [...item.selectedChoiceIds],
+          }))
+
   const data = {
     attemptId: Number(pickField(raw, 'attemptId', 'attempt_id')),
-    savedAnswerCount: Number(pickField(raw, 'savedAnswerCount', 'saved_answer_count') ?? 0),
+    savedAnswerCount: Number(
+      pickField(raw, 'savedAnswerCount', 'saved_answer_count') ?? savedAnswers.length,
+    ),
     answeredCount: Number(pickField(raw, 'answeredCount', 'answered_count') ?? 0),
     totalCount: Number(pickField(raw, 'totalCount', 'total_count') ?? 0),
     status: pickField(raw, 'status'),
     updatedAt: pickField(raw, 'updatedAt', 'updated_at'),
+    savedAnswers,
   }
+
   const currentAnswers = readSession().answers ?? {}
   const answers = { ...currentAnswers }
-  answerItems.forEach((item) => {
+  savedAnswers.forEach((item) => {
     answers[item.questionId] = [...item.selectedChoiceIds]
   })
   writeSession({ answers })

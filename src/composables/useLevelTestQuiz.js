@@ -44,7 +44,7 @@ export const useLevelTestQuiz = () => {
       existing?.status === 'IN_PROGRESS' &&
       (options.length === 0 || options.some((o) => !o?.key || !o?.label))
 
-    // 이전 매핑 버그(id/text)로 저장된 세션이면 재시작
+    // 이전 매핑 버그(id/text)로 저장된 세션이면 start API로 복원·재매핑
     if (existing?.status === 'IN_PROGRESS' && !optionsBroken) return
 
     try {
@@ -60,6 +60,8 @@ export const useLevelTestQuiz = () => {
     const asset = currentQuestion.value?.assetType
     return asset ? (ASSET_LABELS[asset] ?? asset) : '기초 진단'
   })
+
+  const isTrueFalse = computed(() => currentQuestion.value?.questionType === 'TRUE_FALSE')
 
   /** @type {import('vue').ComputedRef<'IN_PROGRESS' | 'SELECTED'>} */
   const quizUiStatus = computed(() => (currentSelectedKey.value ? 'SELECTED' : 'IN_PROGRESS'))
@@ -150,6 +152,7 @@ export const useLevelTestQuiz = () => {
     actionError,
     examTitle,
     subject,
+    isTrueFalse,
     quizUiStatus,
     statusBadge,
     optionsWithTone,

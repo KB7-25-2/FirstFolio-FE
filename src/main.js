@@ -17,6 +17,7 @@ import {
   faUser,
   faBars,
   faXmark,
+  faLock,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -29,6 +30,7 @@ library.add(
   faUser,
   faBars,
   faXmark,
+  faLock,
 )
 
 import './assets/styles/main.css'

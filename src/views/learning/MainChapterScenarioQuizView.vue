@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import roomBg from '@/assets/learning/scenario/room-bg.jpg'
 import penguin from '@/assets/learning/scenario/penguin.png'
 import ScenarioClipboardBoard from '@/components/learning/ScenarioClipboardBoard.vue'
@@ -11,6 +12,7 @@ import ScenarioEvaluationBlock from '@/components/learning/ScenarioEvaluationBlo
 import ScenarioMarketBar from '@/components/learning/ScenarioMarketBar.vue'
 import ScenarioResultPanel from '@/components/learning/ScenarioResultPanel.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
+import FoundationUnlockCeremony from '@/components/FoundationUnlockCeremony.vue'
 import { useMainChapterScenarioQuiz } from '@/composables/useMainChapterScenarioQuiz.js'
 
 const {
@@ -39,7 +41,20 @@ const {
   onPrimaryAction,
   goToMainChapter,
   goToRoadmap,
+  showUnlockCeremony,
+  confirmUnlockCeremony,
+  dismissUnlockCeremony,
+  pendingFoundationUnlock,
 } = useMainChapterScenarioQuiz()
+
+const resultConfirmLabel = computed(() =>
+  pendingFoundationUnlock.value ? '모의투자금 받기 →' : '학습 로드맵으로',
+)
+const resultCongratsMessage = computed(() =>
+  pendingFoundationUnlock.value
+    ? '포트폴리오 기초를 모두 마쳤어요. 모의투자금이 지급되고 포트폴리오가 해금됩니다.'
+    : '수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다. 앞으로도 꾸준히 학습하며 상담 역량을 키워 보세요.',
+)
 </script>
 
 <template>
@@ -252,8 +267,8 @@ const {
         <ScenarioClipboardBoard v-else-if="scenarioPhase === 'RESULT'" paper-title="">
           <ScenarioResultPanel
             :subject-name="chapterTitle"
-            congrats-message="수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다. 앞으로도 꾸준히 학습하며 상담 역량을 키워 보세요."
-            confirm-label="학습 로드맵으로"
+            :congrats-message="resultCongratsMessage"
+            :confirm-label="resultConfirmLabel"
             @confirm="goToRoadmap"
           />
         </ScenarioClipboardBoard>
@@ -267,6 +282,12 @@ const {
         :constraints="conditions.constraints || []"
       />
     </template>
+
+    <FoundationUnlockCeremony
+      :open="showUnlockCeremony"
+      @confirm="confirmUnlockCeremony"
+      @close="dismissUnlockCeremony"
+    />
   </div>
 </template>
 

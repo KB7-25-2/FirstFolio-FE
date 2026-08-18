@@ -34,8 +34,11 @@
  * @typedef {object} LevelTestSaveAnswersResult
  * @property {number} attemptId
  * @property {number} savedAnswerCount
+ * @property {number} [answeredCount]
+ * @property {number} [totalCount]
  * @property {LevelTestAttemptStatus} status
  * @property {string} updatedAt
+ * @property {LevelTestAnswerItem[]} savedAnswers 서버 확정(또는 요청 echo) 답안
  *
  * @typedef {object} LevelTestQuestionResult
  * @property {number} questionId

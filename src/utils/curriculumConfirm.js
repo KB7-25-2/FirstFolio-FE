@@ -15,4 +15,15 @@ export const isCurriculumConfirmed = () => {
   }
 }
 
+/**
+ * @param {boolean} [confirmed=true]
+ */
+export const setCurriculumConfirmed = (confirmed = true) => {
+  localStorage.setItem(CURRICULUM_STORAGE_KEY, JSON.stringify({ confirmed: Boolean(confirmed) }))
+}
+
+export const clearCurriculumConfirmed = () => {
+  localStorage.removeItem(CURRICULUM_STORAGE_KEY)
+}
+
 export { CURRICULUM_STORAGE_KEY }
