@@ -1,10 +1,17 @@
 /**
+ * GET /financial-news 서비스
+ * — 실 API 우선, DEV에서 실패 시 목업 폴백
+ */
+
+/**
  * @typedef {import('@/types/news.js').FinancialNewsItem} FinancialNewsItem
  * @typedef {import('@/types/news.js').FinancialNewsListResponse} FinancialNewsListResponse
  */
 
 import scrap1 from '@/assets/news/scrap-1.png'
 import scrap2 from '@/assets/news/scrap-2.png'
+import { getFinancialNews as getFinancialNewsApi } from '@/api/user/newsApi.js'
+import { ApiError } from '@/api/user/errorHandler.js'
 
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -74,10 +81,28 @@ const normalizeLimit = (limit) => {
 }
 
 /**
+ * @param {unknown} error
+ * @param {string} fallbackCode
+ * @param {string} fallbackMessage
+ * @returns {NewsApiError}
+ */
+const mapNewsError = (error, fallbackCode, fallbackMessage) => {
+  if (error instanceof NewsApiError) return error
+
+  if (error instanceof ApiError) {
+    return new NewsApiError(
+      error.code ?? fallbackCode,
+      error.message ?? fallbackMessage,
+      error.status,
+    )
+  }
+
+  return new NewsApiError(fallbackCode, fallbackMessage, 500)
+}
+
+/**
  * 금융 뉴스 요약 목록 조회
  * GET /financial-news?limit=
- *
- * TODO: API 연동 시 apiClient.get('/financial-news', { params: { limit } }) 로 교체
  *
  * @param {{ limit?: number }} [params]
  * @returns {Promise<FinancialNewsListResponse>}
@@ -85,12 +110,21 @@ const normalizeLimit = (limit) => {
 export const getFinancialNews = async (params = {}) => {
   const limit = normalizeLimit(params.limit)
 
-  await delay()
+  try {
+    const { data } = await getFinancialNewsApi({ limit })
+    return { data: data.data ?? data }
+  } catch (error) {
+    const mapped = mapNewsError(error, 'NEWS_FETCH_FAILED', '금융 뉴스를 불러오지 못했습니다.')
+    if (!import.meta.env.DEV) throw mapped
 
-  // published_at DESC (mock 데이터는 이미 정렬됨)
-  const items = [...MOCK_NEWS]
-    .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
-    .slice(0, limit)
+    console.warn('[newsService] GET /financial-news 실패 — mock으로 대체합니다.', mapped)
+    await delay()
 
-  return { data: { items } }
+    // published_at DESC (mock 데이터는 이미 정렬됨)
+    const items = [...MOCK_NEWS]
+      .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))
+      .slice(0, limit)
+
+    return { data: { items } }
+  }
 }
