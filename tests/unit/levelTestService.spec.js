@@ -69,7 +69,7 @@ describe('levelTestService', () => {
     expect(getStoredLevelTestSession().answers).toEqual({ 1001: ['A'] })
   })
 
-  it('응시 시작 응답의 camelCase 문항도 매핑한다', async () => {
+  it('OpenAPI key/label 선택지도 매핑한다', async () => {
     startLevelTestAttempt.mockResolvedValue({
       data: {
         data: {
@@ -80,12 +80,14 @@ describe('levelTestService', () => {
             {
               questionId: 1002,
               displayOrder: 1,
+              mainChapter: { mainChapterId: 3, assetType: 'BOND' },
               questionType: 'SINGLE_CHOICE',
               generationType: 'HUMAN',
-              prompt: '질문',
-              scenario: null,
-              choices: [{ key: 'A', label: '예' }],
-              savedAnswer: { key: 'A' },
+              prompt: '채권 가격과 금리는?',
+              choices: [
+                { key: '1', label: '반대로 움직인다' },
+                { key: '2', label: '같이 움직인다' },
+              ],
             },
           ],
           answers: [],
@@ -94,9 +96,42 @@ describe('levelTestService', () => {
     })
 
     const { data } = await startLevelTest()
+
     expect(data.attemptId).toBe(2002)
-    expect(data.questions[0].optionsJson[0]).toEqual({ key: 'A', label: '예' })
-    expect(data.savedAnswers).toEqual([{ questionId: 1002, selectedChoiceIds: ['A'] }])
+    expect(data.questions[0].optionsJson).toEqual([
+      { key: '1', label: '반대로 움직인다' },
+      { key: '2', label: '같이 움직인다' },
+    ])
+    expect(data.questions[0].assetType).toBe('BOND')
+  })
+
+  it('optionsJson 필드의 key/label도 선택지로 매핑한다', async () => {
+    startLevelTestAttempt.mockResolvedValue({
+      data: {
+        data: {
+          attemptId: 2003,
+          status: 'IN_PROGRESS',
+          questionCount: 1,
+          questions: [
+            {
+              questionId: 1003,
+              prompt: '질문',
+              optionsJson: [
+                { key: '1', label: '선택지 내용' },
+                { key: '2', label: '다른 선택지' },
+              ],
+            },
+          ],
+          answers: [],
+        },
+      },
+    })
+
+    const { data } = await startLevelTest()
+    expect(data.questions[0].optionsJson).toEqual([
+      { key: '1', label: '선택지 내용' },
+      { key: '2', label: '다른 선택지' },
+    ])
   })
 
   it('optionsJson 필드의 key/label도 선택지로 매핑한다', async () => {

@@ -4,6 +4,7 @@ import {
   logout as logoutApi,
   signupWithGoogle as signupWithGoogleApi,
   signupWithEmail as signupWithEmailApi,
+  signupWithExistingFirebaseSession as signupWithExistingSessionApi,
   loginWithGoogle as loginWithGoogleApi,
   loginWithEmail as loginWithEmailApi,
   refreshLoginSession,
@@ -87,6 +88,12 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
+  const signupWithExistingFirebaseSession = async (payload = {}) => {
+    const { data, idToken } = await signupWithExistingSessionApi(payload)
+    await establishSession(idToken, data.onboardingStep)
+    return data
+  }
+
   const loginWithGoogle = async (options = {}) => {
     const { data, idToken } = await loginWithGoogleApi(options)
     await establishSession(idToken, data.onboardingStep)
@@ -117,6 +124,7 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithEmail,
     signupWithGoogle,
     signupWithEmail,
+    signupWithExistingFirebaseSession,
     loginWithGoogle,
     logout,
   }

@@ -18,6 +18,8 @@ export const useLoginView = () => {
   const activeTab = ref('login')
   const signupStep = ref('method')
   const signupMethod = ref('email')
+  // 로그인 시도 → SIGNUP_REQUIRED → 회원가입 탭 전환 여부 (Firebase 세션 재사용)
+  const isSignupRequiredFlow = ref(false)
 
   const nickname = ref('')
   const email = ref(authStore.rememberedEmail || '')
@@ -47,6 +49,7 @@ export const useLoginView = () => {
     if (isLoading.value) return
     activeTab.value = tab
     error.value = ''
+    isSignupRequiredFlow.value = false
     if (tab === 'signup') {
       signupStep.value = 'method'
     }
@@ -75,6 +78,7 @@ export const useLoginView = () => {
       await router.push(path)
     } catch (err) {
       if (err?.code === 'SIGNUP_REQUIRED') {
+        isSignupRequiredFlow.value = true
         signupMethod.value = 'email'
         activeTab.value = 'signup'
         signupStep.value = 'form'
@@ -103,6 +107,7 @@ export const useLoginView = () => {
       await router.push(path)
     } catch (err) {
       if (err?.code === 'SIGNUP_REQUIRED') {
+        isSignupRequiredFlow.value = true
         signupMethod.value = 'google'
         activeTab.value = 'signup'
         signupStep.value = 'method'
@@ -122,7 +127,12 @@ export const useLoginView = () => {
     error.value = ''
 
     try {
-      await authStore.signupWithGoogle({ onDismissed: unlockIfPopupDismissed })
+      if (isSignupRequiredFlow.value) {
+        // Firebase 세션 재사용 — 팝업 없이 BE에만 가입
+        await authStore.signupWithExistingFirebaseSession()
+      } else {
+        await authStore.signupWithGoogle({ onDismissed: unlockIfPopupDismissed })
+      }
       await router.push(ONBOARDING_PATHS.intro)
     } catch (err) {
       error.value = err?.message || 'Google 회원가입에 실패했습니다.'
@@ -144,7 +154,8 @@ export const useLoginView = () => {
   const handleSignupSubmit = async () => {
     if (isLoading.value) return
 
-    if (password.value !== passwordConfirm.value) {
+    // SIGNUP_REQUIRED 흐름이 아닌 신규 이메일 가입에서만 비밀번호 확인
+    if (!isSignupRequiredFlow.value && password.value !== passwordConfirm.value) {
       error.value = '비밀번호가 일치하지 않습니다.'
       return
     }
@@ -153,11 +164,16 @@ export const useLoginView = () => {
     error.value = ''
 
     try {
-      await authStore.signupWithEmail({
-        nickname: nickname.value,
-        email: email.value,
-        password: password.value,
-      })
+      if (isSignupRequiredFlow.value) {
+        // Firebase 계정은 이미 있음 — BE에만 회원가입
+        await authStore.signupWithExistingFirebaseSession({ nickname: nickname.value })
+      } else {
+        await authStore.signupWithEmail({
+          nickname: nickname.value,
+          email: email.value,
+          password: password.value,
+        })
+      }
       await router.push(ONBOARDING_PATHS.intro)
     } catch (err) {
       error.value = err?.message || '회원가입에 실패했습니다.'
@@ -195,6 +211,7 @@ export const useLoginView = () => {
     activeTab,
     signupStep,
     signupMethod,
+    isSignupRequiredFlow,
     nickname,
     email,
     password,
