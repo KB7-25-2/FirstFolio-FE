@@ -30,7 +30,7 @@ const writeSession = (patch) => {
 
 const unwrap = (response) => response.data?.data ?? response.data
 
-/** OpenAPI QuizChoiceResponse: key/label — 구버전 id/text·문자열 호환 */
+/** OpenAPI QuizChoiceResponse: key/label (구 id/text 호환) */
 const mapChoice = (choice) => {
   if (choice == null) return { key: '', label: '' }
   if (typeof choice === 'string') return { key: choice, label: choice }

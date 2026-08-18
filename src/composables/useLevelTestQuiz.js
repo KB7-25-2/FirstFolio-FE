@@ -38,15 +38,8 @@ export const useLevelTestQuiz = () => {
   const actionError = ref('')
 
   onMounted(async () => {
-    const existing = levelTestStore.attempt
-    const options = levelTestStore.currentQuestion?.optionsJson ?? []
-    const optionsBroken =
-      existing?.status === 'IN_PROGRESS' &&
-      (options.length === 0 || options.some((o) => !o?.key || !o?.label))
-
-    // 이전 매핑 버그(id/text)로 저장된 세션이면 start API로 복원·재매핑
-    if (existing?.status === 'IN_PROGRESS' && !optionsBroken) return
-
+    // 세션에 예전(id/text) 매핑이 남아 있으면 선택지가 비어 보이므로
+    // 항상 start API로 복원·재매핑한다.
     try {
       await levelTestStore.start()
     } catch (err) {

@@ -134,6 +134,35 @@ describe('levelTestService', () => {
     ])
   })
 
+  it('optionsJson 필드의 key/label도 선택지로 매핑한다', async () => {
+    startLevelTestAttempt.mockResolvedValue({
+      data: {
+        data: {
+          attemptId: 2003,
+          status: 'IN_PROGRESS',
+          questionCount: 1,
+          questions: [
+            {
+              questionId: 1003,
+              prompt: '질문',
+              optionsJson: [
+                { key: '1', label: '선택지 내용' },
+                { key: '2', label: '다른 선택지' },
+              ],
+            },
+          ],
+          answers: [],
+        },
+      },
+    })
+
+    const { data } = await startLevelTest()
+    expect(data.questions[0].optionsJson).toEqual([
+      { key: '1', label: '선택지 내용' },
+      { key: '2', label: '다른 선택지' },
+    ])
+  })
+
   it('답안을 실제 API 계약의 answer.key 형식으로 저장한다', async () => {
     saveLevelTestAttemptAnswers.mockResolvedValue({
       data: {
