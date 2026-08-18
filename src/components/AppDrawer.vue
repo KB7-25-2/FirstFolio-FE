@@ -18,14 +18,14 @@ const emit = defineEmits(['close', 'profile-click'])
 const userStore = useUserStore()
 const { nickname, greeting, pointBalanceDisplay } = storeToRefs(userStore)
 const authStore = useAuthStore()
-const { tabs, isActive, navigate } = useNavTabs()
+const { tabs, isActive, isTabLocked, portfolioLockedMessage, navigate } = useNavTabs()
 
 const avatarInitial = computed(() => nickname.value?.trim()?.charAt(0)?.toUpperCase() || '')
 
 const close = () => emit('close')
 
-const goTo = (path) => {
-  navigate(path)
+const goTo = async (path) => {
+  await navigate(path)
   close()
 }
 
@@ -103,10 +103,18 @@ const confirmLogout = async () => {
           :key="tab.name"
           type="button"
           class="app-drawer__nav-item"
-          :class="{ 'app-drawer__nav-item--active': isActive(tab.name) }"
+          :class="{
+            'app-drawer__nav-item--active': isActive(tab.name),
+            'opacity-50': isTabLocked(tab.name),
+          }"
+          :aria-disabled="isTabLocked(tab.name) ? 'true' : undefined"
+          :title="isTabLocked(tab.name) ? portfolioLockedMessage : undefined"
           @click="goTo(tab.path)"
         >
-          <font-awesome-icon :icon="tab.icon" class="w-4 text-[14px]" />
+          <font-awesome-icon
+            :icon="isTabLocked(tab.name) ? 'fa-solid fa-lock' : tab.icon"
+            class="w-4 text-[14px]"
+          />
           <span class="font-serif text-[13px] font-bold">{{ tab.label }}</span>
         </button>
       </nav>

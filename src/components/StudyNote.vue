@@ -21,30 +21,35 @@ const {
 
 onMounted(async () => {
   try {
-    await dashboardStore.fetchDashboard()
+    await dashboardStore.ensureDashboard()
   } catch {
-    // dashboard 실패 시에도 학습 노트는 study 경로로 폴백
+    // dashboard 실패 시에도 학습 노트는 study store 경로로 폴백
   }
 
   const dashLearning = learning.value
-  if (dashLearning && dashLearning.available !== false && dashLearning.mainChapterId != null) {
-    studyStore.isLoading = true
+  const dashMainChapterId =
+    dashLearning && dashLearning.available !== false ? dashLearning.mainChapterId : null
+
+  // 로드맵·학습 노트가 store에 있으면 API 생략
+  if (studyStore.hasRoadmap) {
+    if (dashMainChapterId != null) {
+      studyStore.applyLearningItemsFromStage(dashMainChapterId)
+    }
+    if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
+      return
+    }
+  }
+
+  if (dashMainChapterId != null) {
     studyStore.error = null
     try {
-      await Promise.all([
-        studyStore.fetchCurriculum(),
-        studyStore.fetchLearningProgress(dashLearning.mainChapterId),
-      ])
-      await studyStore.fetchContinuePosition()
+      await studyStore.fetchStudyNote({ mainChapterId: dashMainChapterId })
       if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
         return
       }
     } catch (err) {
       studyStore.error = err?.message || '학습 현황을 불러오지 못했습니다.'
-    } finally {
-      studyStore.isLoading = false
     }
-    studyStore.error = null
   }
 
   await studyStore.fetchStudyNote()
@@ -164,7 +169,7 @@ const goLearning = () => {
 </script>
 
 <template>
-  <div class="relative w-full max-w-[346px]">
+  <div class="relative w-full max-w-[346px]" data-testid="study-note">
     <div
       class="memo-selectable relative z-10"
       role="button"

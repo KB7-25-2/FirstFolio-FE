@@ -10,12 +10,14 @@ const {
   availableItems,
   isLoading,
   isSaving,
+  isConfirming,
+  isEditMode,
   error,
   actionError,
   onToggle,
   onReorder,
   onConfirm,
-  goResult,
+  goBack,
 } = useCurriculumRecommend()
 
 const selectedOptionalCount = computed(
@@ -33,10 +35,10 @@ const progressTotal = computed(() =>
   <div class="cork-board mx-auto flex mobile-frame flex-col overflow-hidden">
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-10 pb-3">
       <p class="font-serif text-[10px] tracking-[0.4px] text-[var(--cork-stamp)]">
-        STEP 4 · CURRICULUM ORDER
+        {{ isEditMode ? 'EDIT · CURRICULUM ORDER' : 'STEP 4 · CURRICULUM ORDER' }}
       </p>
       <h1 class="mt-1.5 font-serif text-[22px] leading-snug font-black text-[var(--cork-ink)]">
-        학습 순서를 정해보세요
+        {{ isEditMode ? '학습 순서를 수정해보세요' : '학습 순서를 정해보세요' }}
       </h1>
 
       <div class="mt-4 w-full max-w-[359px] self-center">
@@ -67,14 +69,16 @@ const progressTotal = computed(() =>
     </div>
 
     <div class="flex shrink-0 gap-3 px-4 pt-2 pb-6">
-      <button type="button" class="cork-btn cork-btn--danger flex-1" @click="goResult">이전</button>
+      <button type="button" class="cork-btn cork-btn--danger flex-1" @click="goBack">
+        {{ isEditMode ? '학습으로' : '이전' }}
+      </button>
       <button
         type="button"
         class="cork-btn cork-btn--primary flex-1"
-        :disabled="isSaving || !orderedItems.length"
+        :disabled="isConfirming || isSaving || !orderedItems.length"
         @click="onConfirm"
       >
-        {{ isSaving ? '저장 중…' : '구성 확정 →' }}
+        {{ isConfirming || isSaving ? '적용 중…' : isEditMode ? '수정 확정 →' : '구성 확정 →' }}
       </button>
     </div>
   </div>

@@ -4,22 +4,29 @@ import {
   getChapterGame,
   getContinuePosition,
   getCurriculum,
-  getLearningProgress,
+  getLearningRoadmap,
   getLessonPages,
   getQuizQuestions,
   getScenario,
   getSubChapterContent,
   gradeQuizAttemptAnswer,
+  pickStageLearningItems,
   saveLessonProgress,
   startSubChapterQuizAttempt,
   submitQuizAttempt,
   submitScenarioAttempt,
 } from '@/services/studyService.js'
+import { StudyApiError } from '@/services/study/studyApiError.js'
+import { needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
+import { shouldFallbackStudyMock } from '@/services/study/studyResponseUtils.js'
 import { useUserStore } from '@/store/userStore.js'
+import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
 
 export const useStudyStore = defineStore('study', () => {
   const curriculumItems = ref([])
   const learningItems = ref([])
+  /** @type {import('vue').Ref<Array<{ mainChapterId: number, status: string, periods: import('@/types/study.js').LearningProgressItem[] }>>} */
+  const roadmapStages = ref([])
   const continuePosition = ref(null)
   const currentContent = ref(null)
   const lessonPages = ref([])
@@ -57,10 +64,27 @@ export const useStudyStore = defineStore('study', () => {
   const scenarioAnswers = ref({})
   const scenarioAttemptResult = ref(null)
 
+  /** 기초 수료 직후 모의투자금 지급 세리머니 표시 */
+  const pendingFoundationUnlock = ref(false)
+
   /** StudyNote에 표시할 활성 대단원 */
   const activeCurriculumItem = computed(
     () => curriculumItems.value.find((item) => item.status === 'ACTIVE') ?? null,
   )
+
+  /** 필수 선행 포트폴리오 기초 과정 */
+  const foundationItem = computed(
+    () => curriculumItems.value.find((item) => item.chapterType === 'FOUNDATION') ?? null,
+  )
+
+  /** 홈 기초 과정 가이드 노출 (미시작 FOUNDATION만) */
+  const needsFoundationGuide = computed(() => shouldShowFoundationGuide(curriculumItems.value))
+
+  /** 기초 수료 여부 — 미수료 시 포트폴리오 탭 잠금 */
+  const isFoundationCompletedFlag = computed(() => isFoundationCompleted(curriculumItems.value))
+
+  /** 포트폴리오 기능 잠금 (기초 미수료) */
+  const isPortfolioLocked = computed(() => !isFoundationCompletedFlag.value)
 
   const chapterTitle = computed(() => activeCurriculumItem.value?.title ?? '')
 
@@ -68,6 +92,9 @@ export const useStudyStore = defineStore('study', () => {
     () =>
       continuePosition.value?.progressPercent ?? activeCurriculumItem.value?.progressPercent ?? 0,
   )
+
+  /** 로드맵 API 캐시 여부 — 있으면 재조회 생략 */
+  const hasRoadmap = computed(() => roadmapStages.value.length > 0)
 
   /** 「이어서 →」 이동 경로 */
   const continueRoute = computed(() => continuePosition.value?.route ?? null)
@@ -160,9 +187,67 @@ export const useStudyStore = defineStore('study', () => {
     }
   }
 
-  const fetchLearningProgress = async (mainChapterId) => {
-    const { data } = await getLearningProgress(mainChapterId)
-    learningItems.value = data.items
+  const fetchRoadmap = async (options = {}) => {
+    const { force = false } = options
+    if (!force && roadmapStages.value.length) {
+      return {
+        curriculumItems: curriculumItems.value,
+        stages: roadmapStages.value,
+      }
+    }
+
+    try {
+      const { data } = await getLearningRoadmap()
+      curriculumItems.value = data.curriculumItems
+      roadmapStages.value = data.stages
+      return data
+    } catch (err) {
+      if (err?.code === 'CURRICULUM_NOT_FOUND') {
+        curriculumItems.value = []
+        roadmapStages.value = []
+      }
+      throw err
+    }
+  }
+
+  /** store에 로드맵이 없을 때만 API 호출 (기본 진입 경로) */
+  const ensureRoadmap = async (options = {}) => fetchRoadmap({ force: false, ...options })
+
+  /**
+   * 서버 재조회 없이 store 로드맵의 소단원 진행만 반영
+   * @param {number} subChapterId
+   * @param {Record<string, unknown>} patch
+   */
+  const patchRoadmapPeriod = (subChapterId, patch) => {
+    for (const stage of roadmapStages.value) {
+      const period = stage.periods?.find((row) => row.subChapterId === subChapterId)
+      if (!period) continue
+      Object.assign(period, patch)
+      return stage.mainChapterId
+    }
+    return null
+  }
+
+  const applyLearningItemsFromStage = (mainChapterId = null) => {
+    learningItems.value = pickStageLearningItems(roadmapStages.value, mainChapterId)
+  }
+
+  /**
+   * store 로드맵에서 learningItems 재구성
+   * @param {number} [mainChapterId]
+   * @param {{ syncFromServer?: boolean }} [options] syncFromServer=true면 API 재조회 (퀴즈·시나리오 완료 후)
+   */
+  const refreshLearningItems = async (mainChapterId, options = {}) => {
+    const { syncFromServer = false } = options
+    if (syncFromServer) {
+      await fetchRoadmap({ force: true })
+    }
+    const targetId =
+      mainChapterId ??
+      activeCurriculumItem.value?.mainChapterId ??
+      roadmapStages.value.find((stage) => stage.status === 'ACTIVE')?.mainChapterId ??
+      null
+    applyLearningItemsFromStage(targetId)
   }
 
   const fetchContinuePosition = async () => {
@@ -214,7 +299,14 @@ export const useStudyStore = defineStore('study', () => {
 
     currentPageId.value = fromPreferred || fromProgress || pages[0]?.id || null
 
-    return { meta, lesson: data, pages }
+    await ensureLessonCompletedIfFullyRead(pages)
+
+    return {
+      meta: currentContent.value,
+      lesson: data,
+      pages,
+      needsQuiz: needsQuizAttempt(currentContent.value?.progress),
+    }
   }
 
   /**
@@ -232,8 +324,9 @@ export const useStudyStore = defineStore('study', () => {
 
   /**
    * @param {string} [pageId]
+   * @param {{ status?: import('@/types/study.js').LearningProgressStatus }} [options]
    */
-  const saveProgress = async (pageId) => {
+  const saveProgress = async (pageId, options = {}) => {
     const subChapterId = currentContent.value?.subChapterId
     const lastPageId = pageId ?? currentPageId.value
     if (!subChapterId || !lastPageId) return null
@@ -241,11 +334,20 @@ export const useStudyStore = defineStore('study', () => {
     const { data } = await saveLessonProgress(subChapterId, {
       lastPageId,
       contentVersionId: currentContent.value?.contentVersionId,
+      status: options.status ?? 'IN_PROGRESS',
     })
     if (currentContent.value?.progress) {
       currentContent.value.progress.lastPageId = data.lastPageId
       currentContent.value.progress.status = data.status
+      if (data.completedAt) {
+        currentContent.value.progress.completedAt = data.completedAt
+      }
     }
+    patchRoadmapPeriod(subChapterId, {
+      status: data.status,
+      lastPageId: data.lastPageId,
+      ...(data.completedAt ? { completedAt: data.completedAt } : {}),
+    })
     await fetchContinuePosition()
     return data
   }
@@ -255,6 +357,9 @@ export const useStudyStore = defineStore('study', () => {
     const next = lessonPages.value[pageIndex.value + 1]
     if (!next) return false
     await setCurrentPage(next.id)
+    if (isLastPage.value) {
+      await ensureLessonCompletedIfFullyRead(lessonPages.value)
+    }
     return true
   }
 
@@ -271,6 +376,58 @@ export const useStudyStore = defineStore('study', () => {
     quizUiStatus.value = 'IN_PROGRESS'
   }
 
+  /** 퀴즈 시작 API가 반환한 문항·기존 응답으로 세션 복원 */
+  const applyQuizAttemptSession = (attemptData) => {
+    const questions = attemptData?.questions ?? []
+    if (!questions.length) return false
+
+    quizAttemptId.value = attemptData.attemptId ?? null
+    quizQuestions.value = questions
+
+    const nextAnswers = {}
+    const nextGrades = {}
+    for (const question of questions) {
+      if (!question.answered || !question.selectedKey) continue
+      nextAnswers[question.questionId] = question.selectedKey
+      if (question.isCorrect != null) {
+        nextGrades[question.questionId] = {
+          questionId: question.questionId,
+          selectedKey: question.selectedKey,
+          isCorrect: question.isCorrect,
+          correctAnswer: question.correctAnswerJson,
+          explanation: question.explanation,
+        }
+      }
+    }
+    quizAnswers.value = nextAnswers
+    quizGradeByQuestionId.value = nextGrades
+
+    const nextIndex = questions.findIndex((row) => !row.answered)
+    quizIndex.value = nextIndex >= 0 ? nextIndex : Math.max(questions.length - 1, 0)
+
+    const current = questions[quizIndex.value]
+    if (current?.answered && current.selectedKey) {
+      quizSelectedKey.value = current.selectedKey
+      quizUiStatus.value = current.isCorrect ? 'CORRECT' : 'WRONG'
+    } else {
+      resetQuizQuestionUi()
+    }
+    return true
+  }
+
+  /** 마지막 페이지까지 읽었으면 강좌 COMPLETED PUT */
+  const ensureLessonCompletedIfFullyRead = async (pages) => {
+    const meta = currentContent.value
+    if (!meta?.subChapterId || !pages.length) return
+    if (meta.progress?.status === 'COMPLETED') return
+
+    const lastPage = pages[pages.length - 1]
+    const lastPageId = meta.progress?.lastPageId ?? currentPageId.value
+    if (!lastPage?.id || lastPageId !== lastPage.id) return
+
+    await saveProgress(lastPage.id, { status: 'COMPLETED' })
+  }
+
   /**
    * 소단원 퀴즈 세션 시작 — questionIds 없으면 강좌 JSON 재조회
    * @param {number} subChapterId
@@ -279,12 +436,25 @@ export const useStudyStore = defineStore('study', () => {
     clearQuizSession()
     quizSubChapterId.value = subChapterId
 
-    const attempt = await startSubChapterQuizAttempt(subChapterId)
+    /** @type {{ data?: { attemptId?: number, questions?: unknown[] } } | null} */
+    let attempt = null
+    try {
+      attempt = await startSubChapterQuizAttempt(subChapterId)
+    } catch (error) {
+      const mapped =
+        error instanceof StudyApiError
+          ? error
+          : new StudyApiError(
+              error?.code ?? 'QUIZ_START_FAILED',
+              error?.message ?? '퀴즈를 시작하지 못했습니다.',
+              error?.status ?? 500,
+            )
+      if (!shouldFallbackStudyMock(mapped)) throw mapped
+      console.warn('[studyStore] quiz start 실패 — mock 문항으로 대체합니다.', mapped)
+    }
+
     if (attempt?.data?.questions?.length) {
-      quizAttemptId.value = attempt.data.attemptId
-      quizQuestions.value = attempt.data.questions
-      quizIndex.value = 0
-      resetQuizQuestionUi()
+      applyQuizAttemptSession(attempt.data)
       return
     }
 
@@ -340,15 +510,6 @@ export const useStudyStore = defineStore('study', () => {
     const correctKey = question.correctAnswerJson?.key
     quizUiStatus.value = quizSelectedKey.value === correctKey ? 'CORRECT' : 'WRONG'
     return true
-  }
-
-  const retryCurrentQuizQuestion = () => {
-    const question = quizCurrentQuestion.value
-    if (!question) return
-    const next = { ...quizAnswers.value }
-    delete next[question.questionId]
-    quizAnswers.value = next
-    resetQuizQuestionUi()
   }
 
   const goNextQuizQuestion = () => {
@@ -417,23 +578,56 @@ export const useStudyStore = defineStore('study', () => {
 
     const data = quizAttemptResult.value
 
-    if (currentContent.value?.subChapterId === subChapterId && currentContent.value.progress) {
+    const completionPageId =
+      currentContent.value?.progress?.lastPageId ??
+      lessonPages.value[lessonPages.value.length - 1]?.id ??
+      currentPageId.value
+
+    if (completionPageId) {
+      const { data: progressData } = await saveLessonProgress(subChapterId, {
+        lastPageId: completionPageId,
+        contentVersionId: currentContent.value?.contentVersionId,
+        status: 'COMPLETED',
+      })
+
+      if (currentContent.value?.subChapterId === subChapterId && currentContent.value.progress) {
+        currentContent.value.progress.status = progressData.status
+        currentContent.value.progress.lastPageId = progressData.lastPageId
+        currentContent.value.progress.completedAt =
+          progressData.completedAt ??
+          currentContent.value.progress.completedAt ??
+          new Date().toISOString()
+      }
+
+      const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
+      if (item) {
+        item.status = progressData.status
+        item.lastPageId = progressData.lastPageId
+        item.completedAt = progressData.completedAt ?? item.completedAt ?? new Date().toISOString()
+        if (data) item.quizScore = data.quizScore
+      }
+    } else if (
+      currentContent.value?.subChapterId === subChapterId &&
+      currentContent.value.progress
+    ) {
       currentContent.value.progress.status = 'COMPLETED'
       currentContent.value.progress.completedAt =
         currentContent.value.progress.completedAt ?? new Date().toISOString()
+
+      const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
+      if (item && data) {
+        item.status = 'COMPLETED'
+        item.quizScore = data.quizScore
+        item.completedAt = item.completedAt ?? new Date().toISOString()
+      }
     }
 
-    const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
-    if (item && data) {
-      item.status = 'COMPLETED'
-      item.quizScore = data.quizScore
-      item.completedAt = item.completedAt ?? new Date().toISOString()
-    }
-
-    const mainChapterId = currentContent.value?.mainChapterId ?? item?.mainChapterId
+    const mainChapterId =
+      currentContent.value?.mainChapterId ??
+      learningItems.value.find((row) => row.subChapterId === subChapterId)?.mainChapterId
     await fetchContinuePosition()
     if (mainChapterId) {
-      await fetchLearningProgress(mainChapterId)
+      await refreshLearningItems(mainChapterId, { syncFromServer: true })
     }
 
     return data
@@ -554,6 +748,10 @@ export const useStudyStore = defineStore('study', () => {
     const scenarioId = scenarioDetail.value?.scenarioId
     if (!mainChapterId || !scenarioId || !scenarioSteps.value.length) return null
 
+    const wasFoundationChapter =
+      curriculumItems.value.find((item) => item.mainChapterId === mainChapterId)?.chapterType ===
+      'FOUNDATION'
+
     const answers = scenarioSteps.value.map((step) => ({
       stepId: step.stepId,
       selectedKey: scenarioAnswers.value[step.stepId] ?? '',
@@ -582,28 +780,42 @@ export const useStudyStore = defineStore('study', () => {
       item.completedAt = item.completedAt ?? new Date().toISOString()
     }
 
-    await Promise.all([fetchCurriculum(), fetchContinuePosition()])
+    await Promise.all([fetchRoadmap({ force: true }), fetchContinuePosition()])
+    applyLearningItemsFromStage(mainChapterId)
+
+    if (wasFoundationChapter && isFoundationCompletedFlag.value) {
+      pendingFoundationUnlock.value = true
+    }
 
     return data
   }
 
-  /** StudyNote용: 커리큘럼 + 소단원 목록 + 이어하기 */
-  const fetchStudyNote = async () => {
+  const clearFoundationUnlock = () => {
+    pendingFoundationUnlock.value = false
+  }
+
+  /** StudyNote용: 로드맵 + 이어하기 (소단원 N+1 호출 없음) */
+  const fetchStudyNote = async (options = {}) => {
     if (isLoading.value) return
 
     isLoading.value = true
     error.value = null
 
     try {
-      await Promise.all([fetchCurriculum(), fetchContinuePosition()])
+      await Promise.all([ensureRoadmap(), fetchContinuePosition()])
 
-      const active = activeCurriculumItem.value
-      if (!active) {
+      const mainChapterId =
+        options.mainChapterId ??
+        activeCurriculumItem.value?.mainChapterId ??
+        roadmapStages.value.find((stage) => stage.status === 'ACTIVE')?.mainChapterId ??
+        null
+
+      if (mainChapterId == null) {
         learningItems.value = []
         return
       }
 
-      await fetchLearningProgress(active.mainChapterId)
+      applyLearningItemsFromStage(mainChapterId)
     } catch (err) {
       error.value = err?.message || '학습 현황을 불러오지 못했습니다.'
     } finally {
@@ -620,8 +832,10 @@ export const useStudyStore = defineStore('study', () => {
   const clearStudy = () => {
     curriculumItems.value = []
     learningItems.value = []
+    roadmapStages.value = []
     continuePosition.value = null
     currentContent.value = null
+    pendingFoundationUnlock.value = false
     clearLesson()
     clearQuizSession()
     clearScenarioSession()
@@ -631,6 +845,8 @@ export const useStudyStore = defineStore('study', () => {
   return {
     curriculumItems,
     learningItems,
+    roadmapStages,
+    hasRoadmap,
     continuePosition,
     currentContent,
     lessonPages,
@@ -657,6 +873,10 @@ export const useStudyStore = defineStore('study', () => {
     scenarioAnswers,
     scenarioAttemptResult,
     activeCurriculumItem,
+    foundationItem,
+    needsFoundationGuide,
+    isFoundationCompleted: isFoundationCompletedFlag,
+    isPortfolioLocked,
     chapterTitle,
     progressPercent,
     continueRoute,
@@ -683,7 +903,11 @@ export const useStudyStore = defineStore('study', () => {
     scenarioIsGraded,
     scenarioCorrectCount,
     fetchCurriculum,
-    fetchLearningProgress,
+    fetchRoadmap,
+    ensureRoadmap,
+    patchRoadmapPeriod,
+    refreshLearningItems,
+    applyLearningItemsFromStage,
     fetchContinuePosition,
     fetchSubChapterContent,
     fetchLessonContent,
@@ -695,7 +919,6 @@ export const useStudyStore = defineStore('study', () => {
     startSubChapterQuiz,
     selectQuizOption,
     submitCurrentQuizQuestion,
-    retryCurrentQuizQuestion,
     goNextQuizQuestion,
     completeQuizAttempt,
     clearQuizSession,
@@ -707,6 +930,8 @@ export const useStudyStore = defineStore('study', () => {
     goNextScenarioStep,
     completeScenarioAttempt,
     clearScenarioSession,
+    pendingFoundationUnlock,
+    clearFoundationUnlock,
     clearLesson,
     clearStudy,
   }

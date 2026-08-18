@@ -38,7 +38,8 @@ export const useLevelTestQuiz = () => {
   const actionError = ref('')
 
   onMounted(async () => {
-    if (levelTestStore.attempt?.status === 'IN_PROGRESS') return
+    // 세션에 예전(id/text) 매핑이 남아 있으면 선택지가 비어 보이므로
+    // 항상 start API로 복원·재매핑한다.
     try {
       await levelTestStore.start()
     } catch (err) {
@@ -52,6 +53,8 @@ export const useLevelTestQuiz = () => {
     const asset = currentQuestion.value?.assetType
     return asset ? (ASSET_LABELS[asset] ?? asset) : '기초 진단'
   })
+
+  const isTrueFalse = computed(() => currentQuestion.value?.questionType === 'TRUE_FALSE')
 
   /** @type {import('vue').ComputedRef<'IN_PROGRESS' | 'SELECTED'>} */
   const quizUiStatus = computed(() => (currentSelectedKey.value ? 'SELECTED' : 'IN_PROGRESS'))
@@ -142,6 +145,7 @@ export const useLevelTestQuiz = () => {
     actionError,
     examTitle,
     subject,
+    isTrueFalse,
     quizUiStatus,
     statusBadge,
     optionsWithTone,

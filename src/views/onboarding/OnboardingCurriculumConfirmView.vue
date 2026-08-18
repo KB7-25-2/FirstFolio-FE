@@ -8,7 +8,7 @@ const {
   orderedItems,
   periods,
   isLoading,
-  isConfirming,
+  isEditMode,
   error,
   actionError,
   goEdit,
@@ -20,10 +20,10 @@ const {
   <div class="cork-board mx-auto flex mobile-frame flex-col overflow-hidden">
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-10 pb-3">
       <p class="font-serif text-[10px] tracking-[0.4px] text-[var(--cork-stamp)]">
-        READY · CURRICULUM
+        {{ isEditMode ? 'UPDATED · CURRICULUM' : 'READY · CURRICULUM' }}
       </p>
       <h1 class="mt-1.5 font-serif text-[22px] leading-snug font-black text-[var(--cork-ink)]">
-        나의 학습 시간표가 완성됐어요
+        {{ isEditMode ? '학습 시간표가 수정됐어요' : '나의 학습 시간표가 완성됐어요' }}
       </h1>
 
       <div class="mt-5 w-full max-w-[350px] self-center">
@@ -58,10 +58,10 @@ const {
       <button
         type="button"
         class="cork-btn cork-btn--primary flex-1"
-        :disabled="isConfirming || !orderedItems.length"
+        :disabled="!orderedItems.length"
         @click="onStartLearning"
       >
-        {{ isConfirming ? '확정 중…' : '학습 시작 →' }}
+        {{ isEditMode ? '학습으로 →' : '학습 시작 →' }}
       </button>
     </div>
   </div>

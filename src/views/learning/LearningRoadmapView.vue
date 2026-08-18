@@ -1,10 +1,22 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+defineOptions({ name: 'LearningRoadmapView' })
+
+import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 import LearningLayout from '@/components/learning/LearningLayout.vue'
 import LearningNotePaper from '@/components/learning/LearningNotePaper.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 import { useLearningRoadmap } from '@/composables/useLearningRoadmap.js'
+import {
+  getDidInitialAutoFocus,
+  getPersistedFocusStageIndex,
+  getPersistedListScrollTop,
+  markInitialAutoFocusDone,
+  persistRoadmapFocus,
+  setPersistedFocusStageIndex,
+  setPersistedListScrollTop,
+} from '@/utils/learningRoadmapFocus.js'
 
 const {
   isLoading,
@@ -15,6 +27,7 @@ const {
   hasRoadmap,
   statusLabel,
   periodStatusLabel,
+  isPeriodQuizDue,
   accentClass,
   openPeriod,
   startScenarioQuiz,
@@ -24,7 +37,9 @@ const {
 
 const listRef = ref(null)
 /** 스크롤로 보이는 대단원 (상단 강조) */
-const focusStageIndex = ref(0)
+const focusStageIndex = ref(getPersistedFocusStageIndex())
+/** 탭 전환으로 비활성일 때 activeStage 동기화가 포커스를 덮어쓰지 않게 */
+const isViewActive = ref(true)
 
 /** `scroll-mt-[3.75rem]` — 스크롤 스파이 마커와 scrollIntoView 오프셋을 맞춤 */
 const SCROLL_SPY_OFFSET = 60
@@ -63,7 +78,9 @@ const overall = computed(() => {
 const focusStage = computed(() => stages.value[focusStageIndex.value] ?? null)
 
 const isPeriodCurrent = (period) =>
-  period.scheduleStatus === 'IN_PROGRESS' || period.scheduleStatus === 'NEXT'
+  isPeriodQuizDue(period) ||
+  period.scheduleStatus === 'IN_PROGRESS' ||
+  period.scheduleStatus === 'NEXT'
 
 const isPeriodLocked = (stage, period) =>
   stage.status === 'LOCKED' || period.scheduleStatus === 'LOCKED'
@@ -94,8 +111,25 @@ const findCurrentPeriodTarget = () => {
   return null
 }
 
+/** listRef 내부만 스크롤 (document.scrollIntoView는 잘못된 조상으로 갈 수 있음) */
+const scrollRootByDelta = (el, align = 'start', behavior = 'auto') => {
+  const root = listRef.value
+  if (!root || !el) return 0
+  const delta = el.getBoundingClientRect().top - root.getBoundingClientRect().top
+  let nextTop = root.scrollTop + delta
+  if (align === 'start') nextTop -= SCROLL_SPY_OFFSET
+  if (align === 'center') nextTop -= root.clientHeight / 2 - el.clientHeight / 2
+  nextTop = Math.max(0, nextTop)
+  if (behavior === 'smooth') root.scrollTo({ top: nextTop, behavior: 'smooth' })
+  else root.scrollTop = nextTop
+  setPersistedListScrollTop(nextTop)
+  return nextTop
+}
+
 const scrollToElement = (id, behavior = 'smooth') => {
-  document.getElementById(id)?.scrollIntoView({ behavior, block: 'center' })
+  const el = document.getElementById(id)
+  if (!el) return
+  scrollRootByDelta(el, 'center', behavior)
 }
 
 /** 클릭으로 이동 중에는 스크롤 스파이가 강조를 되돌리지 않게 잠금 */
@@ -113,6 +147,9 @@ const unlockScrollSpy = (runScrollSpy = true) => {
   }
   if (pendingFocusStageIndex != null) {
     focusStageIndex.value = pendingFocusStageIndex
+    const stage = stages.value[pendingFocusStageIndex]
+    if (stage) persistRoadmapFocus(pendingFocusStageIndex, stage.mainChapterId)
+    else setPersistedFocusStageIndex(pendingFocusStageIndex)
     pendingFocusStageIndex = null
     return
   }
@@ -146,25 +183,63 @@ const updateFocusFromScroll = () => {
 
   if (current !== focusStageIndex.value) {
     focusStageIndex.value = current
+    const stage = stages.value[current]
+    if (stage) persistRoadmapFocus(current, stage.mainChapterId)
+    else setPersistedFocusStageIndex(current)
   }
+  setPersistedListScrollTop(root.scrollTop)
+}
+
+/** 저장해 둔 scrollTop + 대단원 앵커로 listRef 복원 */
+const scrollListToPersisted = () => {
+  const root = listRef.value
+  if (!root) return false
+
+  const savedTop = getPersistedListScrollTop()
+  const index = getPersistedFocusStageIndex()
+  const stage = stages.value[index]
+
+  // KeepAlive가 이미 스크롤을 갖고 있고 persist만 0이면 현재 DOM 값을 유지·저장
+  if (savedTop <= 0 && root.scrollTop > 0) {
+    setPersistedListScrollTop(root.scrollTop)
+    return true
+  }
+
+  if (savedTop > 0) {
+    root.scrollTop = savedTop
+  }
+
+  const applied = savedTop > 0 && Math.abs(root.scrollTop - savedTop) <= 8
+  if (!applied && stage) {
+    const el = document.getElementById(`chapter-${stage.mainChapterId}`)
+    if (el) scrollRootByDelta(el, 'start', 'auto')
+    if (savedTop > 0 && root.scrollHeight - root.clientHeight >= savedTop - 1) {
+      root.scrollTop = savedTop
+    }
+  }
+
+  // 복원 실패(높이 미확정)로 0이 되면 persist를 덮어쓰지 않음
+  if (root.scrollTop > 0 || savedTop === 0) {
+    setPersistedListScrollTop(root.scrollTop)
+  }
+  return true
 }
 
 const jumpToStage = async (index) => {
   focusStageIndex.value = index
+  const stage = stages.value[index]
+  if (stage) persistRoadmapFocus(index, stage.mainChapterId)
+  else setPersistedFocusStageIndex(index)
   selectStage(index)
   lockScrollSpyTemporarily(700, index)
   await nextTick()
-  const stage = stages.value[index]
   if (!stage) {
     unlockScrollSpy(false)
     return
   }
-  document
-    .getElementById(`chapter-${stage.mainChapterId}`)
-    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const el = document.getElementById(`chapter-${stage.mainChapterId}`)
+  if (el) scrollRootByDelta(el, 'start', 'smooth')
 }
-
-const didAutoFocus = ref(false)
 
 const focusCurrentPeriod = async () => {
   await nextTick()
@@ -174,6 +249,7 @@ const focusCurrentPeriod = async () => {
   if (target) {
     if (target.stageIndex >= 0) {
       focusStageIndex.value = target.stageIndex
+      persistRoadmapFocus(target.stageIndex, target.stage.mainChapterId)
       lockScrollSpyTemporarily(400, target.stageIndex)
       if (target.stageIndex !== activeStageIndex.value) {
         selectStage(target.stageIndex)
@@ -188,45 +264,116 @@ const focusCurrentPeriod = async () => {
     const chapterIndex = stages.value.findIndex(
       (stage) => stage.mainChapterId === focusMainChapterId.value,
     )
+    if (chapterIndex >= 0) {
+      focusStageIndex.value = chapterIndex
+      persistRoadmapFocus(chapterIndex, focusMainChapterId.value)
+    }
     lockScrollSpyTemporarily(400, chapterIndex >= 0 ? chapterIndex : null)
     scrollToElement(`chapter-${focusMainChapterId.value}`, 'auto')
   }
 }
 
 watch(activeStageIndex, (index) => {
-  if (index >= 0) focusStageIndex.value = index
+  if (!isViewActive.value) return
+  if (scrollSpyLocked.value) return
+  if (index >= 0) {
+    focusStageIndex.value = index
+    const stage = stages.value[index]
+    if (stage) persistRoadmapFocus(index, stage.mainChapterId)
+  }
 })
 
-watch(isLoading, (loading, prev) => {
-  if (prev && !loading) didAutoFocus.value = false
-})
+/** @type {ReturnType<typeof setTimeout> | null} */
+let restoreRetryTimer = null
+
+const restoreFocusSnapshot = async () => {
+  focusStageIndex.value = getPersistedFocusStageIndex()
+  lockScrollSpyTemporarily(1000, focusStageIndex.value)
+
+  const run = () => {
+    scrollListToPersisted()
+  }
+
+  await nextTick()
+  run()
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  run()
+
+  // 탭 Transition(out-in ~220ms) 후 레이아웃 확정되면 재적용
+  if (restoreRetryTimer != null) clearTimeout(restoreRetryTimer)
+  restoreRetryTimer = setTimeout(() => {
+    restoreRetryTimer = null
+    run()
+  }, 280)
+}
 
 watch(
   () => [hasRoadmap.value, isLoading.value],
   async ([ready, loading]) => {
-    if (!ready || loading || didAutoFocus.value) return
-    didAutoFocus.value = true
+    if (!ready || loading) return
+
+    // 이미 한 번 자동 포커스했으면, 리마운트/재진입 시 저장된 위치만 복원
+    if (getDidInitialAutoFocus()) {
+      await restoreFocusSnapshot()
+      return
+    }
+
+    markInitialAutoFocusDone()
     focusStageIndex.value = activeStageIndex.value
+    const stage = stages.value[activeStageIndex.value]
+    if (stage) persistRoadmapFocus(activeStageIndex.value, stage.mainChapterId)
     await focusCurrentPeriod()
+    await nextTick()
+    if (listRef.value) setPersistedListScrollTop(listRef.value.scrollTop)
   },
 )
+
+const saveFocusSnapshot = () => {
+  if (listRef.value) setPersistedListScrollTop(listRef.value.scrollTop)
+  const stage = stages.value[focusStageIndex.value]
+  if (stage) persistRoadmapFocus(focusStageIndex.value, stage.mainChapterId)
+  else setPersistedFocusStageIndex(focusStageIndex.value)
+}
+
+onDeactivated(() => {
+  isViewActive.value = false
+  saveFocusSnapshot()
+})
+
+onBeforeUnmount(() => {
+  if (restoreRetryTimer != null) clearTimeout(restoreRetryTimer)
+  saveFocusSnapshot()
+})
+
+onActivated(async () => {
+  isViewActive.value = true
+  await restoreFocusSnapshot()
+})
 </script>
 
 <template>
-  <LearningLayout :pad-for-nav="false" content-class="!overflow-hidden">
+  <LearningLayout :pad-for-nav="false" lock-shell-scroll>
     <BaseLoading v-if="isLoading" />
     <p v-else-if="error" class="font-serif text-sm text-red-300">{{ error }}</p>
 
     <div v-else-if="hasRoadmap" class="flex min-h-0 flex-1 flex-col gap-3">
       <!-- 고정: 소개 + 전체 진행 -->
       <div class="shrink-0 space-y-3">
-        <div>
-          <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
-            나만의 금융 커리큘럼
-          </p>
-          <p class="mt-0.5 font-serif text-[11px] text-[var(--cork-ink-muted)]">
-            대단원마다 소단원 진행을 확인하고 이어서 학습해요
-          </p>
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
+              나만의 금융 커리큘럼
+            </p>
+            <p class="mt-0.5 font-serif text-[11px] text-[var(--cork-ink-muted)]">
+              대단원마다 소단원 진행을 확인하고 이어서 학습해요
+            </p>
+          </div>
+          <RouterLink
+            :to="{ name: 'onboarding-curriculum', query: { mode: 'edit' } }"
+            class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24] underline-offset-2 hover:underline"
+          >
+            커리큘럼 수정
+          </RouterLink>
         </div>
 
         <p v-if="actionError" class="font-serif text-sm text-red-700">{{ actionError }}</p>
@@ -391,6 +538,7 @@ watch(
                         :class="{
                           'learning-syllabus__row--done': period.scheduleStatus === 'COMPLETED',
                           'learning-syllabus__row--now': isPeriodCurrent(period),
+                          'learning-syllabus__row--quiz': isPeriodQuizDue(period),
                           'learning-syllabus__row--locked': isPeriodLocked(stage, period),
                         }"
                         :disabled="isPeriodLocked(stage, period)"
@@ -412,7 +560,7 @@ watch(
                         <span class="learning-syllabus__row-body">
                           <span class="learning-syllabus__row-meta">
                             {{ orderLabel(periodIndex) }}교시 ·
-                            {{ periodStatusLabel(period.scheduleStatus) }}
+                            {{ periodStatusLabel(period.scheduleStatus, period) }}
                           </span>
                           <span class="learning-syllabus__row-title">{{ period.title }}</span>
                         </span>

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { primaryNav, seedHomeSession } from './helpers/authSession.js'
+import { resolveQuizAnswerKeys } from './helpers/learningApiMock.js'
 
 /**
  * 학습 플로우 E2E (이슈 G 수동 스모크 대응)
@@ -9,19 +10,30 @@ import { primaryNav, seedHomeSession } from './helpers/authSession.js'
  */
 test.describe('학습 플로우 (이어하기 · 수료)', () => {
   test.describe.configure({ mode: 'serial' })
+  /** @type {import('@playwright/test').BrowserContext} */
+  let context
   /** @type {import('@playwright/test').Page} */
   let page
 
-  test.beforeAll(async ({ browser }, testInfo) => {
+  test.beforeAll(async ({ browser, baseURL }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium', '공유 mock 오염 방지 — chromium만')
-    page = await browser.newPage()
+    context = await browser.newContext({
+      baseURL: baseURL ?? 'http://127.0.0.1:5173',
+    })
+    page = await context.newPage()
     await seedHomeSession(page)
     await page.goto('/home')
-    await expect(page.getByRole('button', { name: '이어서 →' })).toBeVisible({ timeout: 15_000 })
+    await expect(page).toHaveURL(/\/home/, { timeout: 15_000 })
+    await expect(primaryNav(page)).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByTestId('study-note')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText('학습 현황을 불러오는 중…')).toHaveCount(0, { timeout: 15_000 })
+    const continueBtn = page.getByRole('button', { name: '이어서 →' })
+    await expect(continueBtn).toBeVisible({ timeout: 15_000 })
   })
 
   test.afterAll(async () => {
     await page?.close()
+    await context?.close()
   })
 
   test('홈 StudyNote「이어서 →」가 강좌 page 쿼리로 진입한다', async () => {
@@ -66,7 +78,7 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
       await expectMainChapterRoadmap(page, 2)
     }
 
-    const scenarioCta = page.locator('button').filter({ hasText: '예금 실전 퀴즈' })
+    const scenarioCta = page.getByRole('button', { name: '대단원 실전 퀴즈' })
     await expect(scenarioCta).toBeVisible({ timeout: 10_000 })
     await expect(scenarioCta).toBeEnabled()
     await scenarioCta.click()
@@ -79,8 +91,7 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
     test.setTimeout(90_000)
     await completeScenarioQuiz(page)
 
-    await expect(page).toHaveURL(/\/learning\/?$/)
-    await expect(page.getByRole('heading', { name: '예·적금' })).toBeVisible()
+    await expectMainChapterRoadmap(page, 2)
     await expect(page.getByRole('heading', { name: '채권' })).toBeVisible()
     await expect(
       page.locator('button').filter({ hasText: '채권' }).filter({ hasText: '진행 중' }).first(),
@@ -103,46 +114,54 @@ async function expectMainChapterRoadmap(page, mainChapterId) {
   await expect(page.getByRole('heading', { name: '예·적금' })).toBeVisible({ timeout: 15_000 })
 }
 
-/** 강좌 마지막 페이지까지 이동 후 퀴즈 진입 */
+/** 강좌 마지막 페이지까지 이동 후 퀴즈 진입 (완료 화면 CTA 포함) */
 async function finishLessonToQuiz(page) {
   await expect(page.getByText('학습 화면')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('불러오는 중…')).toHaveCount(0, { timeout: 15_000 })
   await expect(page.getByText('선행 학습이 필요합니다.')).toHaveCount(0)
 
-  const primary = page.getByRole('button', { name: /다음 컷 →|퀴즈 풀기 →/ })
-  await expect(primary).toBeEnabled({ timeout: 15_000 })
+  const quizCta = page.getByRole('button', { name: /퀴즈 풀기 →|퀴즈 이어하기 →/ })
+  const nextCut = page.getByRole('button', { name: '다음 컷 →' })
+  await expect(
+    page.getByRole('button', { name: /다음 컷 →|퀴즈 풀기 →|퀴즈 이어하기 →/ }),
+  ).toBeEnabled({
+    timeout: 15_000,
+  })
 
   for (let i = 0; i < 12; i += 1) {
-    const quizBtn = page.getByRole('button', { name: '퀴즈 풀기 →' })
-    if (await quizBtn.isVisible()) {
-      await expect(quizBtn).toBeEnabled()
-      await quizBtn.click()
-      await expect(page).toHaveURL(/\/quiz/)
-      return
+    if (await quizCta.isVisible()) {
+      await expect(quizCta).toBeEnabled()
+      await quizCta.click()
+      break
     }
-    const nextBtn = page.getByRole('button', { name: '다음 컷 →' })
-    await expect(nextBtn).toBeEnabled()
-    await nextBtn.click()
+    await expect(nextCut).toBeEnabled()
+    await nextCut.click()
+    if (i === 11) throw new Error('퀴즈 진입에 실패했다')
   }
-  throw new Error('퀴즈 진입에 실패했다')
+
+  const completedCopy = page.getByText('강좌를 모두 읽었어요')
+  const quizHeading = page.getByRole('heading', { name: '시험지' })
+  await expect(completedCopy.or(quizHeading)).toBeVisible({ timeout: 15_000 })
+
+  if (await completedCopy.isVisible()) {
+    await expect(quizCta).toBeEnabled()
+    await quizCta.click()
+  }
+
+  await expect(page).toHaveURL(/\/quiz/)
 }
 
 /** 소단원 퀴즈 전 문항 응시·결과 모달 → 시간표 */
 async function completeSubChapterQuiz(page) {
   await expect(page.getByRole('heading', { name: '시험지' })).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText('불러오는 중…')).toHaveCount(0, { timeout: 15_000 })
-  await expect(page.getByRole('button', { name: /①|②|③|④/ }).first()).toBeVisible({
-    timeout: 15_000,
-  })
 
-  for (let q = 0; q < 8; q += 1) {
+  const answerKeys = await resolveQuizAnswerKeys(page)
+
+  for (const key of answerKeys) {
     const resultDialog = page.getByRole('dialog', { name: '시험 결과' })
     if (await resultDialog.isVisible()) break
-
-    await answerUntilCorrect(page)
-    const next = page.getByRole('button', { name: /다음 문항|결과 보기/ })
-    await expect(next).toBeEnabled()
-    await next.click()
+    await answerQuizQuestion(page, key)
   }
 
   const dialog = page.getByRole('dialog', { name: '시험 결과' })
@@ -150,27 +169,25 @@ async function completeSubChapterQuiz(page) {
   await dialog.getByRole('button', { name: '학습 목록으로' }).click()
 }
 
+const CIRCLE_BY_KEY = { 1: '①', 2: '②', 3: '③', 4: '④' }
+
 /**
  * @param {import('@playwright/test').Page} page
+ * @param {string} key
  */
-async function answerUntilCorrect(page) {
-  for (let i = 0; i < 4; i += 1) {
-    const retry = page.getByRole('button', { name: '다시 풀기' })
-    if (await retry.isVisible()) {
-      await retry.click()
-      await expect(page.getByRole('button', { name: '정답 제출' })).toBeDisabled()
-    }
-
-    const option = page.getByRole('button', { name: new RegExp(`^[①②③④]`) }).nth(i)
-    await expect(option).toBeVisible()
-    await option.click()
-    await page.getByRole('button', { name: '정답 제출' }).click()
-
-    if (await page.getByRole('button', { name: /다음 문항|결과 보기/ }).isVisible()) {
-      return
-    }
+async function answerQuizQuestion(page, key) {
+  const circleLabel = CIRCLE_BY_KEY[key]
+  if (circleLabel) {
+    await page.getByRole('button', { name: new RegExp(`^${circleLabel}`) }).click()
+  } else {
+    await page.getByRole('button', { name: new RegExp(`^${key}$`) }).click()
   }
-  throw new Error('퀴즈 정답을 찾지 못했다')
+
+  await page.getByRole('button', { name: '정답 제출' }).click()
+
+  const next = page.getByRole('button', { name: /다음 문항|결과 보기/ })
+  await expect(next).toBeEnabled({ timeout: 5000 })
+  await next.click()
 }
 
 /** 시나리오 인트로 → 전 스텝 정답 → 수료증 → 로드맵 */

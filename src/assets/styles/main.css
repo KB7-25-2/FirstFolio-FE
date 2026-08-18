@@ -129,6 +129,52 @@
     pointer-events: none;
   }
 
+  /* 하단 네비 탭 전환 */
+  .nav-tab-next-enter-active,
+  .nav-tab-next-leave-active,
+  .nav-tab-prev-enter-active,
+  .nav-tab-prev-leave-active {
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s ease;
+  }
+
+  .nav-tab-next-leave-to {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.985);
+  }
+
+  .nav-tab-next-enter-from {
+    opacity: 0;
+    transform: translateX(10px) scale(0.985);
+  }
+
+  .nav-tab-prev-leave-to {
+    opacity: 0;
+    transform: translateX(10px) scale(0.985);
+  }
+
+  .nav-tab-prev-enter-from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.985);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-tab-next-enter-active,
+    .nav-tab-next-leave-active,
+    .nav-tab-prev-enter-active,
+    .nav-tab-prev-leave-active {
+      transition: opacity 0.12s ease;
+    }
+
+    .nav-tab-next-leave-to,
+    .nav-tab-next-enter-from,
+    .nav-tab-prev-leave-to,
+    .nav-tab-prev-enter-from {
+      transform: none;
+    }
+  }
+
   /* 스크롤 중 카드 blur + scale — 수치는 ScrollReveal 인라인 스타일 */
   .scroll-reveal {
     width: 100%;
@@ -700,6 +746,16 @@
 
   .learning-syllabus__row--now .learning-syllabus__row-meta {
     color: #c17f24;
+    font-weight: 700;
+  }
+
+  .learning-syllabus__row--quiz {
+    background: rgba(255, 236, 210, 0.75);
+    border: 0.5px solid rgba(193, 127, 36, 0.45);
+  }
+
+  .learning-syllabus__row--quiz .learning-syllabus__row-meta {
+    color: #b86a12;
     font-weight: 700;
   }
 
