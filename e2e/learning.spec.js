@@ -91,8 +91,7 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
     test.setTimeout(90_000)
     await completeScenarioQuiz(page)
 
-    await expect(page).toHaveURL(/\/learning\/?$/)
-    await expect(page.getByRole('heading', { name: '예·적금' })).toBeVisible()
+    await expectMainChapterRoadmap(page, 2)
     await expect(page.getByRole('heading', { name: '채권' })).toBeVisible()
     await expect(
       page.locator('button').filter({ hasText: '채권' }).filter({ hasText: '진행 중' }).first(),
