@@ -117,8 +117,12 @@ export const useLessonPlayer = () => {
   const onPrimaryAction = async () => {
     if (isLastPage.value) {
       const lastPage = studyStore.lessonPages[studyStore.lessonPages.length - 1]
-      if (lastPage?.id) {
-        await studyStore.saveProgress(lastPage.id, { status: 'COMPLETED' })
+      try {
+        if (lastPage?.id) {
+          await studyStore.saveProgress(lastPage.id, { status: 'COMPLETED' })
+        }
+      } catch {
+        // 진도 저장 실패여도 퀴즈 CTA는 보여 준다
       }
       needsQuiz.value = true
       return
