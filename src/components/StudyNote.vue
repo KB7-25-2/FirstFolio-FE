@@ -1,10 +1,14 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onActivated, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useStudyStore } from '@/store/studyStore.js'
-import { isSubChapterFullyCompleted, needsQuizAttempt } from '@/utils/subChapterProgress.js'
+import {
+  isQuizInProgress,
+  isSubChapterFullyCompleted,
+  needsQuizAttempt,
+} from '@/utils/subChapterProgress.js'
 import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
@@ -28,7 +32,7 @@ const {
   error: dashboardError,
 } = storeToRefs(dashboardStore)
 
-onMounted(async () => {
+const loadStudyNote = async () => {
   try {
     await dashboardStore.ensureDashboard()
   } catch {
@@ -45,6 +49,7 @@ onMounted(async () => {
       studyStore.applyLearningItemsFromStage(dashMainChapterId)
     }
     if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
+      await studyStore.refreshLearningItems(dashMainChapterId, { syncProgress: true })
       return
     }
   }
@@ -62,6 +67,15 @@ onMounted(async () => {
   }
 
   await studyStore.fetchStudyNote()
+}
+
+let hasMounted = false
+onMounted(async () => {
+  await loadStudyNote()
+  hasMounted = true
+})
+onActivated(() => {
+  if (hasMounted) loadStudyNote()
 })
 
 const noteLoading = computed(
@@ -97,7 +111,10 @@ const roadmapNodes = computed(() => {
   const items = lessonItems.value
   if (!items.length) return []
 
-  let currentIdx = items.findIndex((item) => item.status === 'IN_PROGRESS')
+  let currentIdx = items.findIndex((item) => isQuizInProgress(item))
+  if (currentIdx < 0) {
+    currentIdx = items.findIndex((item) => item.status === 'IN_PROGRESS')
+  }
   if (currentIdx < 0) {
     currentIdx = items.findIndex((item) => needsQuizAttempt(item))
   }
@@ -120,6 +137,7 @@ const roadmapNodes = computed(() => {
     role,
     roleLabel,
     status: item.status,
+    quizInProgress: isQuizInProgress(item),
     quizDue: needsQuizAttempt(item),
     fullyCompleted: isSubChapterFullyCompleted(item),
   })
@@ -346,20 +364,26 @@ const goScenarioQuiz = (event) => {
                     >
                       {{ node.roleLabel }}
                     </span>
+                    <span
+                      v-if="node.role === 'current' && node.quizInProgress"
+                      class="font-serif text-[9px] font-bold text-[#c17f24]"
+                    >
+                      퀴즈 진행중
+                    </span>
+                    <span
+                      v-else-if="node.role === 'current' && node.quizDue"
+                      class="font-serif text-[9px] font-bold text-[#c17f24]"
+                    >
+                      퀴즈 풀기
+                    </span>
                     <button
-                      v-if="node.role === 'current' && effectiveContinueRoute"
+                      v-else-if="node.role === 'current' && effectiveContinueRoute"
                       type="button"
                       class="study-continue-cta shrink-0 rounded px-1.5 py-0.5 font-serif text-[12px] font-bold whitespace-nowrap text-[var(--study-continue)]"
                       @click.stop="onContinue"
                     >
                       이어서 →
                     </button>
-                    <span
-                      v-else-if="node.role === 'current' && node.quizDue"
-                      class="font-serif text-[9px] font-bold text-[#c17f24]"
-                    >
-                      퀴즈 필요
-                    </span>
                     <span
                       v-else-if="node.role === 'current' && node.status === 'IN_PROGRESS'"
                       class="font-serif text-[9px] text-[#c17f24]"

@@ -112,7 +112,7 @@ export const mergeProgressIntoItem = (item, progressRaw) => {
     startedAt: progress.startedAt,
     completedAt: progress.completedAt,
     updatedAt: progress.completedAt ?? progress.startedAt ?? item.updatedAt,
-    quizProgress: progress.quiz,
+    quiz: progress.quiz,
   }
 }
 
@@ -176,6 +176,10 @@ export const isQuizCompletedFromItem = (item) => {
   return item?.quizScore != null
 }
 
+/** @param {{ quiz?: object, quizProgress?: object, progress?: { quiz?: object } } | null | undefined} item */
+export const isQuizInProgressFromItem = (item) =>
+  resolveItemQuizProgress(item)?.activeAttemptId != null
+
 /** @param {{ entryType?: string, status?: LearningProgressStatus, quiz?: object, quizProgress?: object, progress?: { quiz?: object }, quizScore?: number | null } | null | undefined} item */
 export const needsQuizAttemptFromItem = (item) =>
   item?.entryType !== 'SCENARIO_QUIZ' && isLessonCompleted(item) && !isQuizCompletedFromItem(item)
@@ -184,5 +188,5 @@ export const needsQuizAttemptFromItem = (item) =>
 export const isSubChapterFullyCompletedFromItem = (item) => {
   if (!item) return false
   if (item.entryType === 'SCENARIO_QUIZ') return item.status === 'COMPLETED'
-  return isQuizCompletedFromItem(item)
+  return isLessonCompleted(item) && isQuizCompletedFromItem(item)
 }

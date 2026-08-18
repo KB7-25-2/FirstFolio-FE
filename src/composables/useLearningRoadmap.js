@@ -83,7 +83,7 @@ export const useLearningRoadmap = () => {
   }
 
   const periodStatusLabel = (scheduleStatus, period = null) => {
-    if (period && isPeriodQuizDue(period)) return '퀴즈 필요'
+    if (period && isPeriodQuizDue(period)) return '퀴즈 진행중'
     if (scheduleStatus === 'COMPLETED') return '완료'
     if (scheduleStatus === 'IN_PROGRESS') return '진행 중'
     if (scheduleStatus === 'NEXT') return '다음'

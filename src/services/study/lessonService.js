@@ -37,6 +37,26 @@ const resolveContentVersionId = async (subChapterId, payloadVersionId) => {
 }
 
 /**
+ * 로드맵 소단원에 GET progress 응답을 병합한다.
+ * 개별 소단원 조회 실패 시 해당 로드맵 항목은 그대로 유지한다.
+ *
+ * @param {LearningProgressItem[]} items
+ * @returns {Promise<LearningProgressItem[]>}
+ */
+export const mergeLearningItemsWithProgress = async (items) =>
+  Promise.all(
+    items.map(async (item) => {
+      if (!item.subChapterId) return item
+      try {
+        const progressRaw = unwrap(await getSubChapterProgressApi(item.subChapterId))
+        return mergeProgressIntoItem(item, progressRaw)
+      } catch {
+        return item
+      }
+    }),
+  )
+
+/**
  * 대단원 소단원 목록 + 각 소단원 진도 조회 (legacy N+1)
  *
  * 신규 화면·StudyNote는 `getLearningRoadmap` + `pickStageLearningItems` 사용을 권장한다.
@@ -52,18 +72,7 @@ export const getLearningProgress = async (mainChapterId) => {
       .map((item, index) => mapSubChapterListItem(item, mainChapterId, index))
       .sort((a, b) => a.order - b.order)
 
-    const items = await Promise.all(
-      baseItems.map(async (item) => {
-        if (!item.subChapterId) return item
-        try {
-          const progressRaw = unwrap(await getSubChapterProgressApi(item.subChapterId))
-          return mergeProgressIntoItem(item, progressRaw)
-        } catch {
-          return item
-        }
-      }),
-    )
-
+    const items = await mergeLearningItemsWithProgress(baseItems)
     return { data: { items } }
   } catch (error) {
     if (error instanceof StudyApiError) throw error

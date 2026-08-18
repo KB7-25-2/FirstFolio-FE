@@ -8,6 +8,7 @@ import {
   getQuizQuestions,
   getSubChapterContent,
   gradeQuizAttemptAnswer,
+  mergeLearningItemsWithProgress,
   pickStageLearningItems,
   saveLessonProgress,
   startMainChapterQuizAttempt,
@@ -20,6 +21,7 @@ import {
   isSubChapterFullyCompletedFromItem,
 } from '@/services/study/mappers/subChapterMapper.js'
 import { shouldFallbackStudyMock } from '@/services/study/studyResponseUtils.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
 
@@ -240,10 +242,10 @@ export const useStudyStore = defineStore('study', () => {
   /**
    * store 로드맵에서 learningItems 재구성
    * @param {number} [mainChapterId]
-   * @param {{ syncFromServer?: boolean }} [options] syncFromServer=true면 API 재조회 (퀴즈·시나리오 완료 후)
+   * @param {{ syncFromServer?: boolean, syncProgress?: boolean }} [options]
    */
   const refreshLearningItems = async (mainChapterId, options = {}) => {
-    const { syncFromServer = false } = options
+    const { syncFromServer = false, syncProgress = false } = options
     if (syncFromServer) {
       await fetchRoadmap({ force: true })
     }
@@ -253,6 +255,9 @@ export const useStudyStore = defineStore('study', () => {
       roadmapStages.value.find((stage) => stage.status === 'ACTIVE')?.mainChapterId ??
       null
     applyLearningItemsFromStage(targetId)
+    if (syncProgress) {
+      learningItems.value = await mergeLearningItemsWithProgress(learningItems.value)
+    }
   }
 
   const fetchContinuePosition = async () => {
@@ -341,6 +346,7 @@ export const useStudyStore = defineStore('study', () => {
       contentVersionId: currentContent.value?.contentVersionId,
       status: options.status ?? 'IN_PROGRESS',
     })
+    useDashboardStore().invalidate()
     if (currentContent.value?.progress) {
       currentContent.value.progress.lastPageId = data.lastPageId
       currentContent.value.progress.status = data.status
@@ -562,6 +568,7 @@ export const useStudyStore = defineStore('study', () => {
         })),
       }
       quizAttemptResult.value = data
+      useDashboardStore().invalidate()
       if (data.pointsGranted > 0) {
         const userStore = useUserStore()
         await userStore.addPoints(data.pointsGranted)
@@ -574,6 +581,7 @@ export const useStudyStore = defineStore('study', () => {
 
       const { data } = await submitQuizAttempt({ subChapterId, answers })
       quizAttemptResult.value = data
+      useDashboardStore().invalidate()
 
       if (data.pointsGranted > 0) {
         const userStore = useUserStore()
@@ -641,7 +649,7 @@ export const useStudyStore = defineStore('study', () => {
       currentContent.value?.mainChapterId ??
       learningItems.value.find((row) => row.subChapterId === subChapterId)?.mainChapterId
     await Promise.all([
-      refreshLearningItems(mainChapterId, { syncFromServer: true }),
+      refreshLearningItems(mainChapterId, { syncFromServer: true, syncProgress: true }),
       fetchContinuePosition(),
     ])
 
@@ -922,6 +930,7 @@ export const useStudyStore = defineStore('study', () => {
       }
 
       applyLearningItemsFromStage(mainChapterId)
+      learningItems.value = await mergeLearningItemsWithProgress(learningItems.value)
     } catch (err) {
       error.value = err?.message || '학습 현황을 불러오지 못했습니다.'
     } finally {
