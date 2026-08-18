@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useStudyStore } from '@/store/studyStore.js'
+import { isSubChapterFullyCompleted, needsQuizAttempt } from '@/utils/subChapterProgress.js'
 import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
@@ -90,6 +91,9 @@ const roadmapNodes = computed(() => {
 
   let currentIdx = items.findIndex((item) => item.status === 'IN_PROGRESS')
   if (currentIdx < 0) {
+    currentIdx = items.findIndex((item) => needsQuizAttempt(item))
+  }
+  if (currentIdx < 0) {
     currentIdx = items.findIndex((item) => item.status === 'NOT_STARTED')
   }
   if (currentIdx < 0) {
@@ -108,6 +112,8 @@ const roadmapNodes = computed(() => {
     role,
     roleLabel,
     status: item.status,
+    quizDue: needsQuizAttempt(item),
+    fullyCompleted: isSubChapterFullyCompleted(item),
   })
 
   if (currentIdx > 0) {
@@ -123,8 +129,13 @@ const roadmapNodes = computed(() => {
   return nodes
 })
 
-/** 복습 대상: 직전 완료 소단원 */
-const reviewLesson = computed(() => roadmapNodes.value.find((node) => node.role === 'prev') ?? null)
+/** 복습 대상: 직전 완료(퀴즈 포함) 소단원 */
+const reviewLesson = computed(() => {
+  const prev = roadmapNodes.value.find((node) => node.role === 'prev')
+  if (!prev?.subChapterId) return null
+  const item = lessonItems.value.find((row) => row.subChapterId === prev.subChapterId)
+  return item && isSubChapterFullyCompleted(item) ? prev : null
+})
 
 /**
  * @param {string} routePath
@@ -284,33 +295,35 @@ const goLearning = () => {
                     class="flex size-8 items-center justify-center rounded-full border-[0.5px] font-serif text-[15px] leading-none"
                     :class="{
                       'border-[rgba(89,140,82,0.75)] bg-[#e8f5e4] text-[#598c52]':
-                        node.role === 'prev',
+                        node.role === 'prev' && node.fullyCompleted,
                       'border-[#c17f24] bg-[#c17f24] text-[#fff8ec] shadow-[0_0_0_3px_rgba(193,127,36,0.22)]':
                         node.role === 'current',
                       'border-[rgba(33,43,92,0.3)] bg-[#fffdf7] text-[rgba(33,43,92,0.5)]':
-                        node.role === 'next',
+                        node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
                     }"
                   >
-                    {{ node.role === 'prev' ? '✓' : node.order }}
+                    {{ node.role === 'prev' && node.fullyCompleted ? '✓' : node.order }}
                   </span>
                 </div>
 
                 <div
                   class="min-w-0 flex-1 rounded-[4px] px-2.5 py-2"
                   :class="{
-                    'bg-[rgba(237,229,209,0.75)]': node.role === 'prev',
+                    'bg-[rgba(237,229,209,0.75)]': node.role === 'prev' && node.fullyCompleted,
                     'border-[0.5px] border-[rgba(193,127,36,0.65)] bg-[#fae8a8]':
                       node.role === 'current',
-                    'bg-[rgba(240,232,214,0.6)]': node.role === 'next',
+                    'bg-[rgba(240,232,214,0.6)]':
+                      node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
                   }"
                 >
                   <div class="flex items-center justify-between gap-2">
                     <span
                       class="font-serif text-[9px] font-bold tracking-wide"
                       :class="{
-                        'text-[rgba(89,140,82,0.9)]': node.role === 'prev',
+                        'text-[rgba(89,140,82,0.9)]': node.role === 'prev' && node.fullyCompleted,
                         'text-[#c17f24]': node.role === 'current',
-                        'text-[rgba(33,43,92,0.55)]': node.role === 'next',
+                        'text-[rgba(33,43,92,0.55)]':
+                          node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
                       }"
                     >
                       {{ node.roleLabel }}
@@ -324,13 +337,19 @@ const goLearning = () => {
                       이어서 →
                     </button>
                     <span
+                      v-else-if="node.role === 'current' && node.quizDue"
+                      class="font-serif text-[9px] font-bold text-[#c17f24]"
+                    >
+                      퀴즈 필요
+                    </span>
+                    <span
                       v-else-if="node.role === 'current' && node.status === 'IN_PROGRESS'"
                       class="font-serif text-[9px] text-[#c17f24]"
                     >
                       진행 중
                     </span>
                     <span
-                      v-else-if="node.role === 'prev'"
+                      v-else-if="node.role === 'prev' && node.fullyCompleted"
                       class="font-serif text-[9px] text-[rgba(89,140,82,0.9)]"
                     >
                       완료
@@ -339,9 +358,11 @@ const goLearning = () => {
                   <p
                     class="mt-0.5 font-serif text-[13px] leading-snug font-bold"
                     :class="{
-                      'text-[rgba(41,33,26,0.5)] line-through': node.role === 'prev',
+                      'text-[rgba(41,33,26,0.5)] line-through':
+                        node.role === 'prev' && node.fullyCompleted,
                       'text-[#29211a]': node.role === 'current',
-                      'text-[rgba(41,33,26,0.72)]': node.role === 'next',
+                      'text-[rgba(41,33,26,0.72)]':
+                        node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
                     }"
                   >
                     {{ node.order }}. {{ node.title }}

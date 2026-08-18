@@ -17,7 +17,10 @@ import {
   submitScenarioAttempt,
 } from '@/services/studyService.js'
 import { StudyApiError } from '@/services/study/studyApiError.js'
-import { needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
+import {
+  needsQuizAttempt,
+  isSubChapterFullyCompletedFromItem,
+} from '@/services/study/mappers/subChapterMapper.js'
 import { shouldFallbackStudyMock } from '@/services/study/studyResponseUtils.js'
 import { useUserStore } from '@/store/userStore.js'
 import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
@@ -112,8 +115,7 @@ export const useStudyStore = defineStore('study', () => {
 
   const allLessonsCompleted = computed(
     () =>
-      lessonItems.value.length > 0 &&
-      lessonItems.value.every((item) => item.status === 'COMPLETED'),
+      lessonItems.value.length > 0 && lessonItems.value.every(isSubChapterFullyCompletedFromItem),
   )
 
   const scenarioQuizItem = computed(

@@ -1,4 +1,5 @@
 import { pickField } from '../studyResponseUtils.js'
+import { isSubChapterFullyCompletedFromItem } from './subChapterMapper.js'
 
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
@@ -103,7 +104,7 @@ export const buildRoadmapStage = (chapter, subChapters, mainChapterQuiz = null) 
   const lessonsDone =
     chapter.status !== 'LOCKED' &&
     lessonPeriods.length > 0 &&
-    lessonPeriods.every((row) => row.status === 'COMPLETED')
+    lessonPeriods.every(isSubChapterFullyCompletedFromItem)
 
   const quiz = mainChapterQuiz ?? {}
   const quizStatus = pickField(quiz, 'status')

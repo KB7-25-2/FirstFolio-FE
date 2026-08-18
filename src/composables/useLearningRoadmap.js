@@ -4,7 +4,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
 import { getMainChapterDisplay } from '@/constants/mainChapterDisplay.js'
 import { getPersistedMainChapterId, persistRoadmapFocus } from '@/utils/learningRoadmapFocus.js'
-import { isPeriodQuizDue, needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
+import {
+  isPeriodQuizDue,
+  isQuizCompleted,
+  needsQuizAttempt,
+} from '@/services/study/mappers/subChapterMapper.js'
 
 /**
  * 대단원 × 소단원 목차(체크리스트) 로드맵
@@ -119,6 +123,10 @@ export const useLearningRoadmap = () => {
         return
       }
 
+      if (isQuizCompleted(progress)) {
+        return
+      }
+
       const page = progress?.lastPageId
       router.push({
         name: 'learning-lesson',
@@ -198,6 +206,7 @@ export const useLearningRoadmap = () => {
 
   onActivated(() => {
     if (!isRoadmapRouteActive.value) return
+    void loadStages({ force: true })
     const persisted = getPersistedMainChapterId()
     // 탭 복귀 시 URL 쿼리가 비었거나 스크롤 persist와 어긋나면 persist 기준으로 맞춤
     if (persisted != null && focusMainChapterId.value !== persisted) {

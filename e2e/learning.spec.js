@@ -129,9 +129,26 @@ async function finishLessonToQuiz(page) {
   })
 
   for (let i = 0; i < 12; i += 1) {
+    const completedCopy = page.getByText('강좌를 모두 읽었어요')
+    const quizHeading = page.getByRole('heading', { name: '시험지' })
+    if (await quizHeading.isVisible()) return
+    if (await completedCopy.isVisible()) {
+      await quizCta.click()
+      await expect(page).toHaveURL(/\/quiz/)
+      return
+    }
     if (await quizCta.isVisible()) {
       await expect(quizCta).toBeEnabled()
       await quizCta.click()
+      if (await quizHeading.isVisible()) {
+        await expect(page).toHaveURL(/\/quiz/)
+        return
+      }
+      if (await completedCopy.isVisible()) {
+        await quizCta.click()
+        await expect(page).toHaveURL(/\/quiz/)
+        return
+      }
       break
     }
     await expect(nextCut).toBeEnabled()
