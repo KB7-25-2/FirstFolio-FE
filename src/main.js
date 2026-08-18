@@ -12,11 +12,26 @@ import {
   faBookOpen,
   faChartPie,
   faShop,
+  faCalendarDay,
   faArrowRightFromBracket,
   faUser,
+  faBars,
+  faXmark,
+  faLock,
 } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faHouse, faBookOpen, faChartPie, faShop, faArrowRightFromBracket, faUser)
+library.add(
+  faHouse,
+  faBookOpen,
+  faChartPie,
+  faShop,
+  faCalendarDay,
+  faArrowRightFromBracket,
+  faUser,
+  faBars,
+  faXmark,
+  faLock,
+)
 
 import './assets/styles/main.css'
 

@@ -83,7 +83,7 @@ const isMe = (item) =>
 
       <div
         v-else-if="isSnapshotMissing"
-        class="rounded-2xl border border-[rgba(245,237,217,0.12)] bg-[#161b22] px-4 py-10 text-center"
+        class="rounded-2xl border-[0.5px] border-[rgba(245,237,217,0.12)] bg-[#161b22] px-4 py-10 text-center"
       >
         <p class="font-serif text-[15px] font-bold text-[#f5edd9]">집계 준비 중</p>
         <p class="mt-2 font-serif text-[12px] leading-relaxed text-[rgba(245,237,217,0.55)]">
@@ -93,7 +93,7 @@ const isMe = (item) =>
 
       <div
         v-else-if="error"
-        class="rounded-2xl border border-[rgba(220,80,80,0.35)] bg-[rgba(220,80,80,0.1)] px-4 py-6 text-center"
+        class="rounded-2xl border-[0.5px] border-[rgba(220,80,80,0.35)] bg-[rgba(220,80,80,0.1)] px-4 py-6 text-center"
       >
         <p class="font-serif text-[13px] text-[#f0b4b4]">{{ error }}</p>
         <button
@@ -109,7 +109,7 @@ const isMe = (item) =>
         <!-- 내 순위 -->
         <section
           v-if="myRank"
-          class="mb-5 rounded-2xl border border-[rgba(193,127,36,0.45)] bg-[rgba(193,127,36,0.12)] px-4 py-3"
+          class="mb-5 rounded-2xl border-[0.5px] border-[rgba(193,127,36,0.45)] bg-[rgba(193,127,36,0.12)] px-4 py-3"
           aria-label="내 순위"
         >
           <p class="font-serif text-[10px] font-bold tracking-wide text-[rgba(193,127,36,0.9)]">
@@ -125,7 +125,7 @@ const isMe = (item) =>
               </p>
             </div>
             <div class="shrink-0 text-right">
-              <p class="font-pen text-[28px] leading-none text-[rgba(193,127,36,0.95)]">
+              <p class="font-serif font-bold text-[28px] leading-none text-[rgba(193,127,36,0.95)]">
                 {{ myRank.rank }}
               </p>
               <p class="mt-1 font-serif text-[12px] font-bold text-[#f5edd9]">
@@ -137,7 +137,7 @@ const isMe = (item) =>
 
         <!-- 순위 목록 -->
         <section
-          class="overflow-hidden rounded-[4px] border border-[rgba(224,160,122,0.45)] bg-[var(--study-quest-surface)] shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
+          class="overflow-hidden rounded-[4px] border-[0.5px] border-[rgba(224,160,122,0.45)] bg-[var(--study-quest-surface)] shadow-[0_6px_16px_rgba(0,0,0,0.35)]"
           aria-label="순위 목록"
         >
           <div
@@ -155,7 +155,7 @@ const isMe = (item) =>
               :class="isMe(item) ? 'bg-[rgba(196,92,42,0.12)]' : ''"
             >
               <span
-                class="w-7 shrink-0 text-center font-pen text-[20px] leading-none"
+                class="w-7 shrink-0 text-center font-serif font-bold text-[20px] leading-none"
                 :class="rankToneClass(item.rank)"
               >
                 {{ item.rank }}

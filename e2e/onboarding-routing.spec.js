@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import {
   mockUserProfileApi,
+  primaryNav,
   seedOnboardingSession,
   skipUnlessChromium,
 } from './helpers/authSession.js'
@@ -78,9 +79,7 @@ test.describe('온보딩 라우팅 · 인증 가드', () => {
     await page.goto('/onboarding/intro')
 
     await expect(page).toHaveURL(/\/home/, { timeout: 15_000 })
-    await expect(
-      page.getByRole('navigation').getByRole('button', { name: '홈', exact: true }),
-    ).toBeVisible()
+    await expect(primaryNav(page).getByRole('button', { name: '홈', exact: true })).toBeVisible()
   })
 
   test('HOME 사용자는 /home에 머무를 수 있다', async ({ page }, testInfo) => {
@@ -92,9 +91,7 @@ test.describe('온보딩 라우팅 · 인증 가드', () => {
     await page.goto('/home')
 
     await expect(page).toHaveURL(/\/home/, { timeout: 15_000 })
-    await expect(
-      page.getByRole('navigation').getByRole('button', { name: '학습', exact: true }),
-    ).toBeVisible()
+    await expect(primaryNav(page).getByRole('button', { name: '학습', exact: true })).toBeVisible()
   })
 
   test('HOME 사용자가 /login 접근 시 /home으로 보낸다', async ({ page }, testInfo) => {

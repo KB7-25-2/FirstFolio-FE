@@ -44,7 +44,7 @@ defineEmits(['confirm'])
       <div class="h-px flex-1 bg-[rgba(139,100,60,0.28)]" />
     </div>
 
-    <p class="mt-5 font-pen text-[28px] leading-tight text-[#212b5c]">축하합니다</p>
+    <p class="mt-5 font-serif font-bold text-[28px] leading-tight text-[#212b5c]">축하합니다</p>
     <p class="mt-3 max-w-[280px] font-serif text-[13px] leading-[20px] text-[#7a5230]">
       {{ congratsMessage }}
     </p>
@@ -64,7 +64,7 @@ defineEmits(['confirm'])
 
     <p class="mt-4 font-serif text-[11px] font-bold text-[#3d1f08]">투자 상담 교육원장</p>
     <span
-      class="mt-2 -rotate-8 rounded border-[1.6px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
+      class="mt-2 -rotate-8 rounded border-[0.5px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
     >
       수료
     </span>

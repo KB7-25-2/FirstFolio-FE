@@ -68,7 +68,7 @@ defineEmits(['start'])
 
     <div
       v-if="mission"
-      class="mt-4 w-full rounded-[10px] border border-dashed border-[rgba(139,100,60,0.22)] bg-[rgba(139,100,60,0.07)] px-3 py-2.5"
+      class="mt-4 w-full rounded-[10px] border-[0.5px] border-dashed border-[rgba(139,100,60,0.22)] bg-[rgba(139,100,60,0.07)] px-3 py-2.5"
     >
       <p class="text-center font-serif text-[11px] leading-[18px] text-[#7a5230]">
         {{ mission }}
@@ -81,7 +81,7 @@ defineEmits(['start'])
         <p class="mt-0.5 font-serif text-[11px] font-bold text-[#3d1f08]">{{ issuerName }}</p>
       </div>
       <span
-        class="-rotate-8 rounded border-[1.6px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
+        class="-rotate-8 rounded border-[0.5px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
       >
         공인
       </span>
@@ -89,7 +89,7 @@ defineEmits(['start'])
 
     <button
       type="button"
-      class="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-[rgba(255,255,255,0.15)] bg-[#c17f24] font-serif text-[14px] font-bold tracking-[0.84px] text-[#fff8ec] shadow-[0_3px_6px_rgba(139,80,20,0.4)] disabled:opacity-60"
+      class="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border-[0.5px] border-[rgba(255,255,255,0.15)] bg-[#c17f24] font-serif text-[14px] font-bold tracking-[0.84px] text-[#fff8ec] shadow-[0_3px_6px_rgba(139,80,20,0.4)] disabled:opacity-60"
       :disabled="disabled"
       @click="$emit('start')"
     >

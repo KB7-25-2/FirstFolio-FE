@@ -10,17 +10,24 @@ import {
   LevelTestApiError,
 } from '@/services/levelTestService.js'
 export const useLevelTestStore = defineStore('levelTest', () => {
+  const storedSession = getStoredLevelTestSession()
   /** @type {import('vue').Ref<boolean | null>} null = 아직 조회 전 */
-  const completed = ref(null)
+  const completed = ref(storedSession.completed ? true : null)
   /** @type {import('vue').Ref<import('@/types/levelTest.js').LevelTestAttempt | null>} */
-  const attempt = ref(null)
+  const attempt = ref(storedSession.attempt)
   /**
-   * 로컬 작성 중 답안 — questionId → selectedChoiceIds
+   * 서버(PUT) 확정 답안 — questionId → selectedChoiceIds
    * @type {import('vue').Ref<Record<number, string[]>>}
    */
-  const answers = ref({})
+  const answers = ref(storedSession.answers)
+  /**
+   * 아직 PUT 전인 화면 선택 — questionId → choiceKey
+   * DB와 동기화된 answers와 분리해 부정합을 막는다.
+   * @type {import('vue').Ref<Record<number, string>>}
+   */
+  const draftChoices = ref({})
   /** @type {import('vue').Ref<import('@/types/levelTest.js').LevelTestSubmitResult | null>} */
-  const submitResult = ref(null)
+  const submitResult = ref(storedSession.submitResult)
   /** 0-based 현재 문항 인덱스 */
   const currentQuestionIndex = ref(0)
 
@@ -46,16 +53,24 @@ export const useLevelTestStore = defineStore('levelTest', () => {
   const currentSelectedKey = computed(() => {
     const qid = currentQuestion.value?.questionId
     if (qid == null) return null
-    return answers.value[qid]?.[0] ?? null
+    return draftChoices.value[qid] ?? answers.value[qid]?.[0] ?? null
   })
 
   const answeredCount = computed(
     () => Object.values(answers.value).filter((ids) => ids?.length).length,
   )
 
-  const allAnswersReady = computed(
-    () => questionTotal.value > 0 && answeredCount.value >= questionTotal.value,
-  )
+  /** 확정 답안 + 현재 문항 드래프트까지 포함해 제출 가능 여부 */
+  const allAnswersReady = computed(() => {
+    if (questionTotal.value <= 0) return false
+    return questions.value.every((question) => {
+      const qid = question.questionId
+      if (qid === currentQuestion.value?.questionId) {
+        return Boolean(currentSelectedKey.value)
+      }
+      return Boolean(answers.value[qid]?.length)
+    })
+  })
 
   const recommendations = computed(() => submitResult.value?.recommendations ?? [])
   const cartCandidates = computed(() => submitResult.value?.cartCandidates ?? [])
@@ -124,6 +139,8 @@ export const useLevelTestStore = defineStore('levelTest', () => {
       completed.value = data.completed
       const session = getStoredLevelTestSession()
       if (session.attempt) attempt.value = session.attempt
+      answers.value = session.answers
+      draftChoices.value = {}
       if (session.submitResult) submitResult.value = session.submitResult
       return data.completed
     } catch (err) {
@@ -151,11 +168,19 @@ export const useLevelTestStore = defineStore('levelTest', () => {
       attempt.value = data
       completed.value = false
       submitResult.value = null
-      answers.value = {}
-      currentQuestionIndex.value = 0
+      answers.value = Object.fromEntries(
+        (data.savedAnswers ?? [])
+          .filter((item) => item.selectedChoiceIds?.length)
+          .map((item) => [item.questionId, item.selectedChoiceIds]),
+      )
+      draftChoices.value = {}
+      const firstUnansweredIndex = data.questions.findIndex(
+        (question) => !answers.value[question.questionId]?.length,
+      )
+      currentQuestionIndex.value = firstUnansweredIndex >= 0 ? firstUnansweredIndex : 0
       return data
     } catch (err) {
-      if (err instanceof LevelTestApiError && err.code === 'LEVEL_TEST_ALREADY_COMPLETED') {
+      if (err?.code === 'LEVEL_TEST_ALREADY_COMPLETED') {
         completed.value = true
         attempt.value = null
       }
@@ -167,21 +192,28 @@ export const useLevelTestStore = defineStore('levelTest', () => {
   }
 
   /**
-   * 현재 문항 선택 (SINGLE_CHOICE)
-   * @param {string} choiceKey optionsJson.key / selected_choice_ids 항목
+   * 현재 문항 선택 (SINGLE_CHOICE) — PUT 전 드래프트만 갱신
+   * @param {string} choiceKey optionsJson.key / API answer.key
    */
   const selectChoice = (choiceKey) => {
     const qid = currentQuestion.value?.questionId
     if (qid == null || !choiceKey) return
-    if (attempt.value?.status === 'COMPLETED' || submitResult.value) return
-    answers.value = {
-      ...answers.value,
-      [qid]: [choiceKey],
+    if (attempt.value?.status === 'GRADED' || submitResult.value) return
+    draftChoices.value = {
+      ...draftChoices.value,
+      [qid]: choiceKey,
     }
   }
 
+  const clearDraftForQuestion = (questionId) => {
+    if (questionId == null || draftChoices.value[questionId] == null) return
+    const next = { ...draftChoices.value }
+    delete next[questionId]
+    draftChoices.value = next
+  }
+
   /**
-   * 답안 저장 (채점 없음)
+   * 답안 저장 (채점 없음) — 성공 시 응답(또는 요청) 확정값을 answers에 반영
    * @param {import('@/types/levelTest.js').LevelTestAnswerItem[]} [answerItems]
    */
   const saveAnswers = async (answerItems) => {
@@ -206,11 +238,28 @@ export const useLevelTestStore = defineStore('levelTest', () => {
       const { data } = await saveLevelTestAnswers(attempt.value.attemptId, {
         answers: payloadAnswers,
       })
+
+      const confirmed = data.savedAnswers?.length ? data.savedAnswers : payloadAnswers
+      const nextAnswers = { ...answers.value }
+      const nextDrafts = { ...draftChoices.value }
+      for (const item of confirmed) {
+        const qid = Number(item.questionId)
+        if (!item.selectedChoiceIds?.length) continue
+        nextAnswers[qid] = [...item.selectedChoiceIds]
+        delete nextDrafts[qid]
+      }
+      answers.value = nextAnswers
+      draftChoices.value = nextDrafts
+
       if (attempt.value) {
         attempt.value = {
           ...attempt.value,
           updatedAt: data.updatedAt,
           status: data.status,
+          savedAnswers: Object.entries(nextAnswers).map(([questionId, selectedChoiceIds]) => ({
+            questionId: Number(questionId),
+            selectedChoiceIds,
+          })),
         }
       }
       return data
@@ -234,14 +283,11 @@ export const useLevelTestStore = defineStore('levelTest', () => {
     isSubmitting.value = true
     error.value = null
     try {
-      if (answeredCount.value > 0) {
-        await saveAnswers()
-      }
       const { data } = await submitLevelTest(attempt.value.attemptId)
       submitResult.value = data
       completed.value = true
       if (attempt.value) {
-        attempt.value = { ...attempt.value, status: 'COMPLETED' }
+        attempt.value = { ...attempt.value, status: 'GRADED' }
       }
       return data
     } catch (err) {
@@ -253,15 +299,16 @@ export const useLevelTestStore = defineStore('levelTest', () => {
   }
 
   const goNextQuestion = () => {
-    if (!isLastQuestion.value) {
-      currentQuestionIndex.value += 1
-    }
+    if (isLastQuestion.value) return
+    // 저장하지 않고 이동하면 드래프트 폐기 → DB 확정값(answers)만 유지
+    clearDraftForQuestion(currentQuestion.value?.questionId)
+    currentQuestionIndex.value += 1
   }
 
   const goPrevQuestion = () => {
-    if (!isFirstQuestion.value) {
-      currentQuestionIndex.value -= 1
-    }
+    if (isFirstQuestion.value) return
+    clearDraftForQuestion(currentQuestion.value?.questionId)
+    currentQuestionIndex.value -= 1
   }
 
   /**
@@ -269,6 +316,7 @@ export const useLevelTestStore = defineStore('levelTest', () => {
    */
   const goToQuestion = (index) => {
     if (index < 0 || index >= questionTotal.value) return
+    clearDraftForQuestion(currentQuestion.value?.questionId)
     currentQuestionIndex.value = index
   }
 
@@ -276,6 +324,7 @@ export const useLevelTestStore = defineStore('levelTest', () => {
     completed.value = null
     attempt.value = null
     answers.value = {}
+    draftChoices.value = {}
     submitResult.value = null
     currentQuestionIndex.value = 0
     error.value = null
@@ -290,6 +339,7 @@ export const useLevelTestStore = defineStore('levelTest', () => {
     completed,
     attempt,
     answers,
+    draftChoices,
     submitResult,
     currentQuestionIndex,
     isLoading,

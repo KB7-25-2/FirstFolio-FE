@@ -19,9 +19,13 @@ defineProps({
       <p class="font-serif text-[10px] tracking-wide text-[rgba(139,100,60,0.55)]">
         RESULT &nbsp;·&nbsp; 커리큘럼 규칙
       </p>
-      <h2 class="mt-1.5 font-pen text-[28px] leading-none text-[#212b5c]">금융 기초 진단 결과</h2>
+      <h2 class="mt-1.5 font-serif text-[20px] leading-snug font-bold text-[#212b5c]">
+        금융 기초 진단 결과
+      </h2>
 
-      <div class="mt-5 overflow-hidden rounded border border-[rgba(184,173,148,0.45)] bg-[#fffdf8]">
+      <div
+        class="mt-5 overflow-hidden rounded border-[0.5px] border-[rgba(184,173,148,0.45)] bg-[#fffdf8]"
+      >
         <div class="grid grid-cols-[1.1fr_0.9fr_1.1fr] gap-1 bg-[rgba(139,100,60,0.08)] px-3 py-2">
           <p class="font-serif text-[11px] font-bold text-[rgba(61,31,8,0.55)]">영역</p>
           <p class="text-center font-serif text-[11px] font-bold text-[rgba(61,31,8,0.55)]">결과</p>
@@ -32,7 +36,7 @@ defineProps({
           <li
             v-for="row in rows"
             :key="row.mainChapterId"
-            class="grid grid-cols-[1.1fr_0.9fr_1.1fr] items-center gap-1 rounded border border-[rgba(184,173,148,0.35)] bg-white px-3 py-2.5"
+            class="grid grid-cols-[1.1fr_0.9fr_1.1fr] items-center gap-1 rounded border-[0.5px] border-[rgba(184,173,148,0.35)] bg-white px-3 py-2.5"
           >
             <p class="font-serif text-[13px] font-bold text-[#8b643c]">{{ row.assetLabel }}</p>
             <p
@@ -61,7 +65,7 @@ defineProps({
       </div>
 
       <div
-        class="relative mt-4 overflow-hidden rounded border border-[rgba(242,199,89,0.55)] bg-[#fff8e6] px-3.5 py-3"
+        class="relative mt-4 overflow-hidden rounded border-[0.5px] border-[rgba(242,199,89,0.55)] bg-[#fff8e6] px-3.5 py-3"
       >
         <span
           class="absolute top-2.5 left-3 rounded bg-[#212b5c] px-1.5 py-0.5 font-serif text-[9px] font-black tracking-wide text-[#f5edd9]"

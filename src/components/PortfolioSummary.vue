@@ -2,73 +2,59 @@
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
-import { usePortfolioStore } from '@/store/portfolioStore.js'
-import { useUserStore } from '@/store/userStore.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
+import { resolveInvestmentStyle } from '@/utils/investmentStyle.js'
+import { PORTFOLIO_LOCKED_MESSAGE } from '@/utils/foundationGuide.js'
 import BaseLoading from '@/components/BaseLoading.vue'
+import MemoPin from '@/components/MemoPin.vue'
 
-const portfolioStore = usePortfolioStore()
-const userStore = useUserStore()
+const dashboardStore = useDashboardStore()
 const router = useRouter()
-const { portfolioSummary, allocationView, totalAssetsDisplay, isLoading, error } =
-  storeToRefs(portfolioStore)
-const { pointBalanceDisplay } = storeToRefs(userStore)
+const { portfolio, allocationView, totalAssetsDisplay, isLoading, error, portfolioAvailable } =
+  storeToRefs(dashboardStore)
 
-onMounted(async () => {
-  await Promise.all([
-    portfolioStore.fetchPortfolioSummary(),
-    userStore.profile ? Promise.resolve() : userStore.fetchProfile(),
-  ])
+onMounted(() => {
+  // HomeView에서 선조회; 미적재 시만 보완
+  if (!portfolio.value) {
+    dashboardStore.fetchDashboard()
+  }
 })
 
 const ruledOffsets = computed(() => Array.from({ length: 8 }, (_, index) => 44 + index * 22))
 
-const pointDisplay = computed(() => pointBalanceDisplay.value)
+const investmentStyle = computed(() => resolveInvestmentStyle(allocationView.value))
 
-const goPointMarket = () => {
-  router.push({ name: 'point-market' })
-}
+const emptyMessage = computed(() => {
+  if (error.value) return error.value
+  if (!portfolioAvailable.value) {
+    return portfolio.value?.reason === 'NO_PORTFOLIO'
+      ? '아직 포트폴리오가 없습니다.'
+      : portfolio.value?.reason || '포트폴리오 정보가 없습니다.'
+  }
+  return '포트폴리오 정보가 없습니다.'
+})
 
 const goPortfolios = () => {
+  if (dashboardStore.isPortfolioLocked.value) {
+    router.push({ name: 'learning', query: { mainChapterId: '1' } })
+    return
+  }
   router.push({ name: 'portfolio-holdings' })
 }
 </script>
 
 <template>
-  <div class="memo-selectable relative w-full max-w-[346px]">
-    <!-- 테이프 -->
-    <div
-      class="pointer-events-none absolute -top-2 left-1/2 z-20 h-4 w-[90px] -translate-x-1/2 rotate-3 border-[0.5px] border-white/25 bg-[var(--portfolio-tape)]"
-      aria-hidden="true"
-    />
-
-    <!-- 포인트 상점 보드 -->
-    <button
-      type="button"
-      class="memo-selectable absolute -top-3 -right-1 z-30 -rotate-3 rounded-[5px] bg-[var(--portfolio-shop)] p-1 shadow-[0_0_12px_rgba(193,127,36,0.35),1px_4px_10px_rgba(0,0,0,0.45)]"
-      aria-label="포인트 상점으로 이동"
-      @click.stop="goPointMarket"
-    >
-      <span
-        class="flex flex-col items-center gap-[3px] rounded-[3px] bg-[var(--portfolio-shop-paper)] px-3 py-2.5 text-center"
-      >
-        <span class="font-pen text-[10px] leading-none text-[var(--portfolio-shop)]">
-          {{ pointDisplay }} P
-        </span>
-        <span class="font-serif text-[12px] font-bold leading-none text-[#29211a]">
-          포인트 상점 →
-        </span>
-      </span>
-    </button>
+  <div class="memo-selectable relative w-full max-w-[346px]" data-testid="portfolio-summary">
+    <MemoPin side="center" tone="portfolio" />
 
     <section
-      class="relative min-h-[133px] w-full rotate-[0.8deg] overflow-hidden rounded border-[0.8px] border-[var(--portfolio-border)] bg-[var(--portfolio-surface)] shadow-[0_5px_14px_rgba(0,0,0,0.35)]"
-      aria-label="현재 포트폴리오로 이동"
+      class="relative min-h-[133px] w-full rotate-[0.8deg] overflow-hidden rounded border-[0.5px] border-[var(--portfolio-border)] bg-[var(--portfolio-surface)] shadow-[0_5px_14px_rgba(0,0,0,0.35)]"
+      :aria-label="isPortfolioLocked ? PORTFOLIO_LOCKED_MESSAGE : '현재 포트폴리오로 이동'"
       role="button"
       tabindex="0"
       @click="goPortfolios"
       @keydown.enter="goPortfolios"
     >
-      <!-- 줄노트 -->
       <div class="pointer-events-none absolute inset-0" aria-hidden="true">
         <div
           v-for="top in ruledOffsets"
@@ -78,7 +64,6 @@ const goPortfolios = () => {
         />
       </div>
 
-      <!-- 왼쪽 여백 라인 -->
       <div
         class="pointer-events-none absolute top-3 bottom-3 left-[26px] w-px bg-[var(--portfolio-margin)]"
         aria-hidden="true"
@@ -86,31 +71,42 @@ const goPortfolios = () => {
 
       <div class="relative flex flex-col gap-2 py-5 pr-4 pl-[38px]">
         <BaseLoading
-          v-if="isLoading"
+          v-if="isLoading && !portfolio"
           class="py-6 text-center"
           tone="onLight"
           size="2xs"
           message="포트폴리오를 불러오는 중…"
         />
 
+        <div v-else-if="isPortfolioLocked" class="py-5 pr-2" data-testid="portfolio-summary-locked">
+          <p class="font-serif text-[10px] font-bold tracking-wide text-[var(--portfolio-muted)]">
+            포트폴리오 잠금
+          </p>
+          <p
+            class="mt-1.5 font-serif text-[14px] leading-snug font-bold text-[var(--portfolio-ink)]"
+          >
+            {{ PORTFOLIO_LOCKED_MESSAGE }}
+          </p>
+          <p class="mt-2 font-serif text-[11px] text-[#c17f24]">기초 과정 학습 →</p>
+        </div>
+
         <div
-          v-else-if="error || !portfolioSummary?.available"
+          v-else-if="error || !portfolioAvailable"
           class="py-6 text-center font-serif text-[10px] text-[var(--portfolio-muted)]"
         >
-          {{ error || portfolioSummary?.reason || '포트폴리오 정보가 없습니다.' }}
+          {{ emptyMessage }}
         </div>
 
         <template v-else>
           <p class="font-serif text-[10px] text-[var(--portfolio-muted)]">현재 포트폴리오</p>
 
           <div class="flex items-baseline gap-1.5">
-            <p class="font-pen text-[34px] leading-none text-[var(--portfolio-ink)]">
+            <p class="font-serif font-bold text-[22px] leading-none text-[var(--portfolio-ink)]">
               {{ totalAssetsDisplay }}
             </p>
-            <p class="font-serif text-[13px] text-[var(--portfolio-unit)]">원</p>
+            <p class="font-serif text-[11px] text-[var(--portfolio-unit)]">원</p>
           </div>
 
-          <!-- 비중 바 -->
           <div class="flex h-2.5 w-full overflow-hidden rounded-[3px]" aria-hidden="true">
             <div
               v-for="item in allocationView"
@@ -120,7 +116,6 @@ const goPortfolios = () => {
             />
           </div>
 
-          <!-- 범례 -->
           <div class="flex flex-wrap gap-2.5">
             <div
               v-for="item in allocationView"
@@ -140,16 +135,18 @@ const goPortfolios = () => {
         </template>
       </div>
 
-      <!-- 보유 포인트 칩 -->
       <div
-        class="pointer-events-none absolute top-11 right-3 z-10 flex items-center gap-1.5 rounded-[14px] border border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
+        v-if="!isPortfolioLocked && portfolioSummary?.available"
+        class="pointer-events-none absolute top-11 right-3 z-10 flex max-w-[42%] items-center gap-1.5 rounded-[14px] border-[0.5px] border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
         aria-hidden="true"
       >
-        <span class="font-pen text-[12px] leading-none text-[var(--portfolio-chip-label)]"
-          >보유</span
+        <span class="font-serif text-[12px] leading-none text-[var(--portfolio-chip-label)]"
+          >성향</span
         >
-        <span class="text-[14px] leading-none font-black text-[var(--portfolio-chip-value)]">
-          {{ pointDisplay }} P
+        <span
+          class="truncate text-[13px] leading-none font-black text-[var(--portfolio-chip-value)]"
+        >
+          {{ investmentStyle }}
         </span>
       </div>
     </section>

@@ -7,7 +7,7 @@ defineProps({
 
 <template>
   <div>
-    <p v-if="scenarioLabel" class="font-pen text-[11px] text-[rgba(139,100,60,0.7)]">
+    <p v-if="scenarioLabel" class="font-serif text-[11px] text-[rgba(139,100,60,0.7)]">
       {{ scenarioLabel }}
     </p>
     <p class="mt-1 text-[12px] leading-[18px] text-[#3d1f08]" :class="scenarioLabel ? '' : 'mt-0'">

@@ -62,6 +62,23 @@ const router = createRouter({
           path: 'home',
           name: 'home',
           component: () => import('@/views/HomeView.vue'),
+          meta: { navTab: 'home' },
+        },
+        {
+          path: 'daily',
+          name: 'daily',
+          component: () => import('@/views/DailyView.vue'),
+          meta: { navTab: 'daily' },
+        },
+        {
+          path: 'daily-quest',
+          name: 'daily-quest',
+          component: () => import('@/views/DailyQuestView.vue'),
+          meta: { hideNavbar: true },
+        },
+        {
+          path: 'leaderboard',
+          redirect: { name: 'daily-quest' },
         },
         {
           path: 'daily-quest',
@@ -86,7 +103,10 @@ const router = createRouter({
             {
               path: 'main-chapters/:mainChapterId',
               name: 'learning-main-chapter',
-              component: () => import('@/views/learning/SubChapterSelectView.vue'),
+              redirect: (to) => ({
+                name: 'learning',
+                query: { mainChapterId: String(to.params.mainChapterId) },
+              }),
             },
             {
               path: 'sub-chapters/:subChapterId',
@@ -144,12 +164,54 @@ const router = createRouter({
                 navTab: 'portfolios',
               },
             },
+            {
+              path: 'history',
+              name: 'portfolio-history',
+              component: () => import('@/views/portfolio/TransactionHistoryView.vue'),
+              meta: {
+                title: '거래 내역',
+                subtitle: '매수·매도·이자·만기 등 자산 이벤트 이력을 확인하세요',
+                navTab: 'portfolios',
+              },
+            },
           ],
         },
         {
           path: 'point-market',
           name: 'point-market',
           component: () => import('@/views/PointMarketView.vue'),
+          meta: { navTab: 'point-market' },
+        },
+      ],
+    },
+    {
+      path: '/admin',
+      component: () => import('@/components/admin/AdminLayout.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+      children: [
+        {
+          path: '',
+          name: 'admin-dashboard',
+          component: () => import('@/views/admin/AdminDashboardView.vue'),
+          meta: { title: '대시보드' },
+        },
+        {
+          path: 'curriculum',
+          name: 'admin-curriculum',
+          component: () => import('@/views/admin/AdminCurriculumView.vue'),
+          meta: { title: '커리큘럼' },
+        },
+        {
+          path: 'quiz',
+          name: 'admin-quiz',
+          component: () => import('@/views/admin/AdminQuizView.vue'),
+          meta: { title: '퀴즈 문항' },
+        },
+        {
+          path: 'products',
+          name: 'admin-products',
+          component: () => import('@/views/admin/AdminProductsView.vue'),
+          meta: { title: '모의 금융상품' },
         },
       ],
     },

@@ -4,8 +4,10 @@ import {
   logout as logoutApi,
   signupWithGoogle as signupWithGoogleApi,
   signupWithEmail as signupWithEmailApi,
+  signupWithExistingFirebaseSession as signupWithExistingSessionApi,
   loginWithGoogle as loginWithGoogleApi,
   loginWithEmail as loginWithEmailApi,
+  refreshLoginSession,
 } from '@/services/authService.js'
 import { setToken, removeToken, hasToken } from '@/utils/token.js'
 import {
@@ -15,6 +17,8 @@ import {
 } from '@/utils/onboardingStep.js'
 import { useUserStore } from '@/store/userStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
+import { useCurriculumStore } from '@/store/curriculumStore.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 import router from '@/router/index.js'
 
 const REMEMBER_KEY = 'auth_remember_email'
@@ -44,6 +48,13 @@ export const useAuthStore = defineStore('auth', () => {
   const setOnboardingStep = (step) => {
     onboardingStep.value = step
     setStoredOnboardingStep(step)
+  }
+
+  const ensureOnboardingStep = async () => {
+    if (onboardingStep.value || !hasToken()) return onboardingStep.value
+    const data = await refreshLoginSession()
+    setOnboardingStep(data.onboardingStep)
+    return onboardingStep.value
   }
 
   /**
@@ -77,6 +88,12 @@ export const useAuthStore = defineStore('auth', () => {
     return data
   }
 
+  const signupWithExistingFirebaseSession = async (payload = {}) => {
+    const { data, idToken } = await signupWithExistingSessionApi(payload)
+    await establishSession(idToken, data.onboardingStep)
+    return data
+  }
+
   const loginWithGoogle = async (options = {}) => {
     const { data, idToken } = await loginWithGoogleApi(options)
     await establishSession(idToken, data.onboardingStep)
@@ -91,7 +108,9 @@ export const useAuthStore = defineStore('auth', () => {
       onboardingStep.value = null
       clearStoredOnboardingStep()
       useUserStore().clearProfile()
-      useLevelTestStore().clearSession()
+      useLevelTestStore().clear()
+      useCurriculumStore().clear()
+      useDashboardStore().clear()
       await router.push({ path: '/login' })
     }
   }
@@ -101,9 +120,11 @@ export const useAuthStore = defineStore('auth', () => {
     rememberedEmail,
     onboardingStep,
     setOnboardingStep,
+    ensureOnboardingStep,
     loginWithEmail,
     signupWithGoogle,
     signupWithEmail,
+    signupWithExistingFirebaseSession,
     loginWithGoogle,
     logout,
   }

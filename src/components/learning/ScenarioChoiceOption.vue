@@ -41,13 +41,13 @@ const radioClass = computed(() => {
 <template>
   <button
     type="button"
-    class="scenario-choice flex w-full items-start gap-3 rounded-[10px] border-[0.8px] px-3 py-2.5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out disabled:cursor-default"
+    class="scenario-choice flex w-full items-start gap-3 rounded-[10px] border-[0.5px] px-3 py-2.5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out disabled:cursor-default"
     :class="[shellClass, interactive ? 'scenario-choice--interactive' : '']"
     :disabled="disabled"
     @click="$emit('select', optionKey)"
   >
     <span
-      class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-[1.6px] transition-colors duration-200"
+      class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-[0.5px] transition-colors duration-200"
       :class="radioClass"
     >
       <span

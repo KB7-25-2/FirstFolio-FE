@@ -23,7 +23,7 @@ defineEmits(['select-period', 'start-scenario'])
 </script>
 
 <template>
-  <div class="relative w-full max-w-full overflow-hidden">
+  <div class="relative w-full max-w-full overflow-hidden pt-2">
     <div
       class="pointer-events-none absolute top-1 right-2 z-30 size-11 -rotate-[10deg] overflow-hidden rounded-full border-[2.5px] border-white bg-[#fffaed] shadow-[0_3px_6px_rgba(0,0,0,0.3)]"
       aria-hidden="true"
@@ -35,19 +35,21 @@ defineEmits(['select-period', 'start-scenario'])
       />
     </div>
 
-    <LearningNotePaper surface-class="bg-[#f5edd9]" :show-tape="true">
+    <LearningNotePaper surface-class="bg-[#f5edd9]" :show-pin="true">
       <div class="relative px-4 pt-5 pb-4">
         <div class="flex items-start justify-between gap-2 pr-10">
           <div class="min-w-0">
             <p class="font-serif text-[10px] font-black text-[rgba(139,100,60,0.55)]">
               {{ categoryLabel }}
             </p>
-            <h2 class="mt-1 font-pen text-[28px] leading-none text-[#212b5c]">{{ title }}</h2>
+            <h2 class="mt-1 font-serif text-[20px] leading-snug font-bold text-[#212b5c]">
+              {{ title }}
+            </h2>
             <p class="mt-2 font-serif text-[11px] text-[rgba(139,100,60,0.7)]">{{ description }}</p>
           </div>
           <div
             v-if="unitIndex"
-            class="shrink-0 -rotate-3 rounded border-[1.5px] border-[rgba(193,127,36,0.85)] px-2 py-1"
+            class="shrink-0 -rotate-3 rounded border-[0.5px] border-[rgba(193,127,36,0.85)] px-2 py-1"
           >
             <p class="font-serif text-[11px] font-black whitespace-nowrap text-[#c17f24]">
               {{ unitIndex }}
@@ -61,7 +63,9 @@ defineEmits(['select-period', 'start-scenario'])
         </p>
 
         <div v-if="chapterLocked" class="py-10 text-center">
-          <p class="font-pen text-[18px] text-[rgba(139,100,60,0.55)]">아직 잠긴 대단원이에요</p>
+          <p class="font-serif font-bold text-[18px] text-[rgba(139,100,60,0.55)]">
+            아직 잠긴 대단원이에요
+          </p>
           <p class="mt-1 font-serif text-[11px] text-[rgba(139,100,60,0.4)]">
             선행 대단원을 먼저 수료해 주세요
           </p>
@@ -82,7 +86,7 @@ defineEmits(['select-period', 'start-scenario'])
           <button
             v-if="showScenarioCta"
             type="button"
-            class="flex h-14 w-full shrink-0 cursor-pointer items-center gap-2.5 overflow-hidden border-[1.5px] border-[#c17f24] bg-[#fae8a8] p-2.5 text-left shadow-[0_2px_6px_rgba(139,80,20,0.25)] transition-shadow duration-200 ease-out hover:shadow-[0_2px_10px_rgba(139,80,20,0.35)]"
+            class="flex h-14 w-full shrink-0 cursor-pointer items-center gap-2.5 overflow-hidden border-[0.5px] border-[#c17f24] bg-[#fae8a8] p-2.5 text-left shadow-[0_2px_6px_rgba(139,80,20,0.25)] transition-shadow duration-200 ease-out hover:shadow-[0_2px_10px_rgba(139,80,20,0.35)]"
             @click="$emit('start-scenario')"
           >
             <span
@@ -110,7 +114,7 @@ defineEmits(['select-period', 'start-scenario'])
 
         <p
           v-if="!chapterLocked && periods.length && !showScenarioCta && showScrollHint"
-          class="pointer-events-none absolute bottom-3 left-0 w-full text-center font-pen text-[13px] text-[rgba(139,100,60,0.55)]"
+          class="pointer-events-none absolute bottom-3 left-0 w-full text-center font-serif text-[13px] text-[rgba(139,100,60,0.55)]"
         >
           {{ scrollHint }}
         </p>

@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import PortfolioTabs from '@/components/portfolio/PortfolioTabs.vue'
 import BankruptcyConfirmModal from '@/components/portfolio/BankruptcyConfirmModal.vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
-import portfolioBg from '@/assets/portfolio/portfolio-bg.png'
 
 const route = useRoute()
 const store = usePortfolioStore()
@@ -43,37 +42,39 @@ const handleResetConfirm = async () => {
 </script>
 
 <template>
-  <div
-    class="relative flex h-full min-h-0 flex-col gap-4 overflow-hidden px-5 pt-6 pb-3 text-[var(--pf-text)]"
-  >
-    <img
-      :src="portfolioBg"
-      alt=""
-      class="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover"
-    />
-    <div class="pointer-events-none absolute inset-0 -z-10 bg-[var(--pf-page-bg)]/75" />
-
-    <header class="flex w-full shrink-0 justify-between gap-3">
-      <div class="flex w-full flex-col">
-        <div class="flex w-full justify-between">
-          <h1 class="text-xl font-bold text-[var(--pf-text)]">{{ title }}</h1>
-          <button
-            v-if="showBankruptcyAction"
-            type="button"
-            class="shrink-0 rounded-full border border-[var(--pf-danger-border)] bg-[var(--pf-danger-bg)] px-3 py-1 text-xs font-bold whitespace-nowrap text-[var(--pf-danger-text)]"
-            @click="openBankruptcyModal"
+  <div class="cork-board flex h-full flex-col overflow-hidden">
+    <header class="chalk-header shrink-0 px-5 pt-5">
+      <div class="flex w-full items-center justify-between gap-2">
+        <div class="min-w-0">
+          <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
+            {{ subtitle }}
+          </p>
+          <h1
+            class="chalk-header__title mt-1 truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
           >
-            포트폴리오 초기화
-          </button>
+            {{ title }}
+          </h1>
         </div>
-        <p class="mt-2 text-xs text-[var(--pf-text-muted)]">{{ subtitle }}</p>
+
+        <button
+          v-if="showBankruptcyAction"
+          type="button"
+          class="chalk-header__stamp flex shrink-0 rotate-[-4deg] items-center justify-center rounded px-2.5 py-1"
+          style="background: rgba(240, 217, 160, 0.22)"
+          @click="openBankruptcyModal"
+        >
+          <span class="font-pen text-[13px] leading-none whitespace-nowrap">파산 신청</span>
+        </button>
       </div>
     </header>
 
-    <PortfolioTabs class="shrink-0" />
-
-    <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <RouterView />
+    <div class="flex min-h-0 flex-1 flex-col gap-4 px-5 pt-5">
+      <div class="shrink-0">
+        <PortfolioTabs />
+      </div>
+      <div class="min-h-0 flex-1 overflow-hidden">
+        <RouterView />
+      </div>
     </div>
 
     <BankruptcyConfirmModal

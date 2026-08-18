@@ -21,7 +21,7 @@ const expanded = ref(false)
     >
       <span class="flex items-center gap-2">
         <span
-          class="inline-block size-4 rounded-[1.5px] border-[1.25px] border-[rgba(249,250,251,0.85)]"
+          class="inline-block size-4 rounded-[1.5px] border-[0.5px] border-[rgba(249,250,251,0.85)]"
           aria-hidden="true"
         />
         <span class="font-serif text-[13px] font-medium text-[#f9fafb]">{{ title }}</span>

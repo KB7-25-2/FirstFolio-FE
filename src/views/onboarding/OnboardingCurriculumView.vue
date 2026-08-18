@@ -10,12 +10,14 @@ const {
   availableItems,
   isLoading,
   isSaving,
+  isConfirming,
+  isEditMode,
   error,
   actionError,
   onToggle,
   onReorder,
   onConfirm,
-  goResult,
+  goBack,
 } = useCurriculumRecommend()
 
 const selectedOptionalCount = computed(
@@ -30,13 +32,13 @@ const progressTotal = computed(() =>
 </script>
 
 <template>
-  <div class="mx-auto flex mobile-frame flex-col overflow-hidden bg-[#0d1117]">
+  <div class="cork-board mx-auto flex mobile-frame flex-col overflow-hidden">
     <div class="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pt-10 pb-3">
-      <p class="font-serif text-[10px] tracking-[0.4px] text-[#f2b859]">
-        STEP 4 · CURRICULUM ORDER
+      <p class="font-serif text-[10px] tracking-[0.4px] text-[var(--cork-stamp)]">
+        {{ isEditMode ? 'EDIT · CURRICULUM ORDER' : 'STEP 4 · CURRICULUM ORDER' }}
       </p>
-      <h1 class="mt-1.5 font-serif text-[22px] leading-snug font-black text-[#f5edd9]">
-        학습 순서를 정해보세요
+      <h1 class="mt-1.5 font-serif text-[22px] leading-snug font-black text-[var(--cork-ink)]">
+        {{ isEditMode ? '학습 순서를 수정해보세요' : '학습 순서를 정해보세요' }}
       </h1>
 
       <div class="mt-4 w-full max-w-[359px] self-center">
@@ -58,27 +60,25 @@ const progressTotal = computed(() =>
           @reorder="onReorder"
         />
       </div>
-      <p v-if="error || actionError" class="mt-3 text-center font-serif text-xs text-red-300">
+      <p
+        v-if="error || actionError"
+        class="mt-3 text-center font-serif text-xs text-[var(--study-total)]"
+      >
         {{ actionError || error }}
       </p>
     </div>
 
     <div class="flex shrink-0 gap-3 px-4 pt-2 pb-6">
-      <button
-        type="button"
-        class="btn-hover flex h-12 flex-1 items-center justify-center rounded-[10px] bg-[#c12e24] font-serif text-[14px] font-bold text-[#f5edd9]"
-        @click="goResult"
-      >
-        이전
+      <button type="button" class="cork-btn cork-btn--danger flex-1" @click="goBack">
+        {{ isEditMode ? '학습으로' : '이전' }}
       </button>
       <button
         type="button"
-        class="flex h-12 flex-1 items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec] disabled:opacity-60"
-        :class="{ 'btn-hover': !isSaving }"
-        :disabled="isSaving || !orderedItems.length"
+        class="cork-btn cork-btn--primary flex-1"
+        :disabled="isConfirming || isSaving || !orderedItems.length"
         @click="onConfirm"
       >
-        {{ isSaving ? '저장 중…' : '구성 확정 →' }}
+        {{ isConfirming || isSaving ? '적용 중…' : isEditMode ? '수정 확정 →' : '구성 확정 →' }}
       </button>
     </div>
   </div>

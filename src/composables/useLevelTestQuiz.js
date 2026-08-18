@@ -1,6 +1,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/authStore.js'
 import { useLevelTestStore } from '@/store/levelTestStore.js'
 
 const OPTION_TONES = ['green', 'blue', 'pink', 'yellow']
@@ -18,6 +19,7 @@ const ASSET_LABELS = {
  */
 export const useLevelTestQuiz = () => {
   const router = useRouter()
+  const authStore = useAuthStore()
   const levelTestStore = useLevelTestStore()
 
   const {
@@ -36,7 +38,8 @@ export const useLevelTestQuiz = () => {
   const actionError = ref('')
 
   onMounted(async () => {
-    if (levelTestStore.attempt?.status === 'IN_PROGRESS') return
+    // 세션에 예전(id/text) 매핑이 남아 있으면 선택지가 비어 보이므로
+    // 항상 start API로 복원·재매핑한다.
     try {
       await levelTestStore.start()
     } catch (err) {
@@ -50,6 +53,8 @@ export const useLevelTestQuiz = () => {
     const asset = currentQuestion.value?.assetType
     return asset ? (ASSET_LABELS[asset] ?? asset) : '기초 진단'
   })
+
+  const isTrueFalse = computed(() => currentQuestion.value?.questionType === 'TRUE_FALSE')
 
   /** @type {import('vue').ComputedRef<'IN_PROGRESS' | 'SELECTED'>} */
   const quizUiStatus = computed(() => (currentSelectedKey.value ? 'SELECTED' : 'IN_PROGRESS'))
@@ -78,7 +83,7 @@ export const useLevelTestQuiz = () => {
 
   const primaryEnabled = computed(() => {
     if (isSaving.value || isSubmitting.value) return false
-    if (isLastQuestion.value) return allAnswersReady.value || !!currentSelectedKey.value
+    if (isLastQuestion.value) return allAnswersReady.value
     return quizUiStatus.value === 'SELECTED'
   })
 
@@ -97,9 +102,15 @@ export const useLevelTestQuiz = () => {
     if (!currentSelectedKey.value) return
 
     try {
-      await levelTestStore.saveAnswers()
+      await levelTestStore.saveAnswers([
+        {
+          questionId: currentQuestion.value.questionId,
+          selectedChoiceIds: [currentSelectedKey.value],
+        },
+      ])
       if (isLastQuestion.value) {
         await levelTestStore.submit()
+        authStore.setOnboardingStep('CURRICULUM')
         await router.push({ name: 'onboarding-result' })
         return 'submitted'
       }
@@ -134,6 +145,7 @@ export const useLevelTestQuiz = () => {
     actionError,
     examTitle,
     subject,
+    isTrueFalse,
     quizUiStatus,
     statusBadge,
     optionsWithTone,

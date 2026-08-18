@@ -4,11 +4,12 @@ import {
   getCurriculumDraft,
   saveCurriculumDraft,
   confirmCurriculum,
+  getConfirmedCurriculum,
+  updateConfirmedCurriculum,
   resetCurriculumState,
-  FOUNDATION_CHAPTER_ID,
   chapterTitle,
 } from '@/services/curriculumService.js'
-import { LevelTestApiError } from '@/services/levelTestService.js'
+import { setCurriculumConfirmed } from '@/utils/curriculumConfirm.js'
 
 export const useCurriculumStore = defineStore('curriculum', () => {
   /** @type {import('vue').Ref<import('@/types/curriculum.js').CurriculumDraft | null>} */
@@ -24,6 +25,8 @@ export const useCurriculumStore = defineStore('curriculum', () => {
   const isConfirming = ref(false)
   const error = ref(null)
   const confirmed = ref(false)
+  /** 학습 화면에서 확정 커리큘럼 수정 중 */
+  const editMode = ref(false)
 
   const items = computed(() => draft.value?.items ?? [])
   const cartCandidates = computed(() => draft.value?.cartCandidates ?? [])
@@ -56,16 +59,13 @@ export const useCurriculumStore = defineStore('curriculum', () => {
   const selectedCourseCount = computed(() => orderedItems.value.length)
 
   const selectedAssetIds = computed(() =>
-    orderedItems.value
-      .filter((i) => i.mainChapterId !== FOUNDATION_CHAPTER_ID)
-      .map((i) => i.mainChapterId),
+    orderedItems.value.filter((i) => i.sourceType !== 'REQUIRED').map((i) => i.mainChapterId),
   )
 
   const isSelected = (mainChapterId) =>
     orderedItems.value.some((i) => i.mainChapterId === mainChapterId)
 
   const sourceTypeFor = (mainChapterId) => {
-    if (mainChapterId === FOUNDATION_CHAPTER_ID) return 'REQUIRED'
     if (recommendationPool.value.some((i) => i.mainChapterId === mainChapterId)) {
       return 'LEVEL_TEST_WRONG'
     }
@@ -73,19 +73,13 @@ export const useCurriculumStore = defineStore('curriculum', () => {
   }
 
   const ensureFoundation = (list) => {
-    const withoutFoundation = list.filter((i) => i.mainChapterId !== FOUNDATION_CHAPTER_ID)
-    return [
-      {
-        mainChapterId: FOUNDATION_CHAPTER_ID,
-        title: chapterTitle(FOUNDATION_CHAPTER_ID),
-        sourceType: 'REQUIRED',
-        displayOrder: 1,
-      },
-      ...withoutFoundation.map((item, index) => ({
-        ...item,
-        displayOrder: index + 2,
-      })),
-    ]
+    const required =
+      list.find((item) => item.sourceType === 'REQUIRED') ??
+      orderedItems.value.find((item) => item.sourceType === 'REQUIRED') ??
+      draft.value?.items.find((item) => item.sourceType === 'REQUIRED')
+    const optional = list.filter((item) => item.sourceType !== 'REQUIRED')
+    const normalized = required ? [required, ...optional] : optional
+    return normalized.map((item, index) => ({ ...item, displayOrder: index + 1 }))
   }
 
   const setOrderedFromDraftItems = (draftItems) => {
@@ -99,23 +93,50 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     )
   }
 
+  /**
+   * POST/PUT 확정 응답 items를 구성·미리보기 목록에 반영
+   * @param {import('@/types/curriculum.js').CurriculumConfirmItem[]} responseItems
+   */
+  const applyConfirmedItems = (responseItems) => {
+    orderedItems.value = ensureFoundation(
+      (responseItems ?? []).map((item) => ({
+        mainChapterId: item.mainChapterId,
+        title: item.title,
+        sourceType: item.sourceType,
+        displayOrder: item.displayOrder,
+      })),
+    )
+    confirmed.value = true
+    setCurriculumConfirmed(true)
+  }
+
   const toggleChapter = (mainChapterId) => {
-    if (mainChapterId === FOUNDATION_CHAPTER_ID) return
+    if (
+      orderedItems.value.some(
+        (item) => item.mainChapterId === mainChapterId && item.sourceType === 'REQUIRED',
+      )
+    ) {
+      return false
+    }
     if (isSelected(mainChapterId)) {
       orderedItems.value = ensureFoundation(
         orderedItems.value.filter((i) => i.mainChapterId !== mainChapterId),
       )
-      return
+      return true
     }
+    const candidate = [...recommendationPool.value, ...cartCandidates.value].find(
+      (item) => item.mainChapterId === mainChapterId,
+    )
     orderedItems.value = ensureFoundation([
       ...orderedItems.value,
       {
         mainChapterId,
-        title: chapterTitle(mainChapterId),
+        title: candidate?.title ?? chapterTitle(mainChapterId),
         sourceType: sourceTypeFor(mainChapterId),
         displayOrder: orderedItems.value.length + 1,
       },
     ])
+    return true
   }
 
   const moveOrderedItem = (index, direction) => {
@@ -126,36 +147,72 @@ export const useCurriculumStore = defineStore('curriculum', () => {
    * 장바구니 순서 변경 (FOUNDATION index 0 고정)
    * @param {number} fromIndex
    * @param {number} toIndex
+   * @returns {boolean} 변경 여부
    */
   const reorderOrderedItems = (fromIndex, toIndex) => {
-    if (fromIndex === toIndex) return
-    if (fromIndex <= 0 || toIndex <= 0) return
+    if (fromIndex === toIndex) return false
+    if (fromIndex <= 0 || toIndex <= 0) return false
     const len = orderedItems.value.length
-    if (fromIndex >= len || toIndex >= len) return
-    if (orderedItems.value[fromIndex]?.sourceType === 'REQUIRED') return
+    if (fromIndex >= len || toIndex >= len) return false
+    if (orderedItems.value[fromIndex]?.sourceType === 'REQUIRED') return false
 
     const next = [...orderedItems.value]
     const [row] = next.splice(fromIndex, 1)
     next.splice(toIndex, 0, row)
     orderedItems.value = ensureFoundation(next)
+    return true
   }
 
-  const fetchDraft = async () => {
+  /**
+   * @param {{ keepOrdered?: boolean }} [options]
+   */
+  const fetchDraft = async ({ keepOrdered = false } = {}) => {
     isLoading.value = true
     error.value = null
     try {
       const { data } = await getCurriculumDraft()
       draft.value = data
-      setOrderedFromDraftItems(data.items)
-      confirmed.value = false
+      if (!keepOrdered) {
+        setOrderedFromDraftItems(data.items)
+        confirmed.value = false
+      }
       return data
     } catch (err) {
-      draft.value = null
-      orderedItems.value = []
-      if (err instanceof LevelTestApiError && err.code === 'LEVEL_TEST_REQUIRED') {
+      if (!keepOrdered) {
+        draft.value = null
+        orderedItems.value = []
+      }
+      if (err?.code === 'LEVEL_TEST_REQUIRED') {
         error.value = '레벨 테스트를 먼저 완료해 주세요.'
       } else {
         error.value = err?.message || '커리큘럼 초안을 불러오지 못했습니다.'
+      }
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /** 학습 화면 진입: 확정 커리큘럼 + 후보 풀 로드 */
+  const fetchForEdit = async () => {
+    isLoading.value = true
+    error.value = null
+    editMode.value = true
+    try {
+      const [confirmedRes, draftRes] = await Promise.all([
+        getConfirmedCurriculum(),
+        getCurriculumDraft().catch(() => null),
+      ])
+      if (draftRes?.data) {
+        draft.value = draftRes.data
+      }
+      applyConfirmedItems(confirmedRes.data.items)
+      return confirmedRes.data
+    } catch (err) {
+      if (err?.code === 'CURRICULUM_NOT_FOUND') {
+        error.value = '확정된 커리큘럼이 없습니다.'
+      } else {
+        error.value = err?.message || '커리큘럼을 불러오지 못했습니다.'
       }
       throw err
     } finally {
@@ -168,9 +225,8 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     error.value = null
     try {
       const { data } = await saveCurriculumDraft({
-        main_chapter_ids: selectedAssetIds.value,
+        mainChapterIds: selectedAssetIds.value,
       })
-      // 응답 items에 title 없을 수 있어 로컬 ordered 유지 + sourceType 동기화
       const byId = new Map(data.items.map((i) => [i.mainChapterId, i]))
       orderedItems.value = ensureFoundation(
         orderedItems.value.map((item) => {
@@ -189,15 +245,15 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     }
   }
 
+  /** 온보딩 최초 확정: POST /curriculum/confirm (초안 PUT 없이 선택값 바로 전송) */
   const confirm = async () => {
     isConfirming.value = true
     error.value = null
     try {
-      await persistDraft()
       const { data } = await confirmCurriculum({
-        main_chapter_ids: selectedAssetIds.value,
+        mainChapterIds: selectedAssetIds.value,
       })
-      confirmed.value = true
+      applyConfirmedItems(data.items)
       return data
     } catch (err) {
       error.value = err?.message || '커리큘럼을 확정하지 못했습니다.'
@@ -207,11 +263,36 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     }
   }
 
+  /** 확정본 수정: PUT /curriculum (조작마다 / 최종 확정 시) */
+  const updateConfirmed = async () => {
+    isSaving.value = true
+    error.value = null
+    try {
+      const { data } = await updateConfirmedCurriculum({
+        mainChapterIds: selectedAssetIds.value,
+      })
+      applyConfirmedItems(data.items)
+      return data
+    } catch (err) {
+      if (err?.code === 'CURRICULUM_NOT_FOUND') {
+        error.value = '확정된 커리큘럼이 없습니다.'
+      } else if (err?.code === 'INVALID_CURRICULUM_SELECTION') {
+        error.value = '선택한 대단원을 확인해 주세요.'
+      } else {
+        error.value = err?.message || '커리큘럼을 수정하지 못했습니다.'
+      }
+      throw err
+    } finally {
+      isSaving.value = false
+    }
+  }
+
   const clear = () => {
     resetCurriculumState()
     draft.value = null
     orderedItems.value = []
     confirmed.value = false
+    editMode.value = false
     error.value = null
   }
 
@@ -222,6 +303,7 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     isConfirming,
     error,
     confirmed,
+    editMode,
     items,
     cartCandidates,
     recommendationPool,
@@ -234,9 +316,12 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     toggleChapter,
     moveOrderedItem,
     reorderOrderedItems,
+    applyConfirmedItems,
     fetchDraft,
+    fetchForEdit,
     persistDraft,
     confirm,
+    updateConfirmed,
     clear,
   }
 })

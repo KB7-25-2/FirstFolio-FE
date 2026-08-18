@@ -38,37 +38,39 @@ const priceText = computed(() => {
 </script>
 
 <template>
-  <li class="flex items-center justify-between gap-3 px-3 py-3">
+  <li class="flex items-center justify-between gap-3 px-4 py-3.5">
     <div class="flex min-w-0 items-start gap-2">
       <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="dotClass" />
       <div class="min-w-0">
         <div class="flex items-center gap-1.5">
-          <p class="truncate font-bold text-[var(--pf-text)]">{{ product.displayName }}</p>
+          <p class="truncate font-serif text-sm font-bold text-[#2c1810]">
+            {{ product.displayName }}
+          </p>
           <span
             v-if="isHeld"
-            class="shrink-0 rounded-full bg-[var(--pf-highlight)]/20 px-1.5 py-0.5 text-[9px] font-bold text-[var(--pf-highlight)]"
+            class="shrink-0 rounded-full bg-[rgba(193,127,36,0.14)] px-1.5 py-0.5 font-serif text-[9px] font-bold text-[#c17f24]"
           >
             보유중
           </span>
         </div>
-        <p class="truncate text-xs text-[var(--pf-text-muted)]">
+        <p class="truncate font-serif text-xs text-[rgba(41,33,26,0.55)]">
           {{ product.riskLevel }} · {{ cycleSummaryText }}
         </p>
-        <p class="mt-1 text-sm text-[var(--pf-highlight)]">{{ priceText }}</p>
+        <p class="mt-1 font-serif text-sm font-bold text-[#c17f24]">{{ priceText }}</p>
       </div>
     </div>
 
     <button
       v-if="!isBlocked"
       type="button"
-      class="shrink-0 rounded-full bg-[var(--pf-cta-bg)] px-3 py-1.5 text-xs font-bold text-[var(--pf-cta-text)]"
+      class="shrink-0 rounded-full bg-[#c17f24] px-3 py-1.5 font-serif text-xs font-bold text-[#fff8ec]"
       @click="$emit('buy', product)"
     >
       {{ buyActionLabel }}
     </button>
     <span
       v-else
-      class="shrink-0 rounded-full border border-[var(--pf-card-border)] px-3 py-1.5 text-xs text-[var(--pf-text-muted)]"
+      class="shrink-0 rounded-full bg-[rgba(193,127,36,0.1)] px-3 py-1.5 font-serif text-xs text-[rgba(41,33,26,0.45)]"
     >
       가입 완료
     </span>

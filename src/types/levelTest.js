@@ -8,7 +8,7 @@
  *
  * @typedef {'DEPOSIT_SAVINGS' | 'BOND' | 'STOCK' | 'FUND'} AssetType
  *
- * @typedef {'IN_PROGRESS' | 'COMPLETED'} LevelTestAttemptStatus
+ * @typedef {'IN_PROGRESS' | 'GRADED'} LevelTestAttemptStatus
  *
  * @typedef {object} LevelTestQuestion
  * @property {number} questionId
@@ -24,6 +24,7 @@
  * @property {number} attemptId
  * @property {LevelTestAttemptStatus} status
  * @property {LevelTestQuestion[]} questions
+ * @property {LevelTestAnswerItem[]} savedAnswers
  * @property {string | null} updatedAt
  *
  * @typedef {object} LevelTestAnswerItem
@@ -33,8 +34,11 @@
  * @typedef {object} LevelTestSaveAnswersResult
  * @property {number} attemptId
  * @property {number} savedAnswerCount
+ * @property {number} [answeredCount]
+ * @property {number} [totalCount]
  * @property {LevelTestAttemptStatus} status
  * @property {string} updatedAt
+ * @property {LevelTestAnswerItem[]} savedAnswers 서버 확정(또는 요청 echo) 답안
  *
  * @typedef {object} LevelTestQuestionResult
  * @property {number} questionId
@@ -52,7 +56,8 @@
  *
  * @typedef {object} LevelTestSubmitResult
  * @property {number} attemptId
- * @property {'COMPLETED'} status
+ * @property {'GRADED'} status
+ * @property {{mainChapterId: number, assetType: AssetType, totalCount: number, correctCount: number, allCorrect: boolean}[]} chapterResults
  * @property {LevelTestQuestionResult[]} results
  * @property {LevelTestRecommendation[]} recommendations
  * @property {LevelTestCartCandidate[]} cartCandidates

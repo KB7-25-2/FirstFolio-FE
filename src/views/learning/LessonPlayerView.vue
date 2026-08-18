@@ -39,8 +39,8 @@ const {
         :total="pageTotal || 1"
       />
       <div class="mt-3">
-        <p class="text-[11px] text-[#8c8f9e]">학습 화면</p>
-        <p class="text-[16px] font-bold text-[#ebebf2]">
+        <p class="text-[11px] text-[var(--cork-ink-muted)]">학습 화면</p>
+        <p class="text-[16px] font-bold text-[var(--cork-ink)]">
           {{ currentPage?.title || '학습 진행' }}
         </p>
       </div>
@@ -55,7 +55,7 @@ const {
       @touchstart.passive="onTouchStart"
       @touchend.passive="onTouchEnd"
     >
-      <LearningNotePaper :show-tape="false" ruled surface-class="bg-[#f5edd9]">
+      <LearningNotePaper :show-pin="false" ruled surface-class="bg-[#f5edd9]">
         <TextbookPage
           :title="currentPage.title"
           :blocks="currentPage.blocks"
@@ -75,17 +75,12 @@ const {
 
     <template #footer>
       <div class="mt-4 flex gap-3">
-        <button
-          type="button"
-          class="btn-hover flex h-12 flex-1 items-center justify-center rounded bg-[#c12e24] font-serif text-[15px] font-bold text-[#f5edd9]"
-          @click="stopLearning"
-        >
+        <button type="button" class="cork-btn cork-btn--danger flex-1" @click="stopLearning">
           학습 중단
         </button>
         <button
           type="button"
-          class="flex h-12 flex-1 items-center justify-center rounded border-[1.5px] border-[rgba(245,237,217,0.45)] font-serif text-[15px] font-bold text-[#f5edd9] disabled:cursor-not-allowed disabled:opacity-40"
-          :class="{ 'btn-hover': !(!!error || isLoading || !currentPage || isFirstPage) }"
+          class="cork-btn cork-btn--ghost flex-1"
           :disabled="!!error || isLoading || !currentPage || isFirstPage"
           @click="goPrevCut"
         >
@@ -93,8 +88,7 @@ const {
         </button>
         <button
           type="button"
-          class="flex h-12 flex-1 items-center justify-center rounded bg-[#c17f24] font-serif text-[15px] font-bold text-[#f5edd9] disabled:cursor-not-allowed disabled:opacity-50"
-          :class="{ 'btn-hover': !(!!error || isLoading || !currentPage) }"
+          class="cork-btn cork-btn--primary flex-1"
           :disabled="!!error || isLoading || !currentPage"
           @click="onPrimaryAction"
         >

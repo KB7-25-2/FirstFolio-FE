@@ -36,7 +36,7 @@ const subClass = {
 
 const rowClass = {
   COMPLETED: 'bg-[rgba(237,229,209,0.9)]',
-  IN_PROGRESS: 'border-[1.5px] border-[rgba(193,127,36,0.7)] bg-[#fae8a8]',
+  IN_PROGRESS: 'border-[0.5px] border-[rgba(193,127,36,0.7)] bg-[#fae8a8]',
   NEXT: 'bg-[rgba(240,232,214,0.55)]',
   LOCKED: 'bg-[rgba(240,232,214,0.55)]',
 }
@@ -51,7 +51,7 @@ const rowClass = {
     @click="$emit('select')"
   >
     <span
-      class="flex size-9 shrink-0 items-center justify-center rounded font-pen text-[18px]"
+      class="flex size-9 shrink-0 items-center justify-center rounded font-serif font-bold text-[18px]"
       :class="numClass[scheduleStatus] ?? numClass.LOCKED"
     >
       {{ order }}

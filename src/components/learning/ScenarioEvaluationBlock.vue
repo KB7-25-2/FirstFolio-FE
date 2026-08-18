@@ -54,7 +54,7 @@ const starActiveClass = computed(() => (isFail.value ? 'text-[#c45c4a]' : 'text-
 
 <template>
   <div
-    class="scenario-eval mt-2 overflow-hidden rounded-[10px] border-[0.8px] border-dashed px-3 py-2"
+    class="scenario-eval mt-2 overflow-hidden rounded-[10px] border-[0.5px] border-dashed px-3 py-2"
     :class="[
       ready ? 'scenario-eval--ready' : '',
       isFail
@@ -90,7 +90,7 @@ const starActiveClass = computed(() => (isFail.value ? 'text-[#c45c4a]' : 'text-
         ★
       </span>
       <span
-        class="scenario-eval__stamp absolute -right-0.5 top-0 rounded border-2 px-2.5 py-1 font-serif text-[13px] font-black tracking-wide"
+        class="scenario-eval__stamp absolute -right-0.5 top-0 rounded border-[0.5px] px-2.5 py-1 font-serif text-[13px] font-black tracking-wide"
         :class="
           isFail
             ? 'border-[rgba(196,92,74,0.7)] bg-[rgba(250,235,229,0.55)] text-[rgba(168,56,42,0.85)]'

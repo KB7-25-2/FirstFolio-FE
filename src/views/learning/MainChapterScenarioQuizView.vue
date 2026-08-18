@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue'
 import roomBg from '@/assets/learning/scenario/room-bg.jpg'
 import penguin from '@/assets/learning/scenario/penguin.png'
 import ScenarioClipboardBoard from '@/components/learning/ScenarioClipboardBoard.vue'
@@ -11,6 +12,7 @@ import ScenarioEvaluationBlock from '@/components/learning/ScenarioEvaluationBlo
 import ScenarioMarketBar from '@/components/learning/ScenarioMarketBar.vue'
 import ScenarioResultPanel from '@/components/learning/ScenarioResultPanel.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
+import FoundationUnlockCeremony from '@/components/FoundationUnlockCeremony.vue'
 import { useMainChapterScenarioQuiz } from '@/composables/useMainChapterScenarioQuiz.js'
 
 const {
@@ -39,7 +41,20 @@ const {
   onPrimaryAction,
   goToMainChapter,
   goToRoadmap,
+  showUnlockCeremony,
+  confirmUnlockCeremony,
+  dismissUnlockCeremony,
+  pendingFoundationUnlock,
 } = useMainChapterScenarioQuiz()
+
+const resultConfirmLabel = computed(() =>
+  pendingFoundationUnlock.value ? '모의투자금 받기 →' : '학습 로드맵으로',
+)
+const resultCongratsMessage = computed(() =>
+  pendingFoundationUnlock.value
+    ? '포트폴리오 기초를 모두 마쳤어요. 모의투자금이 지급되고 포트폴리오가 해금됩니다.'
+    : '수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다. 앞으로도 꾸준히 학습하며 상담 역량을 키워 보세요.',
+)
 </script>
 
 <template>
@@ -48,7 +63,7 @@ const {
       <div class="flex items-center">
         <button
           type="button"
-          class="flex size-8 items-center justify-center rounded border-[1.25px] border-[rgba(245,237,217,0.45)] text-[#f5edd9]"
+          class="flex size-8 items-center justify-center rounded border-[0.5px] border-[rgba(245,237,217,0.45)] text-[#f5edd9]"
           aria-label="닫기"
           @click="goToMainChapter"
         >
@@ -56,10 +71,10 @@ const {
         </button>
         <div class="min-w-0 flex-1 text-center">
           <p class="font-serif text-[17px] font-black text-[#f5edd9]">{{ chapterTitle }}</p>
-          <p class="font-pen text-[13px] text-[rgba(245,237,217,0.55)]">{{ chapterSubtitle }}</p>
+          <p class="font-serif text-[13px] text-[rgba(245,237,217,0.55)]">{{ chapterSubtitle }}</p>
         </div>
         <span
-          class="rounded-[2px] border-[1.5px] border-[#c17f24] px-2 py-1 font-pen text-[12px] text-[#c17f24]"
+          class="rounded-[2px] border-[0.5px] border-[#c17f24] px-2 py-1 font-serif text-[12px] text-[#c17f24]"
         >
           {{ stampLabel }}
         </span>
@@ -83,7 +98,7 @@ const {
         />
         <div class="absolute inset-x-0 top-0 flex justify-center">
           <span
-            class="rounded-full border-[0.8px] border-[rgba(255,214,0,0.3)] bg-[rgba(255,214,0,0.15)] px-2.5 py-1 text-[10px] font-bold text-[#ffd600]"
+            class="rounded-full border-[0.5px] border-[rgba(255,214,0,0.3)] bg-[rgba(255,214,0,0.15)] px-2.5 py-1 text-[10px] font-bold text-[#ffd600]"
           >
             금융 상담실 · 실전 게임
           </span>
@@ -143,7 +158,7 @@ const {
           <ScenarioClipboardQuestion :prompt="scenarioCurrentStep.prompt">
             <template v-if="scenarioUiStatus === 'CORRECT' && stepCorrectOption">
               <div
-                class="scenario-grade-card relative rounded-[10px] border-[0.8px] border-[#c17f24] bg-[rgba(193,127,36,0.15)] px-3 py-2.5 shadow-[0_2px_8px_rgba(139,80,20,0.2)]"
+                class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[#c17f24] bg-[rgba(193,127,36,0.15)] px-3 py-2.5 shadow-[0_2px_8px_rgba(139,80,20,0.2)]"
               >
                 <div class="flex items-start gap-3 pr-16">
                   <span
@@ -181,7 +196,7 @@ const {
 
             <template v-else-if="scenarioUiStatus === 'WRONG' && stepSelectedOption">
               <div
-                class="scenario-grade-card relative rounded-[10px] border-[0.8px] border-[rgba(196,92,74,0.55)] bg-[#faebe5] px-3 py-2.5 shadow-[0_2px_8px_rgba(168,56,42,0.16)]"
+                class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[rgba(196,92,74,0.55)] bg-[#faebe5] px-3 py-2.5 shadow-[0_2px_8px_rgba(168,56,42,0.16)]"
               >
                 <div class="flex items-start gap-3 pr-16">
                   <span
@@ -252,8 +267,8 @@ const {
         <ScenarioClipboardBoard v-else-if="scenarioPhase === 'RESULT'" paper-title="">
           <ScenarioResultPanel
             :subject-name="chapterTitle"
-            congrats-message="수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다. 앞으로도 꾸준히 학습하며 상담 역량을 키워 보세요."
-            confirm-label="학습 로드맵으로"
+            :congrats-message="resultCongratsMessage"
+            :confirm-label="resultConfirmLabel"
             @confirm="goToRoadmap"
           />
         </ScenarioClipboardBoard>
@@ -267,6 +282,12 @@ const {
         :constraints="conditions.constraints || []"
       />
     </template>
+
+    <FoundationUnlockCeremony
+      :open="showUnlockCeremony"
+      @confirm="confirmUnlockCeremony"
+      @close="dismissUnlockCeremony"
+    />
   </div>
 </template>
 

@@ -21,7 +21,7 @@ const collectedLabel = computed(() => {
   return `${yyyy}. ${mm}. ${dd} 수집`
 })
 
-const tapeSide = (index) => (index % 2 === 0 ? 'left' : 'right')
+const pinSide = (index) => (index % 2 === 0 ? 'left' : 'right')
 
 const onSelect = (id) => {
   newsStore.selectNews(id)
@@ -29,35 +29,42 @@ const onSelect = (id) => {
 </script>
 
 <template>
-  <section class="w-full" aria-label="오늘의 금융 뉴스 스크랩">
-    <div class="mb-3 flex items-end justify-between px-0.5">
-      <h2 class="font-serif text-[12px] font-bold text-[var(--news-section)]">
-        오늘의 금융 뉴스 스크랩
-      </h2>
-      <span class="font-serif text-[10px] text-[var(--news-section-muted)]">
-        {{ collectedLabel }}
-      </span>
-    </div>
-
-    <BaseLoading
-      v-if="isLoading"
-      class="py-8 text-center"
-      size="xs"
-      message="뉴스를 불러오는 중…"
+  <section class="relative w-full" aria-label="오늘의 금융 뉴스 스크랩">
+    <div
+      class="scrap-board pointer-events-none absolute inset-0 rounded-[2px]"
+      aria-hidden="true"
     />
 
-    <div v-else-if="error" class="py-8 text-center font-serif text-xs text-[var(--study-total)]">
-      {{ error }}
-    </div>
+    <div class="relative z-[1] px-3.5 pt-3.5 pb-4">
+      <div class="mb-3 flex items-end justify-between gap-2">
+        <h2 class="scrap-board__title font-serif text-[18px] leading-none font-bold">
+          오늘의 금융 뉴스 스크랩
+        </h2>
+        <span class="shrink-0 font-serif text-[10px] text-[var(--cork-ink-muted)]">
+          {{ collectedLabel }}
+        </span>
+      </div>
 
-    <div v-else class="flex flex-col gap-3">
-      <NewsClipping
-        v-for="(item, index) in items"
-        :key="item.financial_news_id"
-        :item="item"
-        :tape-side="tapeSide(index)"
-        @select="onSelect"
+      <BaseLoading
+        v-if="isLoading"
+        class="py-8 text-center"
+        size="xs"
+        message="뉴스를 불러오는 중…"
       />
+
+      <div v-else-if="error" class="py-8 text-center font-serif text-xs text-[var(--study-total)]">
+        {{ error }}
+      </div>
+
+      <div v-else class="flex flex-col items-center gap-3">
+        <NewsClipping
+          v-for="(item, index) in items"
+          :key="item.financial_news_id"
+          :item="item"
+          :pin-side="pinSide(index)"
+          @select="onSelect"
+        />
+      </div>
     </div>
 
     <NewsDetailModal />
