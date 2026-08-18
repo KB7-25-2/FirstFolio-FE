@@ -176,7 +176,7 @@ export const useMainChapterScenarioQuiz = () => {
       return
     }
 
-    studyStore.submitCurrentScenarioStep()
+    await studyStore.submitCurrentScenarioStep()
   }
 
   const retryScenario = async () => {

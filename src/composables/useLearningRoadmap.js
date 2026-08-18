@@ -4,11 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
 import { getMainChapterDisplay } from '@/constants/mainChapterDisplay.js'
 import { getPersistedMainChapterId, persistRoadmapFocus } from '@/utils/learningRoadmapFocus.js'
-import {
-  isPeriodQuizDue,
-  isQuizCompleted,
-  needsQuizAttempt,
-} from '@/services/study/mappers/subChapterMapper.js'
+import { isPeriodQuizDue, needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
 
 /**
  * 대단원 × 소단원 목차(체크리스트) 로드맵
@@ -120,10 +116,6 @@ export const useLearningRoadmap = () => {
           name: 'learning-quiz',
           params: { subChapterId: period.subChapterId },
         })
-        return
-      }
-
-      if (isQuizCompleted(progress)) {
         return
       }
 
