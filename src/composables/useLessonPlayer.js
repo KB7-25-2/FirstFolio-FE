@@ -14,6 +14,8 @@ export const useLessonPlayer = () => {
   const error = ref(null)
   const learnMoreOpen = ref(false)
   const learnMorePayload = ref(null)
+  /** 강좌 COMPLETED 후 퀴즈 미응시 */
+  const needsQuiz = ref(false)
 
   const subChapterId = computed(() => Number(route.params.subChapterId))
   const pageCurrent = computed(() => pageIndex.value + 1)
@@ -30,6 +32,12 @@ export const useLessonPlayer = () => {
     () => currentContent.value?.title || `소단원 #${subChapterId.value}`,
   )
 
+  const quizProgressLabel = computed(() => {
+    const quiz = currentContent.value?.progress?.quiz
+    if (!quiz?.totalCount) return null
+    return `${quiz.answeredCount}/${quiz.totalCount} 문항`
+  })
+
   const syncPageQuery = (pageId) => {
     if (!pageId || route.query.page === pageId) return
     router.replace({
@@ -39,13 +47,24 @@ export const useLessonPlayer = () => {
     })
   }
 
+  const goToQuiz = () => {
+    router.push({
+      name: 'learning-quiz',
+      params: { subChapterId: subChapterId.value },
+    })
+  }
+
   const loadContent = async () => {
     isLoading.value = true
     error.value = null
+    needsQuiz.value = false
     try {
       const preferred = typeof route.query.page === 'string' ? route.query.page : null
-      await studyStore.fetchLessonContent(subChapterId.value, preferred)
-      syncPageQuery(studyStore.currentPageId)
+      const result = await studyStore.fetchLessonContent(subChapterId.value, preferred)
+      needsQuiz.value = Boolean(result?.needsQuiz)
+      if (!needsQuiz.value) {
+        syncPageQuery(studyStore.currentPageId)
+      }
     } catch (err) {
       studyStore.clearLesson()
       if (err?.code === 'PREREQUISITE_REQUIRED') {
@@ -69,6 +88,7 @@ export const useLessonPlayer = () => {
   })
 
   watch(currentPageId, (pageId) => {
+    if (needsQuiz.value) return
     if (pageId) syncPageQuery(pageId)
   })
 
@@ -86,6 +106,7 @@ export const useLessonPlayer = () => {
     touchStartX = event.changedTouches[0]?.clientX ?? 0
   }
   const onTouchEnd = async (event) => {
+    if (needsQuiz.value) return
     const endX = event.changedTouches[0]?.clientX ?? 0
     const delta = endX - touchStartX
     if (Math.abs(delta) < 48) return
@@ -95,10 +116,15 @@ export const useLessonPlayer = () => {
 
   const onPrimaryAction = async () => {
     if (isLastPage.value) {
-      router.push({
-        name: 'learning-quiz',
-        params: { subChapterId: subChapterId.value },
-      })
+      const lastPage = studyStore.lessonPages[studyStore.lessonPages.length - 1]
+      try {
+        if (lastPage?.id) {
+          await studyStore.saveProgress(lastPage.id, { status: 'COMPLETED' })
+        }
+      } catch {
+        // 진도 저장 실패여도 퀴즈 CTA는 보여 준다
+      }
+      needsQuiz.value = true
       return
     }
     await studyStore.goNextPage()
@@ -130,6 +156,8 @@ export const useLessonPlayer = () => {
     isFirstPage,
     isLoading,
     error,
+    needsQuiz,
+    quizProgressLabel,
     learnMoreOpen,
     learnMorePayload,
     pageCurrent,
@@ -141,6 +169,7 @@ export const useLessonPlayer = () => {
     onTouchEnd,
     onPrimaryAction,
     goPrevCut,
+    goToQuiz,
     stopLearning,
   }
 }

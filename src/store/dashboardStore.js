@@ -64,6 +64,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
     return '/learning'
   })
 
+  /** GET /dashboard 캐시 여부 */
+  const hasDashboard = computed(() => summary.value != null && !error.value)
+
   const fetchDashboard = async ({ force = false } = {}) => {
     if (!force && summary.value && !error.value) return summary.value
     if (!force && inflight) return inflight
@@ -88,6 +91,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
     return inflight
   }
 
+  /** store에 대시보드가 없을 때만 API 호출 */
+  const ensureDashboard = async (options = {}) => fetchDashboard({ force: false, ...options })
+
   const clear = () => {
     summary.value = null
     error.value = null
@@ -97,6 +103,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   return {
     summary,
+    hasDashboard,
     isLoading,
     error,
     portfolio,
@@ -110,6 +117,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     profitLossDisplay,
     learningContinueRoute,
     fetchDashboard,
+    ensureDashboard,
     clear,
   }
 })

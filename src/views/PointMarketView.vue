@@ -1,4 +1,6 @@
 <script setup>
+defineOptions({ name: 'PointMarketView' })
+
 import { ref, computed, onMounted, watch } from 'vue'
 import { useGifticonStore } from '@/store/gifticonStore.js'
 import { useUserStore } from '@/store/userStore.js'
