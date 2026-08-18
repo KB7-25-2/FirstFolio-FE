@@ -7,6 +7,20 @@ import { pickField } from '../studyResponseUtils.js'
  */
 
 /**
+ * GET /learning/sub-chapters/{id}/progress — quiz 필드
+ * @param {object | null | undefined} raw
+ */
+export const mapQuizProgress = (raw) => {
+  if (!raw) return null
+  return {
+    completed: Boolean(pickField(raw, 'completed')),
+    activeAttemptId: pickField(raw, 'activeAttemptId', 'active_attempt_id') ?? null,
+    answeredCount: Number(pickField(raw, 'answeredCount', 'answered_count') ?? 0),
+    totalCount: Number(pickField(raw, 'totalCount', 'total_count') ?? 0),
+  }
+}
+
+/**
  * GET /learning/sub-chapters/{id}/progress 응답 매핑
  * @param {object} raw
  */
@@ -18,6 +32,7 @@ export const mapSubChapterProgress = (raw) => ({
   startedAt: pickField(raw, 'startedAt', 'started_at') ?? null,
   completedAt: pickField(raw, 'completedAt', 'completed_at') ?? null,
   updated: pickField(raw, 'updated') ?? null,
+  quiz: mapQuizProgress(raw.quiz),
 })
 
 /**
@@ -97,6 +112,7 @@ export const mergeProgressIntoItem = (item, progressRaw) => {
     startedAt: progress.startedAt,
     completedAt: progress.completedAt,
     updatedAt: progress.completedAt ?? progress.startedAt ?? item.updatedAt,
+    quizProgress: progress.quiz,
   }
 }
 
@@ -105,7 +121,8 @@ export const mergeProgressIntoItem = (item, progressRaw) => {
  * @returns {SubChapterContent}
  */
 export const mapSubChapterContent = (raw, progressRaw = null) => {
-  const progress = progressRaw ?? raw.progress ?? {}
+  const progressMapped = progressRaw ? mapSubChapterProgress(progressRaw) : null
+  const progress = progressMapped ?? raw.progress ?? {}
   const lesson = raw.lesson ?? null
   return {
     subChapterId: pickField(raw, 'subChapterId', 'sub_chapter_id'),
@@ -117,9 +134,28 @@ export const mapSubChapterContent = (raw, progressRaw = null) => {
     expiresAt: pickField(raw, 'expiresAt', 'expires_at') ?? null,
     lesson,
     progress: {
-      status: pickField(progress, 'status') ?? 'NOT_STARTED',
-      lastPageId: pickField(progress, 'lastPageId', 'last_page_id') ?? null,
-      completedAt: pickField(progress, 'completedAt', 'completed_at') ?? null,
+      status: progress.status ?? pickField(progress, 'status') ?? 'NOT_STARTED',
+      lastPageId: progress.lastPageId ?? pickField(progress, 'lastPageId', 'last_page_id') ?? null,
+      completedAt:
+        progress.completedAt ?? pickField(progress, 'completedAt', 'completed_at') ?? null,
+      quiz: progress.quiz ?? mapQuizProgress(progress.quiz),
     },
   }
 }
+
+/** @param {{ status?: LearningProgressStatus, quiz?: ReturnType<typeof mapQuizProgress> | null } | null | undefined} progress */
+export const isLessonCompleted = (progress) => progress?.status === 'COMPLETED'
+
+/** @param {{ quiz?: ReturnType<typeof mapQuizProgress> | null } | null | undefined} progress */
+export const isQuizCompleted = (progress) => Boolean(progress?.quiz?.completed)
+
+/** @param {{ status?: LearningProgressStatus, quiz?: ReturnType<typeof mapQuizProgress> | null } | null | undefined} progress */
+export const needsQuizAttempt = (progress) =>
+  isLessonCompleted(progress) && !isQuizCompleted(progress)
+
+/**
+ * 로드맵 period — 강좌는 COMPLETED인데 소단원 schedule은 미완료
+ * @param {{ status?: LearningProgressStatus, scheduleStatus?: string } | null | undefined} period
+ */
+export const isPeriodQuizDue = (period) =>
+  period?.status === 'COMPLETED' && period?.scheduleStatus !== 'COMPLETED'

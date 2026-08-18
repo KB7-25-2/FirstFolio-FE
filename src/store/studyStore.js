@@ -17,6 +17,7 @@ import {
   submitScenarioAttempt,
 } from '@/services/studyService.js'
 import { StudyApiError } from '@/services/study/studyApiError.js'
+import { needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
 import { shouldFallbackStudyMock } from '@/services/study/studyResponseUtils.js'
 import { useUserStore } from '@/store/userStore.js'
 import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
@@ -298,7 +299,14 @@ export const useStudyStore = defineStore('study', () => {
 
     currentPageId.value = fromPreferred || fromProgress || pages[0]?.id || null
 
-    return { meta, lesson: data, pages }
+    await ensureLessonCompletedIfFullyRead(pages)
+
+    return {
+      meta: currentContent.value,
+      lesson: data,
+      pages,
+      needsQuiz: needsQuizAttempt(currentContent.value?.progress),
+    }
   }
 
   /**
@@ -349,6 +357,9 @@ export const useStudyStore = defineStore('study', () => {
     const next = lessonPages.value[pageIndex.value + 1]
     if (!next) return false
     await setCurrentPage(next.id)
+    if (isLastPage.value) {
+      await ensureLessonCompletedIfFullyRead(lessonPages.value)
+    }
     return true
   }
 
@@ -363,6 +374,58 @@ export const useStudyStore = defineStore('study', () => {
   const resetQuizQuestionUi = () => {
     quizSelectedKey.value = null
     quizUiStatus.value = 'IN_PROGRESS'
+  }
+
+  /** 퀴즈 시작 API가 반환한 문항·기존 응답으로 세션 복원 */
+  const applyQuizAttemptSession = (attemptData) => {
+    const questions = attemptData?.questions ?? []
+    if (!questions.length) return false
+
+    quizAttemptId.value = attemptData.attemptId ?? null
+    quizQuestions.value = questions
+
+    const nextAnswers = {}
+    const nextGrades = {}
+    for (const question of questions) {
+      if (!question.answered || !question.selectedKey) continue
+      nextAnswers[question.questionId] = question.selectedKey
+      if (question.isCorrect != null) {
+        nextGrades[question.questionId] = {
+          questionId: question.questionId,
+          selectedKey: question.selectedKey,
+          isCorrect: question.isCorrect,
+          correctAnswer: question.correctAnswerJson,
+          explanation: question.explanation,
+        }
+      }
+    }
+    quizAnswers.value = nextAnswers
+    quizGradeByQuestionId.value = nextGrades
+
+    const nextIndex = questions.findIndex((row) => !row.answered)
+    quizIndex.value = nextIndex >= 0 ? nextIndex : Math.max(questions.length - 1, 0)
+
+    const current = questions[quizIndex.value]
+    if (current?.answered && current.selectedKey) {
+      quizSelectedKey.value = current.selectedKey
+      quizUiStatus.value = current.isCorrect ? 'CORRECT' : 'WRONG'
+    } else {
+      resetQuizQuestionUi()
+    }
+    return true
+  }
+
+  /** 마지막 페이지까지 읽었으면 강좌 COMPLETED PUT */
+  const ensureLessonCompletedIfFullyRead = async (pages) => {
+    const meta = currentContent.value
+    if (!meta?.subChapterId || !pages.length) return
+    if (meta.progress?.status === 'COMPLETED') return
+
+    const lastPage = pages[pages.length - 1]
+    const lastPageId = meta.progress?.lastPageId ?? currentPageId.value
+    if (!lastPage?.id || lastPageId !== lastPage.id) return
+
+    await saveProgress(lastPage.id, { status: 'COMPLETED' })
   }
 
   /**
@@ -391,10 +454,7 @@ export const useStudyStore = defineStore('study', () => {
     }
 
     if (attempt?.data?.questions?.length) {
-      quizAttemptId.value = attempt.data.attemptId
-      quizQuestions.value = attempt.data.questions
-      quizIndex.value = 0
-      resetQuizQuestionUi()
+      applyQuizAttemptSession(attempt.data)
       return
     }
 

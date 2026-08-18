@@ -27,6 +27,7 @@ const {
   hasRoadmap,
   statusLabel,
   periodStatusLabel,
+  isPeriodQuizDue,
   accentClass,
   openPeriod,
   startScenarioQuiz,
@@ -77,7 +78,9 @@ const overall = computed(() => {
 const focusStage = computed(() => stages.value[focusStageIndex.value] ?? null)
 
 const isPeriodCurrent = (period) =>
-  period.scheduleStatus === 'IN_PROGRESS' || period.scheduleStatus === 'NEXT'
+  isPeriodQuizDue(period) ||
+  period.scheduleStatus === 'IN_PROGRESS' ||
+  period.scheduleStatus === 'NEXT'
 
 const isPeriodLocked = (stage, period) =>
   stage.status === 'LOCKED' || period.scheduleStatus === 'LOCKED'
@@ -535,6 +538,7 @@ onActivated(async () => {
                         :class="{
                           'learning-syllabus__row--done': period.scheduleStatus === 'COMPLETED',
                           'learning-syllabus__row--now': isPeriodCurrent(period),
+                          'learning-syllabus__row--quiz': isPeriodQuizDue(period),
                           'learning-syllabus__row--locked': isPeriodLocked(stage, period),
                         }"
                         :disabled="isPeriodLocked(stage, period)"
@@ -556,7 +560,7 @@ onActivated(async () => {
                         <span class="learning-syllabus__row-body">
                           <span class="learning-syllabus__row-meta">
                             {{ orderLabel(periodIndex) }}교시 ·
-                            {{ periodStatusLabel(period.scheduleStatus) }}
+                            {{ periodStatusLabel(period.scheduleStatus, period) }}
                           </span>
                           <span class="learning-syllabus__row-title">{{ period.title }}</span>
                         </span>

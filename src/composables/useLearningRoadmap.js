@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
 import { getMainChapterDisplay } from '@/constants/mainChapterDisplay.js'
 import { getPersistedMainChapterId, persistRoadmapFocus } from '@/utils/learningRoadmapFocus.js'
+import { isPeriodQuizDue, needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
 
 /**
  * 대단원 × 소단원 목차(체크리스트) 로드맵
@@ -81,7 +82,8 @@ export const useLearningRoadmap = () => {
     return status
   }
 
-  const periodStatusLabel = (scheduleStatus) => {
+  const periodStatusLabel = (scheduleStatus, period = null) => {
+    if (period && isPeriodQuizDue(period)) return '퀴즈 필요'
     if (scheduleStatus === 'COMPLETED') return '완료'
     if (scheduleStatus === 'IN_PROGRESS') return '진행 중'
     if (scheduleStatus === 'NEXT') return '다음'
@@ -107,7 +109,17 @@ export const useLearningRoadmap = () => {
 
     try {
       await studyStore.fetchSubChapterContent(period.subChapterId)
-      const page = studyStore.currentContent?.progress?.lastPageId
+      const progress = studyStore.currentContent?.progress
+
+      if (needsQuizAttempt(progress)) {
+        router.push({
+          name: 'learning-quiz',
+          params: { subChapterId: period.subChapterId },
+        })
+        return
+      }
+
+      const page = progress?.lastPageId
       router.push({
         name: 'learning-lesson',
         params: { subChapterId: period.subChapterId },
@@ -210,6 +222,7 @@ export const useLearningRoadmap = () => {
     hasRoadmap,
     statusLabel,
     periodStatusLabel,
+    isPeriodQuizDue,
     accentClass,
     openPeriod,
     startScenarioQuiz,

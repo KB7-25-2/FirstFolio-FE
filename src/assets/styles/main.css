@@ -802,6 +802,16 @@
     font-weight: 700;
   }
 
+  .learning-syllabus__row--quiz {
+    background: rgba(255, 236, 210, 0.75);
+    border: 0.5px solid rgba(193, 127, 36, 0.45);
+  }
+
+  .learning-syllabus__row--quiz .learning-syllabus__row-meta {
+    color: #b86a12;
+    font-weight: 700;
+  }
+
   .learning-syllabus__row--done .learning-syllabus__row-title {
     color: rgba(33, 43, 92, 0.55);
   }

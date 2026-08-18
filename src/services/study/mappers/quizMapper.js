@@ -9,22 +9,33 @@ import { pickField } from '../studyResponseUtils.js'
  * @param {object} raw
  * @returns {QuizQuestion}
  */
-export const mapQuizAttemptQuestion = (raw) => ({
-  questionId: pickField(raw, 'questionId', 'question_id'),
-  questionKey: String(pickField(raw, 'questionId', 'question_id') ?? ''),
-  questionType: pickField(raw, 'questionType', 'question_type'),
-  generationType: pickField(raw, 'generationType', 'generation_type'),
-  prompt: raw.prompt,
-  scenarioJson: raw.scenario ?? null,
-  optionsJson: (raw.choices ?? []).map((choice) => ({
-    key: pickField(choice, 'key', 'id'),
-    label: pickField(choice, 'label', 'text'),
-  })),
-  correctAnswerJson: null,
-  explanation: null,
-  status: 'PUBLISHED',
-  displayOrder: pickField(raw, 'displayOrder', 'display_order'),
-})
+export const mapQuizAttemptQuestion = (raw) => {
+  const answered = Boolean(pickField(raw, 'answered'))
+  const selectedKey = pickField(raw, 'selectedKey', 'selected_key') ?? null
+  const isCorrect = pickField(raw, 'isCorrect', 'is_correct')
+  const correctRaw = raw.correctAnswer ?? raw.correct_answer
+  const correctKey = correctRaw ? pickField(correctRaw, 'key') : null
+
+  return {
+    questionId: pickField(raw, 'questionId', 'question_id'),
+    questionKey: String(pickField(raw, 'questionId', 'question_id') ?? ''),
+    questionType: pickField(raw, 'questionType', 'question_type'),
+    generationType: pickField(raw, 'generationType', 'generation_type'),
+    prompt: raw.prompt,
+    scenarioJson: raw.scenario ?? null,
+    optionsJson: (raw.choices ?? []).map((choice) => ({
+      key: pickField(choice, 'key', 'id'),
+      label: pickField(choice, 'label', 'text'),
+    })),
+    correctAnswerJson: answered && correctKey != null ? { key: correctKey } : null,
+    explanation: answered ? (raw.explanation ?? null) : null,
+    status: 'PUBLISHED',
+    displayOrder: pickField(raw, 'displayOrder', 'display_order'),
+    answered,
+    selectedKey,
+    isCorrect: isCorrect ?? null,
+  }
+}
 
 /**
  * @param {object} raw

@@ -71,7 +71,7 @@ const dismissUnlockPreview = () => {
 }
 
 onMounted(() => {
-  dashboardStore.fetchDashboard()
+  dashboardStore.ensureDashboard()
 })
 </script>
 
