@@ -102,7 +102,7 @@ export const buildRoadmapStage = (chapter, subChapters, mainChapterQuiz = null) 
   const quiz = mainChapterQuiz ?? {}
   const quizAvailable = Boolean(pickField(quiz, 'available'))
   const quizStatus = pickField(quiz, 'status')
-  const scenarioReady = quizAvailable && quizStatus !== 'COMPLETED'
+  const scenarioReady = chapter.status !== 'LOCKED' && quizAvailable && quizStatus !== 'COMPLETED'
 
   return {
     mainChapterId: chapter.mainChapterId,
