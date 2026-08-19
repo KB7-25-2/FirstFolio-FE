@@ -2,8 +2,29 @@
 @import './tokens.css';
 
 @layer base {
+  html {
+    --scenario-crossfade: 300ms;
+    background-color: var(--cork-base);
+  }
+
   body {
     @apply h-dvh overflow-hidden bg-[var(--cork-base)] font-sans text-[var(--cork-ink)];
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+  }
+
+  html.scenario-room,
+  html.scenario-room body {
+    background-color: #1a1a2e;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      --scenario-crossfade: 0ms;
+    }
   }
 
   * {
@@ -171,6 +192,83 @@
     .nav-tab-next-enter-from,
     .nav-tab-prev-leave-to,
     .nav-tab-prev-enter-from {
+      transform: none;
+    }
+  }
+
+  /* 로드맵 → 대단원(시나리오) 퀴즈: fade-out → 상담실 배경 → fade-in (동일 박자) */
+  .scenario-room-veil {
+    background-color: #1a1a2e;
+    opacity: 0;
+    transition: opacity var(--scenario-crossfade) ease-out;
+  }
+
+  .scenario-room-veil.is-on {
+    opacity: 1;
+  }
+
+  /* AppBar / NavBar — 시나리오 퀴즈와 같은 박자 */
+  .scenario-chrome-leave-active {
+    transition:
+      opacity var(--scenario-crossfade) ease,
+      transform var(--scenario-crossfade) ease;
+  }
+
+  .scenario-chrome-enter-active {
+    transition:
+      opacity var(--scenario-crossfade) ease var(--scenario-crossfade),
+      transform var(--scenario-crossfade) ease var(--scenario-crossfade);
+  }
+
+  .scenario-chrome-enter-from,
+  .scenario-chrome-leave-to {
+    opacity: 0;
+  }
+
+  .app-topbar.scenario-chrome-enter-from,
+  .app-topbar.scenario-chrome-leave-to {
+    transform: translateY(-10px);
+  }
+
+  .nav-dock.scenario-chrome-enter-from,
+  .nav-dock.scenario-chrome-leave-to {
+    transform: translateY(16px);
+  }
+
+  .scenario-chrome-leave-active.app-topbar,
+  .scenario-chrome-enter-active.app-topbar {
+    z-index: 30;
+  }
+
+  .scenario-route-enter-active {
+    transition:
+      opacity var(--scenario-crossfade) cubic-bezier(0.22, 1, 0.36, 1) var(--scenario-crossfade),
+      transform var(--scenario-crossfade) cubic-bezier(0.22, 1, 0.36, 1) var(--scenario-crossfade);
+  }
+
+  .scenario-route-leave-active {
+    transition:
+      opacity var(--scenario-crossfade) ease,
+      transform var(--scenario-crossfade) ease;
+  }
+
+  .scenario-route-enter-from {
+    opacity: 0;
+    transform: scale(1.03) translateY(10px);
+  }
+
+  .scenario-route-leave-to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scenario-route-enter-from,
+    .scenario-route-leave-to,
+    .app-topbar.scenario-chrome-enter-from,
+    .app-topbar.scenario-chrome-leave-to,
+    .nav-dock.scenario-chrome-enter-from,
+    .nav-dock.scenario-chrome-leave-to {
       transform: none;
     }
   }

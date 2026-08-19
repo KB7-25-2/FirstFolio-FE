@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppTopBar from '@/components/AppTopBar.vue'
@@ -23,11 +23,59 @@ const KEEP_ALIVE_TABS = [
   'PointMarketView',
 ]
 
+const CROSSFADE_MS = 300
+
 const route = useRoute()
 const hideNavbar = computed(() => route.matched.some((record) => record.meta.hideNavbar === true))
+const fromScenarioQuiz = ref(false)
+const chromeShown = ref(!hideNavbar.value)
+const isDrawerOpen = ref(false)
+const isProfileOpen = ref(false)
+let chromeTimer
+
+function crossfadeMs() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : CROSSFADE_MS
+}
+
+function clearChromeTimer() {
+  if (chromeTimer) {
+    window.clearTimeout(chromeTimer)
+    chromeTimer = undefined
+  }
+}
+
+watch(
+  () => route.name,
+  (name, prev) => {
+    fromScenarioQuiz.value = prev === 'learning-scenario-quiz'
+    const scenarioFlow = name === 'learning-scenario-quiz' || fromScenarioQuiz.value
+    clearChromeTimer()
+
+    if (!scenarioFlow) {
+      chromeShown.value = !hideNavbar.value
+      return
+    }
+
+    if (hideNavbar.value) {
+      chromeShown.value = false
+      isDrawerOpen.value = false
+      return
+    }
+
+    chromeTimer = window.setTimeout(() => {
+      chromeShown.value = true
+    }, crossfadeMs())
+  },
+)
+
+onUnmounted(clearChromeTimer)
 
 const { activeTab } = useNavTabs()
-const showTopBar = computed(() => !hideNavbar.value && TOP_BAR_TABS.includes(activeTab.value))
+const showTopBar = computed(() => chromeShown.value && TOP_BAR_TABS.includes(activeTab.value))
+const showNavDock = computed(() => chromeShown.value)
+const chromeTransition = computed(() =>
+  route.name === 'learning-scenario-quiz' || fromScenarioQuiz.value ? 'scenario-chrome' : '',
+)
 
 /**
  * 메인 탭 루트는 tab 단위로만 캐시.
@@ -54,9 +102,6 @@ onMounted(() => {
   ])
 })
 
-const isDrawerOpen = ref(false)
-const isProfileOpen = ref(false)
-
 const openProfile = () => {
   isDrawerOpen.value = false
   isProfileOpen.value = true
@@ -76,12 +121,14 @@ const tabTransition = computed(() => (tabDir.value === 'next' ? 'nav-tab-next' :
 
 <template>
   <div class="relative mx-auto flex mobile-frame flex-col overflow-hidden">
-    <AppTopBar
-      v-if="showTopBar"
-      title="firstfolio"
-      @menu-click="isDrawerOpen = true"
-      @profile-click="openProfile"
-    />
+    <Transition :name="chromeTransition">
+      <AppTopBar
+        v-if="showTopBar"
+        title="firstfolio"
+        @menu-click="isDrawerOpen = true"
+        @profile-click="openProfile"
+      />
+    </Transition>
     <main class="relative z-0 min-h-0 flex-1 overflow-hidden">
       <RouterView v-slot="{ Component }">
         <KeepAlive :include="KEEP_ALIVE_TABS" :max="KEEP_ALIVE_TABS.length">
@@ -91,12 +138,14 @@ const tabTransition = computed(() => (tabDir.value === 'next' ? 'nav-tab-next' :
         </KeepAlive>
       </RouterView>
     </main>
-    <div v-if="!hideNavbar" class="nav-dock pointer-events-none absolute inset-x-0 bottom-0 z-20">
-      <div class="nav-content-blur" aria-hidden="true" />
-      <div class="pointer-events-auto">
-        <AppNavbar />
+    <Transition :name="chromeTransition">
+      <div v-if="showNavDock" class="nav-dock pointer-events-none absolute inset-x-0 bottom-0 z-20">
+        <div class="nav-content-blur" aria-hidden="true" />
+        <div class="pointer-events-auto">
+          <AppNavbar />
+        </div>
       </div>
-    </div>
+    </Transition>
 
     <AppDrawer :open="isDrawerOpen" @close="isDrawerOpen = false" @profile-click="openProfile" />
     <UserProfileModal :open="isProfileOpen" @close="isProfileOpen = false" />
