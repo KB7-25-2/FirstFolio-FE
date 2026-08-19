@@ -9,6 +9,7 @@ import {
   isSubChapterFullyCompleted,
   needsQuizAttempt,
 } from '@/utils/subChapterProgress.js'
+import { findStudyNoteFocusIndex } from '@/utils/studyNoteFocus.js'
 import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
@@ -111,19 +112,7 @@ const roadmapNodes = computed(() => {
   const items = lessonItems.value
   if (!items.length) return []
 
-  let currentIdx = items.findIndex((item) => isQuizInProgress(item))
-  if (currentIdx < 0) {
-    currentIdx = items.findIndex((item) => item.status === 'IN_PROGRESS')
-  }
-  if (currentIdx < 0) {
-    currentIdx = items.findIndex((item) => needsQuizAttempt(item))
-  }
-  if (currentIdx < 0) {
-    currentIdx = items.findIndex((item) => item.status === 'NOT_STARTED')
-  }
-  if (currentIdx < 0) {
-    currentIdx = items.length - 1
-  }
+  const currentIdx = findStudyNoteFocusIndex(items)
 
   /** @type {{ key: string|number, subChapterId: number|null, mainChapterId: number|null, order: number, title: string, role: 'prev'|'current'|'next', roleLabel: string, status: string }[]} */
   const nodes = []
