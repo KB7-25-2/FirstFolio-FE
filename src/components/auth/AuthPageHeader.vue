@@ -1,6 +1,4 @@
 <script setup>
-import brandIcon from '@/assets/auth/brand-icon.png'
-
 defineProps({
   tagline: {
     type: String,
@@ -11,19 +9,16 @@ defineProps({
 
 <template>
   <header class="flex flex-col items-center text-center">
-    <div class="flex items-center justify-center gap-2">
+    <h1>
       <img
-        :src="brandIcon"
-        alt=""
-        class="h-15 w-15 shrink-0 object-contain"
-        width="60"
-        height="60"
+        src="/logo.png"
+        alt="firstfolio"
+        class="h-auto w-[min(52vw,200px)]"
+        width="200"
+        height="50"
         draggable="false"
       />
-      <h1 class="font-serif text-[34px] leading-none font-bold text-[var(--auth-title)]">
-        FirstFolio
-      </h1>
-    </div>
+    </h1>
     <p class="mt-2 text-[12px] text-[var(--auth-subtitle)]">{{ tagline }}</p>
   </header>
 </template>

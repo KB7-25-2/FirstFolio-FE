@@ -1,35 +1,27 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import splashWebp from '@/assets/auth/splash.webp'
-import splashGif from '@/assets/auth/splash.gif'
-import brandLogo from '@/assets/auth/brand-logo.png'
 
 defineProps({
   brand: {
     type: String,
-    default: 'FirstFolio',
+    default: 'firstfolio',
   },
 })
 
 const emit = defineEmits(['finished'])
-
-/** splash.webp 1회 재생 길이 */
 const SPLASH_DURATION_MS = 3920
 const SPLASH_TAIL_MS = 200
-/** 로고 홀드 (페이드인 포함) */
 const LOGO_HOLD_MS = 1600
 const SPLASH_FAILSAFE_MS = 10000
 
-/** @type {import('vue').Ref<'anim' | 'logo'>} */
-const phase = ref('anim')
-const mediaRef = ref(null)
-const mediaSrc = ref(splashWebp)
+const phase = ref('splash')
+const splashRef = ref(null)
 
 let finishTimer = 0
 let logoTimer = 0
 let failsafeTimer = 0
 let finished = false
-let animScheduled = false
+let splashEndScheduled = false
 
 const finish = () => {
   if (finished) return
@@ -41,40 +33,29 @@ const finish = () => {
 }
 
 const showLogoThenFinish = () => {
+  if (phase.value === 'logo') return
   phase.value = 'logo'
   if (logoTimer) window.clearTimeout(logoTimer)
   logoTimer = window.setTimeout(finish, LOGO_HOLD_MS)
 }
 
-const scheduleAnimEnd = (ms = SPLASH_DURATION_MS + SPLASH_TAIL_MS) => {
-  if (animScheduled) return
-  animScheduled = true
-  if (finishTimer) window.clearTimeout(finishTimer)
-  finishTimer = window.setTimeout(showLogoThenFinish, ms)
+const scheduleSplashEnd = () => {
+  if (splashEndScheduled) return
+  splashEndScheduled = true
+  finishTimer = window.setTimeout(showLogoThenFinish, SPLASH_DURATION_MS + SPLASH_TAIL_MS)
 }
 
-const onLoad = () => {
-  const el = mediaRef.value
-  if (el && el.naturalWidth > 0) scheduleAnimEnd()
+const onSplashLoad = () => {
+  if (splashRef.value?.naturalWidth) scheduleSplashEnd()
 }
 
-const onError = () => {
-  if (mediaSrc.value !== splashGif) {
-    animScheduled = false
-    mediaSrc.value = splashGif
-    return
-  }
+const onSplashError = () => {
   showLogoThenFinish()
 }
 
 onMounted(() => {
-  failsafeTimer = window.setTimeout(() => {
-    if (phase.value === 'anim') showLogoThenFinish()
-    else finish()
-  }, SPLASH_FAILSAFE_MS)
-
-  const el = mediaRef.value
-  if (el?.complete && el.naturalWidth > 0) scheduleAnimEnd()
+  failsafeTimer = window.setTimeout(showLogoThenFinish, SPLASH_FAILSAFE_MS)
+  if (splashRef.value?.complete && splashRef.value.naturalWidth) onSplashLoad()
 })
 
 onBeforeUnmount(() => {
@@ -96,18 +77,18 @@ onBeforeUnmount(() => {
     >
       <Transition name="auth-splash-cross">
         <img
-          v-if="phase === 'anim'"
-          ref="mediaRef"
-          key="anim"
-          class="auth-splash__media absolute max-h-[42dvh] w-[min(58vw,220px)] select-none object-contain"
-          :src="mediaSrc"
+          v-if="phase === 'splash'"
+          ref="splashRef"
+          key="splash"
+          src="/splash.webp"
           :alt="brand"
+          class="auth-splash__media absolute max-h-[42dvh] w-[min(58vw,220px)] select-none object-contain"
           width="220"
           height="476"
           decoding="async"
           draggable="false"
-          @load="onLoad"
-          @error="onError"
+          @load="onSplashLoad"
+          @error="onSplashError"
         />
       </Transition>
 
@@ -115,9 +96,9 @@ onBeforeUnmount(() => {
         <img
           v-if="phase === 'logo'"
           key="logo"
-          class="auth-splash__logo absolute h-auto w-[min(72vw,280px)] select-none object-contain"
-          :src="brandLogo"
+          src="/logo.png"
           :alt="brand"
+          class="auth-splash__logo absolute h-auto w-[min(72vw,280px)] select-none object-contain"
           width="280"
           height="280"
           decoding="async"

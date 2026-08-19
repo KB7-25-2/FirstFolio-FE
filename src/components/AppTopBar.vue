@@ -2,13 +2,12 @@
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useUserStore } from '@/store/userStore.js'
-import brandIcon from '@/assets/auth/brand-icon.png'
 
 defineProps({
   /** 중앙 타이틀 */
   title: {
     type: String,
-    default: 'Firstfolio',
+    default: 'firstfolio',
   },
 })
 
@@ -35,10 +34,7 @@ const avatarInitial = computed(() => nickname.value?.trim()?.charAt(0)?.toUpperC
       class="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 px-12"
       aria-hidden="true"
     >
-      <img :src="brandIcon" alt="" class="h-6 w-6 shrink-0 object-contain" />
-      <span class="truncate font-serif text-[16px] leading-none font-bold text-[var(--cork-ink)]">
-        {{ title }}
-      </span>
+      <img src="/logo.png" :alt="title" class="h-6 w-auto max-w-[132px] object-contain" />
     </div>
 
     <button

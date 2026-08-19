@@ -74,7 +74,7 @@ const confirmLogout = async () => {
       aria-label="메뉴"
     >
       <div class="flex items-center justify-between px-4 pt-5">
-        <span class="font-serif text-[15px] font-bold text-[var(--cork-ink)]">Firstfolio</span>
+        <img src="/logo.png" alt="firstfolio" class="h-5 w-auto" />
         <button type="button" class="app-drawer__close" aria-label="메뉴 닫기" @click="close">
           <font-awesome-icon icon="fa-solid fa-xmark" class="text-[14px]" />
         </button>

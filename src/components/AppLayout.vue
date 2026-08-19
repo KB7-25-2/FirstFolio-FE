@@ -78,7 +78,7 @@ const tabTransition = computed(() => (tabDir.value === 'next' ? 'nav-tab-next' :
   <div class="relative mx-auto flex mobile-frame flex-col overflow-hidden">
     <AppTopBar
       v-if="showTopBar"
-      title="Firstfolio"
+      title="firstfolio"
       @menu-click="isDrawerOpen = true"
       @profile-click="openProfile"
     />

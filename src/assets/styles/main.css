@@ -379,7 +379,6 @@
     pointer-events: none;
   }
 
-  /* 스플래시 애니 ↔ 로고 크로스페이드 */
   .auth-splash-cross-enter-active,
   .auth-splash-cross-leave-active {
     transition: opacity 0.48s ease;

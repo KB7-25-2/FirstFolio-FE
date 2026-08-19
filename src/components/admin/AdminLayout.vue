@@ -35,7 +35,7 @@ const handleLogout = async () => {
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <div class="admin-sidebar__brand">
-        <p class="admin-sidebar__brand-kicker">FirstFolio</p>
+        <img src="/logo.png" alt="firstfolio" class="admin-sidebar__brand-kicker h-6 w-auto" />
         <p class="admin-sidebar__brand-title">Admin Console</p>
       </div>
 
