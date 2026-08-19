@@ -49,6 +49,23 @@ const PAGE_TITLES = {
   'page-final': '마무리',
 }
 
+const MAIN_CHAPTER_QUIZ_ATTEMPT_ID = 9201
+const MAIN_CHAPTER_QUIZ_QUESTION_COUNT = 3
+
+const buildMainChapterQuizQuestions = (mainChapterId) =>
+  Array.from({ length: MAIN_CHAPTER_QUIZ_QUESTION_COUNT }, (_, index) => ({
+    question_id: 9200 + index,
+    question_type: 'SINGLE_CHOICE',
+    generation_type: 'MAIN_CHAPTER',
+    prompt: `E2E 대단원 퀴즈 ${index + 1}번`,
+    choices: [
+      { key: '1', label: '예금 40%, 주식 40%, 채권 20%' },
+      { key: '2', label: '주식 100%' },
+    ],
+    display_order: index + 1,
+    main_chapter_id: mainChapterId,
+  }))
+
 /**
  * @param {number} subChapterId
  * @param {number[]} questionIds
@@ -98,11 +115,80 @@ export const mockLearningApis = async (page) => {
   const progressBySubChapter = Object.fromEntries(
     Object.entries(SUB_CHAPTER_FIXTURES).map(([id, row]) => [Number(id), { ...row.progress }]),
   )
+  let answeredMainChapterQuizCount = 0
 
   await page.route(
     (url) => url.pathname === '/api/learning/roadmap',
     (route) => route.abort('failed'),
   )
+
+  await page.route(/\/api\/learning\/main-chapters\/\d+\/quiz-attempts$/, async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue()
+      return
+    }
+
+    const mainChapterId = Number(
+      route
+        .request()
+        .url()
+        .match(/main-chapters\/(\d+)/)?.[1],
+    )
+    answeredMainChapterQuizCount = 0
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          attempt_id: MAIN_CHAPTER_QUIZ_ATTEMPT_ID,
+          quiz_type: 'MAIN_CHAPTER',
+          main_chapter_id: mainChapterId,
+          status: 'IN_PROGRESS',
+          question_count: MAIN_CHAPTER_QUIZ_QUESTION_COUNT,
+          questions: buildMainChapterQuizQuestions(mainChapterId),
+        },
+      }),
+    })
+  })
+
+  await page.route(/\/api\/learning\/quiz-attempts\/\d+\/answers\/\d+$/, async (route) => {
+    if (route.request().method() !== 'PUT') {
+      await route.continue()
+      return
+    }
+
+    answeredMainChapterQuizCount += 1
+    const isFinalAnswer = answeredMainChapterQuizCount === MAIN_CHAPTER_QUIZ_QUESTION_COUNT
+    const questionId = Number(
+      route
+        .request()
+        .url()
+        .match(/answers\/(\d+)/)?.[1],
+    )
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: {
+          attempt_id: MAIN_CHAPTER_QUIZ_ATTEMPT_ID,
+          question_id: questionId,
+          selected_key: '1',
+          is_correct: true,
+          correct_answer: { key: '1' },
+          explanation: '균형 잡힌 포트폴리오입니다.',
+          attempt: {
+            status: isFinalAnswer ? 'GRADED' : 'IN_PROGRESS',
+            answered_count: answeredMainChapterQuizCount,
+            total_count: MAIN_CHAPTER_QUIZ_QUESTION_COUNT,
+            correct_count: answeredMainChapterQuizCount,
+            completed: isFinalAnswer,
+          },
+          main_chapter_completed: isFinalAnswer,
+          next_action: isFinalAnswer ? 'OPEN_NEXT_MAIN_CHAPTER' : null,
+        },
+      }),
+    })
+  })
   await page.route(
     (url) => url.pathname === '/api/learning/continue',
     (route) => route.abort('failed'),
