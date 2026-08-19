@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useGifticonStore } from '@/store/gifticonStore.js'
+import GifticonBarcode from '@/components/pointMarket/GifticonBarcode.vue'
 
 // 실제 서버엔 REQUESTED/SENT/COMPLETED 같은 배송 상태가 없다 — 교환은 즉시 완료되고,
 // 이후엔 "코드를 확인했는지"만 남는다(UNDISCLOSED/DISCLOSED/EXPIRED, gifticonMapper 기준).
@@ -79,21 +80,18 @@ const revealCode = async () => {
 
     <p v-if="revealError" class="font-serif text-xs text-[#c0433f]">{{ revealError }}</p>
 
-    <!-- TODO: CODE_128 바코드 이미지 렌더링(예: jsbarcode). 지금은 텍스트 코드만 노출한다. -->
     <div
       v-if="disclosure"
-      class="rounded-[3px] border-[0.5px] border-dashed border-[rgba(193,127,36,0.4)] bg-[#fffdf7] px-3 py-2"
+      class="flex flex-col items-center gap-2 rounded-[3px] border-[0.5px] border-dashed border-[rgba(193,127,36,0.4)] bg-[#fffdf7] px-3 py-3"
     >
+      <GifticonBarcode :value="disclosure.barcodeValue" :format="disclosure.barcodeFormat" />
       <p class="font-mono text-sm font-bold tracking-wider text-[#2c1810]">
         {{ disclosure.code }}
       </p>
-      <p v-if="disclosure.isExpired" class="mt-1 font-serif text-xs text-[#c0433f]">
+      <p v-if="disclosure.isExpired" class="font-serif text-xs text-[#c0433f]">
         유효기간이 지난 코드예요.
       </p>
-      <p
-        v-else-if="disclosure.expiresAt"
-        class="mt-1 font-serif text-xs text-[rgba(41,33,26,0.45)]"
-      >
+      <p v-else-if="disclosure.expiresAt" class="font-serif text-xs text-[rgba(41,33,26,0.45)]">
         {{ new Date(disclosure.expiresAt).toLocaleDateString('ko-KR') }}까지 사용 가능
       </p>
     </div>
