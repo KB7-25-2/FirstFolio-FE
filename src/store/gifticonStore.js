@@ -46,8 +46,24 @@ export const useGifticonStore = defineStore('gifticon', () => {
     error.value = null
 
     try {
+      // 아래 image_url 조인에 카탈로그가 필요하다. 보통은 카탈로그 화면을 먼저 거쳐와서
+      // 이미 채워져 있지만, 혹시 비어 있으면(예: 교환내역으로 바로 진입) 먼저 받아온다.
+      if (!gifticons.value.length) {
+        await fetchGifticons()
+      }
+
       const { items } = await gifticonService.getRedemptionHistoryList(params)
-      redemptionHistory.value = items
+      // 교환내역 목록 API(GET /gifticon-orders)엔 image_url이 없다(MyGifticonListItemResponse
+      // 기준) — 상세 API를 아이템마다 호출하는 대신, 이미 불러온 상품 카탈로그(gifticons)와
+      // gifticonId로 조인해서 채운다. 카탈로그에 없는 상품(판매종료 등)이면 imageUrl은 null로
+      // 남고, 화면에서 기본 아이콘으로 대체한다.
+      const imageUrlById = Object.fromEntries(
+        gifticons.value.map((item) => [item.gifticonId, item.imageUrl]),
+      )
+      redemptionHistory.value = items.map((item) => ({
+        ...item,
+        imageUrl: imageUrlById[item.gifticonId] ?? null,
+      }))
     } catch (err) {
       error.value = err.message
       throw err

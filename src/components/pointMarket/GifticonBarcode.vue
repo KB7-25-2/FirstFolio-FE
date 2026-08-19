@@ -38,6 +38,18 @@ const render = async () => {
       background: 'transparent',
       lineColor: '#2c1810',
     })
+
+    // JsBarcode는 svg에 width/height를 고정 px 값으로 박아넣고 viewBox는 안 넣어준다.
+    // 그 상태로 CSS만 걸면(w-full 등) 줄어들지 않고 그냥 잘리거나 넘친다 — 렌더 직후
+    // viewBox를 채워서 CSS 크기에 맞춰 비율대로 축소되게 만든다.
+    const svg = svgRef.value
+    const w = svg.getAttribute('width')
+    const h = svg.getAttribute('height')
+    if (w && h) {
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`)
+      svg.removeAttribute('width')
+      svg.removeAttribute('height')
+    }
   } catch (err) {
     // JsBarcode는 포맷에 안 맞는 값이면 예외를 던진다(예: 서버가 준 값이 CODE128 인코딩 범위를
     // 벗어난 문자를 포함한 경우) — 화면이 깨지는 대신 폴백 문구를 보여준다.
@@ -52,7 +64,13 @@ watch(() => [props.value, props.format], render)
 
 <template>
   <div class="flex flex-col items-center gap-1">
-    <svg v-show="!renderError" ref="svgRef" role="img" :aria-label="`바코드 ${value}`" />
+    <svg
+      v-show="!renderError"
+      ref="svgRef"
+      class="h-14 w-full max-w-full"
+      role="img"
+      :aria-label="`바코드 ${value}`"
+    />
     <p v-if="renderError" class="font-serif text-xs text-[#c0433f]">{{ renderError }}</p>
   </div>
 </template>

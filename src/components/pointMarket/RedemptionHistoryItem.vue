@@ -63,11 +63,27 @@ const revealCode = async () => {
       :disabled="!canReveal"
       @click="revealCode"
     >
-      <div class="min-w-0">
-        <p class="truncate font-serif text-sm font-bold text-[#2c1810]">{{ order.displayName }}</p>
-        <p class="mt-0.5 font-serif text-xs text-[rgba(41,33,26,0.45)]">
-          {{ completedAtLabel }} 교환 · {{ order.codeMasked }}
-        </p>
+      <div class="flex min-w-0 items-center gap-3">
+        <div
+          class="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.25)] bg-[#fffdf7]"
+        >
+          <img
+            v-if="order.imageUrl"
+            :src="order.imageUrl"
+            :alt="order.displayName"
+            class="size-full object-cover"
+          />
+          <span v-else class="font-serif text-[10px] text-[rgba(41,33,26,0.35)]">이미지 없음</span>
+        </div>
+
+        <div class="min-w-0">
+          <p class="truncate font-serif text-sm font-bold text-[#2c1810]">
+            {{ order.displayName }}
+          </p>
+          <p class="mt-0.5 font-serif text-xs text-[rgba(41,33,26,0.45)]">
+            {{ completedAtLabel }} 교환 · {{ order.codeMasked }}
+          </p>
+        </div>
       </div>
 
       <div class="flex shrink-0 items-center gap-1.5">
