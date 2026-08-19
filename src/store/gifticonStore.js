@@ -56,9 +56,26 @@ export const useGifticonStore = defineStore('gifticon', () => {
     }
   }
 
-  // 교환내역 리스트를 탭했을 때 호출한다. 목록엔 없는 spent_points/provider_reference 등을 준다.
+  // 교환내역 리스트를 탭했을 때 호출한다. 목록엔 없는 category/first_disclosed_at 등을 준다.
   const fetchOrderDetail = (gifticonOrderId) =>
     gifticonService.getGifticonOrderDetailService(gifticonOrderId)
+
+  // 실제 코드를 공개한다. 성공하면 목록/상세의 isDisclosed도 같이 갱신해서
+  // 다시 조회하지 않아도 "코드 확인 완료" 상태가 바로 반영되게 한다.
+  const discloseCode = async (gifticonOrderId) => {
+    const disclosure = await gifticonService.discloseGifticonCodeService(gifticonOrderId)
+
+    const historyItem = redemptionHistory.value.find(
+      (item) => item.gifticonOrderId === gifticonOrderId,
+    )
+    if (historyItem) {
+      historyItem.isDisclosed = true
+      historyItem.status = disclosure.isExpired ? 'EXPIRED' : 'DISCLOSED'
+      historyItem.statusLabel = disclosure.isExpired ? '기간 만료' : '코드 확인 완료'
+    }
+
+    return disclosure
+  }
 
   return {
     gifticons,
@@ -71,5 +88,6 @@ export const useGifticonStore = defineStore('gifticon', () => {
     redeem,
     fetchRedemptionHistory,
     fetchOrderDetail,
+    discloseCode,
   }
 })
