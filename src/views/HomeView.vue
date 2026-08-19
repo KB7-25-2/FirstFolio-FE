@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/userStore.js'
@@ -71,6 +71,10 @@ const dismissUnlockPreview = () => {
 }
 
 onMounted(() => {
+  dashboardStore.ensureDashboard()
+})
+
+onActivated(() => {
   dashboardStore.ensureDashboard()
 })
 </script>

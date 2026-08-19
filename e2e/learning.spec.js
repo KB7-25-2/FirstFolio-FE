@@ -78,13 +78,15 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
       await expectMainChapterRoadmap(page, 2)
     }
 
-    const scenarioCta = page.getByRole('button', { name: '대단원 실전 퀴즈' })
+    const scenarioCta = page.locator('#chapter-2').getByRole('button', { name: '대단원 실전 퀴즈' })
     await expect(scenarioCta).toBeVisible({ timeout: 10_000 })
     await expect(scenarioCta).toBeEnabled()
     await scenarioCta.click()
 
     await expect(page).toHaveURL(/\/learning\/main-chapters\/2\/scenario-quiz/)
-    await expect(page.getByRole('button', { name: /게임 시작/ })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('button', { name: /게임 시작|퀴즈 시작/ })).toBeVisible({
+      timeout: 15_000,
+    })
   })
 
   test('시나리오 수료 후 로드맵·이어하기가 다음 학습으로 갱신된다', async () => {
@@ -129,9 +131,26 @@ async function finishLessonToQuiz(page) {
   })
 
   for (let i = 0; i < 12; i += 1) {
+    const completedCopy = page.getByText('강좌를 모두 읽었어요')
+    const quizHeading = page.getByRole('heading', { name: '시험지' })
+    if (await quizHeading.isVisible()) return
+    if (await completedCopy.isVisible()) {
+      await quizCta.click()
+      await expect(page).toHaveURL(/\/quiz/)
+      return
+    }
     if (await quizCta.isVisible()) {
       await expect(quizCta).toBeEnabled()
       await quizCta.click()
+      if (await quizHeading.isVisible()) {
+        await expect(page).toHaveURL(/\/quiz/)
+        return
+      }
+      if (await completedCopy.isVisible()) {
+        await quizCta.click()
+        await expect(page).toHaveURL(/\/quiz/)
+        return
+      }
       break
     }
     await expect(nextCut).toBeEnabled()
@@ -192,7 +211,7 @@ async function answerQuizQuestion(page, key) {
 
 /** 시나리오 인트로 → 전 스텝 정답 → 수료증 → 로드맵 */
 async function completeScenarioQuiz(page) {
-  await page.getByRole('button', { name: /게임 시작/ }).click()
+  await page.getByRole('button', { name: /게임 시작|퀴즈 시작/ }).click()
 
   for (let step = 0; step < 6; step += 1) {
     if (await page.getByRole('button', { name: '학습 로드맵으로' }).isVisible()) break

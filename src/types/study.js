@@ -60,6 +60,7 @@
  * @property {string} shortLabel
  * @property {string} [periodSubtitle]
  * @property {SubChapterEntryType} [entryType]
+ * @property {QuizProgress | null} [quiz]
  * @property {number | null} quizScore
  */
 

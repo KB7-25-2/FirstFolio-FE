@@ -6,6 +6,7 @@ export {
   getLearningRoadmap,
   pickStageLearningItems,
   getLearningProgress,
+  mergeLearningItemsWithProgress,
   getSubChapterContent,
   getLessonPages,
   saveLessonProgress,

@@ -28,6 +28,7 @@ const {
   onPrimaryAction,
   goPrevCut,
   goToQuiz,
+  backToLesson,
   stopLearning,
 } = useLessonPlayer()
 </script>
@@ -100,8 +101,11 @@ const {
     />
 
     <template #footer>
-      <div v-if="needsQuiz" class="mt-4">
-        <button type="button" class="cork-btn cork-btn--danger w-full" @click="stopLearning">
+      <div v-if="needsQuiz" class="mt-4 flex gap-3">
+        <button type="button" class="cork-btn cork-btn--ghost flex-1" @click="backToLesson">
+          ← 강좌 보기
+        </button>
+        <button type="button" class="cork-btn cork-btn--danger flex-1" @click="stopLearning">
           로드맵으로
         </button>
       </div>

@@ -29,6 +29,7 @@ const {
   scenarioCurrentStep,
   scenarioIsGraded,
   scenarioUiStatus,
+  retryMainChapterQuiz,
   scenarioOptions,
   stepCorrectOption,
   stepSelectedOption,
@@ -48,12 +49,18 @@ const {
 } = useMainChapterScenarioQuiz()
 
 const resultConfirmLabel = computed(() =>
-  pendingFoundationUnlock.value ? '모의투자금 받기 →' : '학습 로드맵으로',
+  retryMainChapterQuiz.value
+    ? '새 응시로 다시 도전하기 →'
+    : pendingFoundationUnlock.value
+      ? '모의투자금 받기 →'
+      : '학습 로드맵으로',
 )
 const resultCongratsMessage = computed(() =>
-  pendingFoundationUnlock.value
-    ? '포트폴리오 기초를 모두 마쳤어요. 모의투자금이 지급되고 포트폴리오가 해금됩니다.'
-    : '수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다. 앞으로도 꾸준히 학습하며 상담 역량을 키워 보세요.',
+  retryMainChapterQuiz.value
+    ? '모든 문항을 맞혀야 대단원을 수료할 수 있어요. 틀린 문항을 확인한 뒤 새 응시로 다시 도전해 보세요.'
+    : pendingFoundationUnlock.value
+      ? '포트폴리오 기초를 모두 마쳤어요. 모의투자금이 지급되고 포트폴리오가 해금됩니다.'
+      : '수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다. 앞으로도 꾸준히 학습하며 상담 역량을 키워 보세요.',
 )
 </script>
 
@@ -269,6 +276,7 @@ const resultCongratsMessage = computed(() =>
             :subject-name="chapterTitle"
             :congrats-message="resultCongratsMessage"
             :confirm-label="resultConfirmLabel"
+            :completed="!retryMainChapterQuiz"
             @confirm="goToRoadmap"
           />
         </ScenarioClipboardBoard>
