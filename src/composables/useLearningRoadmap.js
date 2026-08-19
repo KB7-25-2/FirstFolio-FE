@@ -4,11 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useStudyStore } from '@/store/studyStore.js'
 import { getMainChapterDisplay } from '@/constants/mainChapterDisplay.js'
 import { getPersistedMainChapterId, persistRoadmapFocus } from '@/utils/learningRoadmapFocus.js'
-import {
-  isPeriodQuizDue,
-  isQuizCompleted,
-  needsQuizAttempt,
-} from '@/services/study/mappers/subChapterMapper.js'
+import { isPeriodQuizDue, needsQuizAttempt } from '@/services/study/mappers/subChapterMapper.js'
 
 /**
  * 대단원 × 소단원 목차(체크리스트) 로드맵
@@ -87,7 +83,7 @@ export const useLearningRoadmap = () => {
   }
 
   const periodStatusLabel = (scheduleStatus, period = null) => {
-    if (period && isPeriodQuizDue(period)) return '퀴즈 필요'
+    if (period && isPeriodQuizDue(period)) return '퀴즈 진행중'
     if (scheduleStatus === 'COMPLETED') return '완료'
     if (scheduleStatus === 'IN_PROGRESS') return '진행 중'
     if (scheduleStatus === 'NEXT') return '다음'
@@ -120,10 +116,6 @@ export const useLearningRoadmap = () => {
           name: 'learning-quiz',
           params: { subChapterId: period.subChapterId },
         })
-        return
-      }
-
-      if (isQuizCompleted(progress)) {
         return
       }
 

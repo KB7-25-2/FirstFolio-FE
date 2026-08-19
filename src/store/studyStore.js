@@ -1,20 +1,19 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import {
-  getChapterGame,
   getContinuePosition,
   getCurriculum,
   getLearningRoadmap,
   getLessonPages,
   getQuizQuestions,
-  getScenario,
   getSubChapterContent,
   gradeQuizAttemptAnswer,
+  mergeLearningItemsWithProgress,
   pickStageLearningItems,
   saveLessonProgress,
+  startMainChapterQuizAttempt,
   startSubChapterQuizAttempt,
   submitQuizAttempt,
-  submitScenarioAttempt,
 } from '@/services/studyService.js'
 import { StudyApiError } from '@/services/study/studyApiError.js'
 import {
@@ -22,6 +21,7 @@ import {
   isSubChapterFullyCompletedFromItem,
 } from '@/services/study/mappers/subChapterMapper.js'
 import { shouldFallbackStudyMock } from '@/services/study/studyResponseUtils.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
 
@@ -55,6 +55,7 @@ export const useStudyStore = defineStore('study', () => {
 
   /** 대단원 시나리오 퀴즈 세션 (소단원 퀴즈와 분리) */
   const scenarioMainChapterId = ref(null)
+  const scenarioAttemptId = ref(null)
   const scenarioChapterGame = ref(null)
   const scenarioDetail = ref(null)
   /** @type {import('vue').Ref<'INTRO' | 'PLAY' | 'RESULT'>} */
@@ -66,6 +67,8 @@ export const useStudyStore = defineStore('study', () => {
   /** @type {import('vue').Ref<Record<number, string>>} stepId → selectedKey */
   const scenarioAnswers = ref({})
   const scenarioAttemptResult = ref(null)
+  /** 마지막 문항 제출 시 서버가 확정한 대단원 수료 결과 */
+  const scenarioFinalGrading = ref(null)
 
   /** 기초 수료 직후 모의투자금 지급 세리머니 표시 */
   const pendingFoundationUnlock = ref(false)
@@ -122,13 +125,17 @@ export const useStudyStore = defineStore('study', () => {
     () => learningItems.value.find((item) => item.entryType === 'SCENARIO_QUIZ') ?? null,
   )
 
-  /** 전체 LESSON 수료 + 시나리오 미완료 → 실전 퀴즈 진입 가능 */
-  const scenarioQuizReady = computed(
-    () =>
-      allLessonsCompleted.value &&
-      Boolean(scenarioQuizItem.value) &&
-      scenarioQuizItem.value.status !== 'COMPLETED',
-  )
+  /** roadmap API의 main_chapter_quiz.available 기반 대단원 퀴즈 진입 가능 여부 */
+  const scenarioQuizReady = computed(() => {
+    const mainChapterId =
+      scenarioQuizItem.value?.mainChapterId ??
+      lessonItems.value[0]?.mainChapterId ??
+      activeCurriculumItem.value?.mainChapterId ??
+      null
+    if (!mainChapterId) return false
+    const stage = roadmapStages.value.find((s) => s.mainChapterId === mainChapterId)
+    return Boolean(stage?.scenarioReady)
+  })
 
   const pageIndex = computed(() => {
     if (!currentPageId.value || !lessonPages.value.length) return 0
@@ -237,10 +244,10 @@ export const useStudyStore = defineStore('study', () => {
   /**
    * store 로드맵에서 learningItems 재구성
    * @param {number} [mainChapterId]
-   * @param {{ syncFromServer?: boolean }} [options] syncFromServer=true면 API 재조회 (퀴즈·시나리오 완료 후)
+   * @param {{ syncFromServer?: boolean, syncProgress?: boolean }} [options]
    */
   const refreshLearningItems = async (mainChapterId, options = {}) => {
-    const { syncFromServer = false } = options
+    const { syncFromServer = false, syncProgress = false } = options
     if (syncFromServer) {
       await fetchRoadmap({ force: true })
     }
@@ -250,6 +257,9 @@ export const useStudyStore = defineStore('study', () => {
       roadmapStages.value.find((stage) => stage.status === 'ACTIVE')?.mainChapterId ??
       null
     applyLearningItemsFromStage(targetId)
+    if (syncProgress) {
+      learningItems.value = await mergeLearningItemsWithProgress(learningItems.value)
+    }
   }
 
   const fetchContinuePosition = async () => {
@@ -338,6 +348,7 @@ export const useStudyStore = defineStore('study', () => {
       contentVersionId: currentContent.value?.contentVersionId,
       status: options.status ?? 'IN_PROGRESS',
     })
+    useDashboardStore().invalidate()
     if (currentContent.value?.progress) {
       currentContent.value.progress.lastPageId = data.lastPageId
       currentContent.value.progress.status = data.status
@@ -559,6 +570,7 @@ export const useStudyStore = defineStore('study', () => {
         })),
       }
       quizAttemptResult.value = data
+      useDashboardStore().invalidate()
       if (data.pointsGranted > 0) {
         const userStore = useUserStore()
         await userStore.addPoints(data.pointsGranted)
@@ -571,6 +583,7 @@ export const useStudyStore = defineStore('study', () => {
 
       const { data } = await submitQuizAttempt({ subChapterId, answers })
       quizAttemptResult.value = data
+      useDashboardStore().invalidate()
 
       if (data.pointsGranted > 0) {
         const userStore = useUserStore()
@@ -580,57 +593,67 @@ export const useStudyStore = defineStore('study', () => {
 
     const data = quizAttemptResult.value
 
-    const completionPageId =
-      currentContent.value?.progress?.lastPageId ??
-      lessonPages.value[lessonPages.value.length - 1]?.id ??
-      currentPageId.value
-
-    if (completionPageId) {
-      const { data: progressData } = await saveLessonProgress(subChapterId, {
-        lastPageId: completionPageId,
-        contentVersionId: currentContent.value?.contentVersionId,
-        status: 'COMPLETED',
-      })
-
-      if (currentContent.value?.subChapterId === subChapterId && currentContent.value.progress) {
-        currentContent.value.progress.status = progressData.status
-        currentContent.value.progress.lastPageId = progressData.lastPageId
-        currentContent.value.progress.completedAt =
-          progressData.completedAt ??
-          currentContent.value.progress.completedAt ??
-          new Date().toISOString()
-      }
-
-      const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
-      if (item) {
-        item.status = progressData.status
-        item.lastPageId = progressData.lastPageId
-        item.completedAt = progressData.completedAt ?? item.completedAt ?? new Date().toISOString()
-        if (data) item.quizScore = data.quizScore
-      }
-    } else if (
+    const alreadyCompleted =
       currentContent.value?.subChapterId === subChapterId &&
-      currentContent.value.progress
-    ) {
-      currentContent.value.progress.status = 'COMPLETED'
-      currentContent.value.progress.completedAt =
-        currentContent.value.progress.completedAt ?? new Date().toISOString()
+      currentContent.value?.progress?.status === 'COMPLETED'
 
-      const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
-      if (item && data) {
-        item.status = 'COMPLETED'
-        item.quizScore = data.quizScore
-        item.completedAt = item.completedAt ?? new Date().toISOString()
+    if (!alreadyCompleted) {
+      const completionPageId =
+        currentContent.value?.progress?.lastPageId ??
+        lessonPages.value[lessonPages.value.length - 1]?.id ??
+        currentPageId.value
+
+      if (completionPageId) {
+        const { data: progressData } = await saveLessonProgress(subChapterId, {
+          lastPageId: completionPageId,
+          contentVersionId: currentContent.value?.contentVersionId,
+          status: 'COMPLETED',
+        })
+
+        if (currentContent.value?.subChapterId === subChapterId && currentContent.value.progress) {
+          currentContent.value.progress.status = progressData.status
+          currentContent.value.progress.lastPageId = progressData.lastPageId
+          currentContent.value.progress.completedAt =
+            progressData.completedAt ??
+            currentContent.value.progress.completedAt ??
+            new Date().toISOString()
+        }
+
+        const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
+        if (item) {
+          item.status = progressData.status
+          item.lastPageId = progressData.lastPageId
+          item.completedAt =
+            progressData.completedAt ?? item.completedAt ?? new Date().toISOString()
+          if (data) item.quizScore = data.quizScore
+        }
+      } else if (
+        currentContent.value?.subChapterId === subChapterId &&
+        currentContent.value.progress
+      ) {
+        currentContent.value.progress.status = 'COMPLETED'
+        currentContent.value.progress.completedAt =
+          currentContent.value.progress.completedAt ?? new Date().toISOString()
+
+        const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
+        if (item && data) {
+          item.status = 'COMPLETED'
+          item.quizScore = data.quizScore
+          item.completedAt = item.completedAt ?? new Date().toISOString()
+        }
       }
+    } else {
+      const item = learningItems.value.find((row) => row.subChapterId === subChapterId)
+      if (item && data) item.quizScore = data.quizScore
     }
 
     const mainChapterId =
       currentContent.value?.mainChapterId ??
       learningItems.value.find((row) => row.subChapterId === subChapterId)?.mainChapterId
-    await fetchContinuePosition()
-    if (mainChapterId) {
-      await refreshLearningItems(mainChapterId, { syncFromServer: true })
-    }
+    await Promise.all([
+      refreshLearningItems(mainChapterId, { syncFromServer: true, syncProgress: true }),
+      fetchContinuePosition(),
+    ])
 
     return data
   }
@@ -655,6 +678,7 @@ export const useStudyStore = defineStore('study', () => {
 
   const clearScenarioSession = () => {
     scenarioMainChapterId.value = null
+    scenarioAttemptId.value = null
     scenarioChapterGame.value = null
     scenarioDetail.value = null
     scenarioPhase.value = 'INTRO'
@@ -663,30 +687,98 @@ export const useStudyStore = defineStore('study', () => {
     scenarioUiStatus.value = 'IN_PROGRESS'
     scenarioAnswers.value = {}
     scenarioAttemptResult.value = null
+    scenarioFinalGrading.value = null
   }
 
   /**
-   * 대단원 시나리오 퀴즈 세션 시작 — chapter game → 미완료 scenario 로드
+   * 대단원 퀴즈 세션 시작 — API quiz-attempt 기반
    * @param {number} mainChapterId
    */
   const startMainChapterScenarioQuiz = async (mainChapterId) => {
     clearScenarioSession()
     scenarioMainChapterId.value = mainChapterId
 
-    const { data: game } = await getChapterGame(mainChapterId)
-    scenarioChapterGame.value = game
-
-    const target = game.scenarios.find((s) => !s.completed) ?? game.scenarios[0] ?? null
-    if (!target) {
-      throw Object.assign(new Error('시나리오가 없습니다.'), { code: 'SCENARIO_NOT_FOUND' })
+    const { data: attempt } = await startMainChapterQuizAttempt(mainChapterId)
+    if (!attempt?.questions?.length) {
+      throw Object.assign(new Error('대단원 퀴즈 문항이 없습니다.'), { code: 'STEPS_NOT_FOUND' })
     }
 
-    const { data: detail } = await getScenario(target.scenarioId)
-    if (!detail.content?.steps?.length) {
-      throw Object.assign(new Error('시나리오 문항이 없습니다.'), { code: 'STEPS_NOT_FOUND' })
+    scenarioAttemptId.value = attempt.attemptId
+
+    const steps = attempt.questions.map((q) => {
+      const sj = q.scenarioJson ?? null
+      return {
+        stepId: q.questionId,
+        order: q.displayOrder ?? q.questionId,
+        paperTitle: sj?.paper_title ?? '대단원 퀴즈',
+        prompt: q.prompt,
+        options: (q.optionsJson ?? []).map((opt) => ({
+          key: opt.key,
+          label: opt.label,
+          description: opt.description ?? null,
+        })),
+        correctKey: null,
+        explanation: null,
+        scenarioJson: sj,
+      }
+    })
+
+    // 첫 번째 SCENARIO 타입 문항의 scenario_json → conditions (페르소나·시황)
+    const firstScenario = attempt.questions.find(
+      (q) => q.questionType === 'SCENARIO' && q.scenarioJson,
+    )
+    const sj = firstScenario?.scenarioJson ?? null
+    const conditions = sj
+      ? {
+          persona: {
+            name: sj.persona?.name ?? '',
+            age: sj.persona?.age ?? '',
+            job: sj.persona?.job ?? '',
+            monthlyIncome: sj.persona?.monthly_income ?? sj.persona?.monthlyIncome ?? null,
+            monthlySaving: sj.persona?.monthly_saving ?? sj.persona?.monthlySaving ?? null,
+          },
+          requirements: {
+            assets: sj.requirements?.assets ?? '',
+            risk: sj.requirements?.risk ?? '',
+            goal: sj.requirements?.goal ?? '',
+          },
+          marketTitle: sj.market?.title ?? '',
+          marketDate: sj.market?.reference_at ?? '',
+          marketBullets: sj.market?.bullets ?? [],
+          constraints: sj.constraints ?? [],
+        }
+      : null
+
+    const curriculumItem = curriculumItems.value.find(
+      (item) => item.mainChapterId === mainChapterId,
+    )
+    const title = curriculumItem?.title ?? '대단원 퀴즈'
+
+    scenarioDetail.value = {
+      scenarioId: attempt.attemptId,
+      title,
+      rewardStar: 0,
+      content: {
+        scenarioKey: `main-chapter-${mainChapterId}`,
+        chapterTitle: title,
+        chapterSubtitle: '배운 내용을 실전 상황에서 점검해요',
+        opening: {
+          documentTitle: '평 가 지',
+          docNo: `제 ${mainChapterId}-최종-001 호`,
+          docDate: new Date().toLocaleDateString('ko-KR'),
+          orgName: '퍼스트폴리오 학습원',
+          title: `${title} 최종 평가`,
+          mission:
+            sj?.narrative ?? '지금까지 배운 내용을 바탕으로 각 문항에 가장 알맞은 답을 선택하세요.',
+          issuerLabel: '발행처',
+          issuerName: '퍼스트폴리오 학습원장',
+          startLabel: '퀴즈 시작',
+        },
+        conditions,
+        steps,
+      },
     }
 
-    scenarioDetail.value = detail
     scenarioPhase.value = 'INTRO'
     scenarioStepIndex.value = 0
     resetScenarioStepUi()
@@ -707,7 +799,7 @@ export const useStudyStore = defineStore('study', () => {
     scenarioUiStatus.value = 'SELECTED'
   }
 
-  const submitCurrentScenarioStep = () => {
+  const submitCurrentScenarioStep = async () => {
     const step = scenarioCurrentStep.value
     if (!step || scenarioUiStatus.value !== 'SELECTED' || !scenarioSelectedKey.value) return false
 
@@ -715,7 +807,22 @@ export const useStudyStore = defineStore('study', () => {
       ...scenarioAnswers.value,
       [step.stepId]: scenarioSelectedKey.value,
     }
-    scenarioUiStatus.value = scenarioSelectedKey.value === step.correctKey ? 'CORRECT' : 'WRONG'
+
+    if (scenarioAttemptId.value != null) {
+      const { data: graded } = await gradeQuizAttemptAnswer(
+        scenarioAttemptId.value,
+        step.stepId,
+        scenarioSelectedKey.value,
+      )
+      step.correctKey = graded.correctAnswer?.key ?? step.correctKey
+      step.explanation = graded.explanation ?? step.explanation
+      scenarioUiStatus.value = graded.isCorrect ? 'CORRECT' : 'WRONG'
+      if (graded.attempt?.status === 'GRADED') {
+        scenarioFinalGrading.value = graded
+      }
+    } else {
+      scenarioUiStatus.value = scenarioSelectedKey.value === step.correctKey ? 'CORRECT' : 'WRONG'
+    }
     return true
   }
 
@@ -747,36 +854,49 @@ export const useStudyStore = defineStore('study', () => {
    */
   const completeScenarioAttempt = async () => {
     const mainChapterId = scenarioMainChapterId.value
-    const scenarioId = scenarioDetail.value?.scenarioId
-    if (!mainChapterId || !scenarioId || !scenarioSteps.value.length) return null
+    if (!mainChapterId || !scenarioSteps.value.length) return null
 
     const wasFoundationChapter =
       curriculumItems.value.find((item) => item.mainChapterId === mainChapterId)?.chapterType ===
       'FOUNDATION'
 
-    const answers = scenarioSteps.value.map((step) => ({
-      stepId: step.stepId,
-      selectedKey: scenarioAnswers.value[step.stepId] ?? '',
-    }))
+    const steps = scenarioSteps.value
+    const totalCount = steps.length
+    const correctCount = steps.filter(
+      (step) => scenarioAnswers.value[step.stepId] === step.correctKey,
+    ).length
+    const quizScore = totalCount ? Math.round((correctCount / totalCount) * 100) : 0
 
-    const { data } = await submitScenarioAttempt({ scenarioId, mainChapterId, answers })
+    const data = {
+      mainChapterId,
+      totalCount,
+      correctCount,
+      quizScore,
+      rewardStar: scenarioDetail.value?.rewardStar ?? 0,
+      pointsGranted: 0,
+      wrongAnswers: steps
+        .filter((step) => scenarioAnswers.value[step.stepId] !== step.correctKey)
+        .map((step) => ({
+          stepId: step.stepId,
+          selectedKey: scenarioAnswers.value[step.stepId] ?? '',
+          correctKey: step.correctKey,
+        })),
+      gradedAnswers: steps.map((step) => ({
+        stepId: step.stepId,
+        selectedKey: scenarioAnswers.value[step.stepId] ?? '',
+        isCorrect: scenarioAnswers.value[step.stepId] === step.correctKey,
+      })),
+      mainChapterCompleted: scenarioFinalGrading.value?.mainChapterCompleted === true,
+      nextAction: scenarioFinalGrading.value?.nextAction ?? null,
+    }
+
     scenarioAttemptResult.value = data
     scenarioPhase.value = 'RESULT'
-
-    if (data.pointsGranted > 0) {
-      const userStore = useUserStore()
-      await userStore.addPoints(data.pointsGranted)
-    }
-
-    if (scenarioChapterGame.value) {
-      const summary = scenarioChapterGame.value.scenarios.find((s) => s.scenarioId === scenarioId)
-      if (summary) summary.completed = true
-    }
 
     const item = learningItems.value.find(
       (row) => row.mainChapterId === mainChapterId && row.entryType === 'SCENARIO_QUIZ',
     )
-    if (item) {
+    if (item && data.mainChapterCompleted) {
       item.status = 'COMPLETED'
       item.quizScore = data.quizScore
       item.completedAt = item.completedAt ?? new Date().toISOString()
@@ -785,7 +905,7 @@ export const useStudyStore = defineStore('study', () => {
     await Promise.all([fetchRoadmap({ force: true }), fetchContinuePosition()])
     applyLearningItemsFromStage(mainChapterId)
 
-    if (wasFoundationChapter && isFoundationCompletedFlag.value) {
+    if (data.mainChapterCompleted && wasFoundationChapter && isFoundationCompletedFlag.value) {
       pendingFoundationUnlock.value = true
     }
 
@@ -818,6 +938,7 @@ export const useStudyStore = defineStore('study', () => {
       }
 
       applyLearningItemsFromStage(mainChapterId)
+      learningItems.value = await mergeLearningItemsWithProgress(learningItems.value)
     } catch (err) {
       error.value = err?.message || '학습 현황을 불러오지 못했습니다.'
     } finally {
@@ -874,6 +995,7 @@ export const useStudyStore = defineStore('study', () => {
     scenarioUiStatus,
     scenarioAnswers,
     scenarioAttemptResult,
+    scenarioFinalGrading,
     activeCurriculumItem,
     foundationItem,
     needsFoundationGuide,

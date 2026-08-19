@@ -1,5 +1,4 @@
 import { pickField } from '../studyResponseUtils.js'
-import { isSubChapterFullyCompletedFromItem } from './subChapterMapper.js'
 
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
@@ -100,16 +99,12 @@ export const buildRoadmapStage = (chapter, subChapters, mainChapterQuiz = null) 
     periods = periods.map((row) => ({ ...row, scheduleStatus: 'LOCKED' }))
   }
 
-  const lessonPeriods = periods.filter((row) => row.entryType !== 'SCENARIO_QUIZ')
-  const lessonsDone =
-    chapter.status !== 'LOCKED' &&
-    lessonPeriods.length > 0 &&
-    lessonPeriods.every(isSubChapterFullyCompletedFromItem)
-
   const quiz = mainChapterQuiz ?? {}
-  const quizStatus = pickField(quiz, 'status')
+  const quizAvailable = Boolean(pickField(quiz, 'available'))
+  // 통과한 대단원도 복습·재응시할 수 있다. 완료 상태는 선행 소단원 조건을 이미
+  // 충족했으므로, 서버가 재응시용 available을 별도로 내려주지 않아도 CTA를 유지한다.
   const scenarioReady =
-    lessonsDone && Boolean(pickField(quiz, 'available')) && quizStatus !== 'COMPLETED'
+    chapter.status !== 'LOCKED' && (quizAvailable || chapter.status === 'COMPLETED')
 
   return {
     mainChapterId: chapter.mainChapterId,
