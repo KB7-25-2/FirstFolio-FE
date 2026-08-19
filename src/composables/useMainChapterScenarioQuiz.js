@@ -98,15 +98,17 @@ export const useMainChapterScenarioQuiz = () => {
 
   const evaluationStamp = computed(() => (scenarioUiStatus.value === 'WRONG' ? '부적합' : '최적'))
 
+  const retryMainChapterQuiz = computed(
+    () => scenarioAttemptResult.value?.nextAction === 'RETRY_MAIN_CHAPTER_QUIZ',
+  )
+
   const primaryLabel = computed(() => {
-    if (scenarioUiStatus.value === 'WRONG') return '다시 풀기'
     if (scenarioIsGraded.value) return scenarioIsLastStep.value ? '결과 확인' : '다음 문항'
     return '결과 확인'
   })
 
   const primaryEnabled = computed(() => {
     if (isCompleting.value) return false
-    if (scenarioUiStatus.value === 'WRONG') return true
     if (scenarioIsGraded.value) return true
     return scenarioUiStatus.value === 'SELECTED'
   })
@@ -155,11 +157,6 @@ export const useMainChapterScenarioQuiz = () => {
   }
 
   const onPrimaryAction = async () => {
-    if (scenarioUiStatus.value === 'WRONG') {
-      studyStore.retryCurrentScenarioStep()
-      return
-    }
-
     if (scenarioIsGraded.value) {
       const finished = studyStore.goNextScenarioStep()
       if (finished) {
@@ -193,6 +190,10 @@ export const useMainChapterScenarioQuiz = () => {
 
   /** 수료 후 로드맵으로 — 커리큘럼 ACTIVE/COMPLETED 반영 확인 */
   const goToRoadmap = () => {
+    if (retryMainChapterQuiz.value) {
+      loadScenario()
+      return
+    }
     if (pendingFoundationUnlock.value) {
       showUnlockCeremony.value = true
       return
@@ -251,6 +252,7 @@ export const useMainChapterScenarioQuiz = () => {
     scenarioUiStatus,
     scenarioCorrectCount,
     scenarioAttemptResult,
+    retryMainChapterQuiz,
     scenarioOptions,
     stepCorrectOption,
     stepSelectedOption,

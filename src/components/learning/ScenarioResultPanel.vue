@@ -14,6 +14,10 @@ defineProps({
     type: String,
     default: '학습 목록으로',
   },
+  completed: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 defineEmits(['confirm'])
@@ -30,7 +34,9 @@ defineEmits(['confirm'])
       <span
         class="absolute top-1 right-1 size-2 rounded bg-[rgba(0,0,0,0.12)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
       />
-      <p class="font-serif text-[14px] font-bold tracking-[0.7px] text-[#3d1f08]">수 료 증</p>
+      <p class="font-serif text-[14px] font-bold tracking-[0.7px] text-[#3d1f08]">
+        {{ completed ? '수 료 증' : '재도전 안내' }}
+      </p>
     </div>
 
     <img :src="officialSeal" alt="" class="mt-5 size-16 object-contain" width="64" height="64" />
@@ -44,7 +50,9 @@ defineEmits(['confirm'])
       <div class="h-px flex-1 bg-[rgba(139,100,60,0.28)]" />
     </div>
 
-    <p class="mt-5 font-serif font-bold text-[28px] leading-tight text-[#212b5c]">축하합니다</p>
+    <p class="mt-5 font-serif font-bold text-[28px] leading-tight text-[#212b5c]">
+      {{ completed ? '축하합니다' : '다시 도전해요' }}
+    </p>
     <p class="mt-3 max-w-[280px] font-serif text-[13px] leading-[20px] text-[#7a5230]">
       {{ congratsMessage }}
     </p>
@@ -52,8 +60,11 @@ defineEmits(['confirm'])
     <p
       class="mt-6 font-serif text-[16px] leading-[24px] font-black tracking-[0.3px] text-[#3d1f08]"
     >
-      <span class="text-[#c17f24]">{{ subjectName }}</span>
-      과목을 수료하셨습니다!
+      <template v-if="completed">
+        <span class="text-[#c17f24]">{{ subjectName }}</span>
+        과목을 수료하셨습니다!
+      </template>
+      <template v-else>다음 대단원은 만점 수료 후 열립니다.</template>
     </p>
 
     <div class="mt-5 flex w-full items-center gap-3">
@@ -66,7 +77,7 @@ defineEmits(['confirm'])
     <span
       class="mt-2 -rotate-8 rounded border-[0.5px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
     >
-      수료
+      {{ completed ? '수료' : '재도전' }}
     </span>
 
     <button

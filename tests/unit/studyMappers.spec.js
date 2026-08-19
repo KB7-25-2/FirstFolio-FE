@@ -171,6 +171,25 @@ describe('roadmapMapper', () => {
     expect(stage.scenarioReady).toBe(true)
   })
 
+  it('buildRoadmapStage는 대단원 퀴즈 통과 후에도 재응시 CTA를 유지한다', () => {
+    const chapter = mapRoadmapChapterItem({
+      curriculum_item_id: 502,
+      main_chapter_id: 2,
+      title: '예·적금',
+      chapter_type: 'CORE',
+      display_order: 2,
+      status: 'COMPLETED',
+      progress_percent: 100,
+    })
+
+    const stage = buildRoadmapStage(chapter, [], {
+      available: false,
+      status: 'COMPLETED',
+    })
+
+    expect(stage.scenarioReady).toBe(true)
+  })
+
   it('pickStageLearningItems는 ACTIVE 대단원 periods를 반환한다', () => {
     const chapter = mapRoadmapChapterItem({
       curriculum_item_id: 502,

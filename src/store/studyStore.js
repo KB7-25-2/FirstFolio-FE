@@ -67,6 +67,8 @@ export const useStudyStore = defineStore('study', () => {
   /** @type {import('vue').Ref<Record<number, string>>} stepId → selectedKey */
   const scenarioAnswers = ref({})
   const scenarioAttemptResult = ref(null)
+  /** 마지막 문항 제출 시 서버가 확정한 대단원 수료 결과 */
+  const scenarioFinalGrading = ref(null)
 
   /** 기초 수료 직후 모의투자금 지급 세리머니 표시 */
   const pendingFoundationUnlock = ref(false)
@@ -685,6 +687,7 @@ export const useStudyStore = defineStore('study', () => {
     scenarioUiStatus.value = 'IN_PROGRESS'
     scenarioAnswers.value = {}
     scenarioAttemptResult.value = null
+    scenarioFinalGrading.value = null
   }
 
   /**
@@ -814,6 +817,9 @@ export const useStudyStore = defineStore('study', () => {
       step.correctKey = graded.correctAnswer?.key ?? step.correctKey
       step.explanation = graded.explanation ?? step.explanation
       scenarioUiStatus.value = graded.isCorrect ? 'CORRECT' : 'WRONG'
+      if (graded.attempt?.status === 'GRADED') {
+        scenarioFinalGrading.value = graded
+      }
     } else {
       scenarioUiStatus.value = scenarioSelectedKey.value === step.correctKey ? 'CORRECT' : 'WRONG'
     }
@@ -880,6 +886,8 @@ export const useStudyStore = defineStore('study', () => {
         selectedKey: scenarioAnswers.value[step.stepId] ?? '',
         isCorrect: scenarioAnswers.value[step.stepId] === step.correctKey,
       })),
+      mainChapterCompleted: scenarioFinalGrading.value?.mainChapterCompleted === true,
+      nextAction: scenarioFinalGrading.value?.nextAction ?? null,
     }
 
     scenarioAttemptResult.value = data
@@ -888,7 +896,7 @@ export const useStudyStore = defineStore('study', () => {
     const item = learningItems.value.find(
       (row) => row.mainChapterId === mainChapterId && row.entryType === 'SCENARIO_QUIZ',
     )
-    if (item) {
+    if (item && data.mainChapterCompleted) {
       item.status = 'COMPLETED'
       item.quizScore = data.quizScore
       item.completedAt = item.completedAt ?? new Date().toISOString()
@@ -897,7 +905,7 @@ export const useStudyStore = defineStore('study', () => {
     await Promise.all([fetchRoadmap({ force: true }), fetchContinuePosition()])
     applyLearningItemsFromStage(mainChapterId)
 
-    if (wasFoundationChapter && isFoundationCompletedFlag.value) {
+    if (data.mainChapterCompleted && wasFoundationChapter && isFoundationCompletedFlag.value) {
       pendingFoundationUnlock.value = true
     }
 
@@ -987,6 +995,7 @@ export const useStudyStore = defineStore('study', () => {
     scenarioUiStatus,
     scenarioAnswers,
     scenarioAttemptResult,
+    scenarioFinalGrading,
     activeCurriculumItem,
     foundationItem,
     needsFoundationGuide,
