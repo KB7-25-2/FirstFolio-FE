@@ -128,7 +128,7 @@ describe('roadmapMapper', () => {
     expect(stage.scenarioReady).toBe(false)
   })
 
-  it('buildRoadmapStage는 LESSON이 모두 끝나면 시나리오 CTA를 연다', () => {
+  it('buildRoadmapStage는 LESSON·퀴즈가 모두 끝나면 시나리오 CTA를 연다', () => {
     const chapter = mapRoadmapChapterItem({
       curriculum_item_id: 502,
       main_chapter_id: 2,
@@ -139,16 +139,19 @@ describe('roadmapMapper', () => {
       progress_percent: 100,
     })
     const lessons = [
-      mapRoadmapSubChapter(
-        {
-          sub_chapter_id: 103,
-          title: '금리의 이해',
-          display_order: 1,
-          progress_status: 'COMPLETED',
-          schedule_status: 'COMPLETED',
-        },
-        2,
-      ),
+      {
+        ...mapRoadmapSubChapter(
+          {
+            sub_chapter_id: 103,
+            title: '금리의 이해',
+            display_order: 1,
+            progress_status: 'COMPLETED',
+            schedule_status: 'COMPLETED',
+          },
+          2,
+        ),
+        quiz: { completed: true, answeredCount: 3, totalCount: 3 },
+      },
     ]
     const scenarioPeriod = {
       ...lessons[0],
@@ -163,6 +166,25 @@ describe('roadmapMapper', () => {
     const stage = buildRoadmapStage(chapter, [...lessons, scenarioPeriod], {
       available: true,
       status: 'NOT_STARTED',
+    })
+
+    expect(stage.scenarioReady).toBe(true)
+  })
+
+  it('buildRoadmapStage는 대단원 퀴즈 통과 후에도 재응시 CTA를 유지한다', () => {
+    const chapter = mapRoadmapChapterItem({
+      curriculum_item_id: 502,
+      main_chapter_id: 2,
+      title: '예·적금',
+      chapter_type: 'CORE',
+      display_order: 2,
+      status: 'COMPLETED',
+      progress_percent: 100,
+    })
+
+    const stage = buildRoadmapStage(chapter, [], {
+      available: false,
+      status: 'COMPLETED',
     })
 
     expect(stage.scenarioReady).toBe(true)

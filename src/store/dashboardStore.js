@@ -94,9 +94,14 @@ export const useDashboardStore = defineStore('dashboard', () => {
   /** store에 대시보드가 없을 때만 API 호출 */
   const ensureDashboard = async (options = {}) => fetchDashboard({ force: false, ...options })
 
-  const clear = () => {
+  /** 학습 등 대시보드 원본 데이터 변경 후 다음 진입에서 재조회 */
+  const invalidate = () => {
     summary.value = null
     error.value = null
+  }
+
+  const clear = () => {
+    invalidate()
     isLoading.value = false
     inflight = null
   }
@@ -118,6 +123,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     learningContinueRoute,
     fetchDashboard,
     ensureDashboard,
+    invalidate,
     clear,
   }
 })

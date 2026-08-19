@@ -83,7 +83,7 @@ export const useLearningRoadmap = () => {
   }
 
   const periodStatusLabel = (scheduleStatus, period = null) => {
-    if (period && isPeriodQuizDue(period)) return '퀴즈 필요'
+    if (period && isPeriodQuizDue(period)) return '퀴즈 진행중'
     if (scheduleStatus === 'COMPLETED') return '완료'
     if (scheduleStatus === 'IN_PROGRESS') return '진행 중'
     if (scheduleStatus === 'NEXT') return '다음'
@@ -198,6 +198,7 @@ export const useLearningRoadmap = () => {
 
   onActivated(() => {
     if (!isRoadmapRouteActive.value) return
+    void loadStages({ force: true })
     const persisted = getPersistedMainChapterId()
     // 탭 복귀 시 URL 쿼리가 비었거나 스크롤 persist와 어긋나면 persist 기준으로 맞춤
     if (persisted != null && focusMainChapterId.value !== persisted) {

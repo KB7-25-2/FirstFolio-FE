@@ -1,9 +1,15 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onActivated, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useStudyStore } from '@/store/studyStore.js'
+import {
+  isQuizInProgress,
+  isSubChapterFullyCompleted,
+  needsQuizAttempt,
+} from '@/utils/subChapterProgress.js'
+import { findStudyNoteFocusIndex } from '@/utils/studyNoteFocus.js'
 import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
@@ -11,7 +17,15 @@ import MemoPin from '@/components/MemoPin.vue'
 const dashboardStore = useDashboardStore()
 const studyStore = useStudyStore()
 const router = useRouter()
-const { chapterTitle, learningItems, continueRoute, isLoading, error } = storeToRefs(studyStore)
+const {
+  chapterTitle,
+  learningItems,
+  continueRoute,
+  isLoading,
+  error,
+  scenarioQuizReady,
+  scenarioQuizItem,
+} = storeToRefs(studyStore)
 const {
   learning,
   learningContinueRoute,
@@ -19,7 +33,7 @@ const {
   error: dashboardError,
 } = storeToRefs(dashboardStore)
 
-onMounted(async () => {
+const loadStudyNote = async () => {
   try {
     await dashboardStore.ensureDashboard()
   } catch {
@@ -36,6 +50,7 @@ onMounted(async () => {
       studyStore.applyLearningItemsFromStage(dashMainChapterId)
     }
     if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
+      await studyStore.refreshLearningItems(dashMainChapterId, { syncProgress: true })
       return
     }
   }
@@ -53,6 +68,15 @@ onMounted(async () => {
   }
 
   await studyStore.fetchStudyNote()
+}
+
+let hasMounted = false
+onMounted(async () => {
+  await loadStudyNote()
+  hasMounted = true
+})
+onActivated(() => {
+  if (hasMounted) loadStudyNote()
 })
 
 const noteLoading = computed(
@@ -88,13 +112,7 @@ const roadmapNodes = computed(() => {
   const items = lessonItems.value
   if (!items.length) return []
 
-  let currentIdx = items.findIndex((item) => item.status === 'IN_PROGRESS')
-  if (currentIdx < 0) {
-    currentIdx = items.findIndex((item) => item.status === 'NOT_STARTED')
-  }
-  if (currentIdx < 0) {
-    currentIdx = items.length - 1
-  }
+  const currentIdx = findStudyNoteFocusIndex(items)
 
   /** @type {{ key: string|number, subChapterId: number|null, mainChapterId: number|null, order: number, title: string, role: 'prev'|'current'|'next', roleLabel: string, status: string }[]} */
   const nodes = []
@@ -108,6 +126,9 @@ const roadmapNodes = computed(() => {
     role,
     roleLabel,
     status: item.status,
+    quizInProgress: isQuizInProgress(item),
+    quizDue: needsQuizAttempt(item),
+    fullyCompleted: isSubChapterFullyCompleted(item),
   })
 
   if (currentIdx > 0) {
@@ -123,8 +144,13 @@ const roadmapNodes = computed(() => {
   return nodes
 })
 
-/** 복습 대상: 직전 완료 소단원 */
-const reviewLesson = computed(() => roadmapNodes.value.find((node) => node.role === 'prev') ?? null)
+/** 복습 대상: 직전 완료(퀴즈 포함) 소단원 */
+const reviewLesson = computed(() => {
+  const prev = roadmapNodes.value.find((node) => node.role === 'prev')
+  if (!prev?.subChapterId) return null
+  const item = lessonItems.value.find((row) => row.subChapterId === prev.subChapterId)
+  return item && isSubChapterFullyCompleted(item) ? prev : null
+})
 
 /**
  * @param {string} routePath
@@ -165,6 +191,16 @@ const goReviewLesson = (event) => {
 
 const goLearning = () => {
   router.push({ name: 'learning' })
+}
+
+const goScenarioQuiz = (event) => {
+  event.stopPropagation()
+  const item = scenarioQuizItem.value
+  if (!item?.mainChapterId) return
+  router.push({
+    name: 'learning-scenario-quiz',
+    params: { mainChapterId: item.mainChapterId },
+  })
 }
 </script>
 
@@ -284,39 +320,53 @@ const goLearning = () => {
                     class="flex size-8 items-center justify-center rounded-full border-[0.5px] font-serif text-[15px] leading-none"
                     :class="{
                       'border-[rgba(89,140,82,0.75)] bg-[#e8f5e4] text-[#598c52]':
-                        node.role === 'prev',
+                        node.role === 'prev' && node.fullyCompleted,
                       'border-[#c17f24] bg-[#c17f24] text-[#fff8ec] shadow-[0_0_0_3px_rgba(193,127,36,0.22)]':
                         node.role === 'current',
                       'border-[rgba(33,43,92,0.3)] bg-[#fffdf7] text-[rgba(33,43,92,0.5)]':
-                        node.role === 'next',
+                        node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
                     }"
                   >
-                    {{ node.role === 'prev' ? '✓' : node.order }}
+                    {{ node.role === 'prev' && node.fullyCompleted ? '✓' : node.order }}
                   </span>
                 </div>
 
                 <div
                   class="min-w-0 flex-1 rounded-[4px] px-2.5 py-2"
                   :class="{
-                    'bg-[rgba(237,229,209,0.75)]': node.role === 'prev',
+                    'bg-[rgba(237,229,209,0.75)]': node.role === 'prev' && node.fullyCompleted,
                     'border-[0.5px] border-[rgba(193,127,36,0.65)] bg-[#fae8a8]':
                       node.role === 'current',
-                    'bg-[rgba(240,232,214,0.6)]': node.role === 'next',
+                    'bg-[rgba(240,232,214,0.6)]':
+                      node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
                   }"
                 >
                   <div class="flex items-center justify-between gap-2">
                     <span
                       class="font-serif text-[9px] font-bold tracking-wide"
                       :class="{
-                        'text-[rgba(89,140,82,0.9)]': node.role === 'prev',
+                        'text-[rgba(89,140,82,0.9)]': node.role === 'prev' && node.fullyCompleted,
                         'text-[#c17f24]': node.role === 'current',
-                        'text-[rgba(33,43,92,0.55)]': node.role === 'next',
+                        'text-[rgba(33,43,92,0.55)]':
+                          node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
                       }"
                     >
                       {{ node.roleLabel }}
                     </span>
+                    <span
+                      v-if="node.role === 'current' && node.quizInProgress"
+                      class="font-serif text-[9px] font-bold text-[#c17f24]"
+                    >
+                      퀴즈 진행중
+                    </span>
+                    <span
+                      v-else-if="node.role === 'current' && node.quizDue"
+                      class="font-serif text-[9px] font-bold text-[#c17f24]"
+                    >
+                      퀴즈 풀기
+                    </span>
                     <button
-                      v-if="node.role === 'current' && effectiveContinueRoute"
+                      v-else-if="node.role === 'current' && effectiveContinueRoute"
                       type="button"
                       class="study-continue-cta shrink-0 rounded px-1.5 py-0.5 font-serif text-[12px] font-bold whitespace-nowrap text-[var(--study-continue)]"
                       @click.stop="onContinue"
@@ -330,7 +380,7 @@ const goLearning = () => {
                       진행 중
                     </span>
                     <span
-                      v-else-if="node.role === 'prev'"
+                      v-else-if="node.role === 'prev' && node.fullyCompleted"
                       class="font-serif text-[9px] text-[rgba(89,140,82,0.9)]"
                     >
                       완료
@@ -339,9 +389,11 @@ const goLearning = () => {
                   <p
                     class="mt-0.5 font-serif text-[13px] leading-snug font-bold"
                     :class="{
-                      'text-[rgba(41,33,26,0.5)] line-through': node.role === 'prev',
+                      'text-[rgba(41,33,26,0.5)] line-through':
+                        node.role === 'prev' && node.fullyCompleted,
                       'text-[#29211a]': node.role === 'current',
-                      'text-[rgba(41,33,26,0.72)]': node.role === 'next',
+                      'text-[rgba(41,33,26,0.72)]':
+                        node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
                     }"
                   >
                     {{ node.order }}. {{ node.title }}
@@ -353,6 +405,29 @@ const goLearning = () => {
             <p v-else class="py-8 text-center font-serif text-[11px] text-[var(--study-muted)]">
               표시할 학습 구간이 없습니다
             </p>
+
+            <!-- 대단원 실전 퀴즈 CTA -->
+            <button
+              v-if="scenarioQuizReady"
+              type="button"
+              class="mt-3 w-full rounded-[4px] border-[0.5px] border-[rgba(33,43,92,0.35)] bg-[#eef0fc] px-3 py-2.5 text-left transition-transform duration-150 hover:scale-[1.01]"
+              aria-label="대단원 실전 퀴즈 시작"
+              @click.stop="goScenarioQuiz"
+            >
+              <p class="font-serif font-bold text-[15px] leading-none text-[#212b5c]">
+                실전 퀴즈에 도전해볼까요? 🎯
+              </p>
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <p class="font-serif text-[11px] text-[rgba(33,43,92,0.6)]">
+                  {{ scenarioQuizItem?.title || '대단원 실전 퀴즈' }}
+                </p>
+                <span
+                  class="shrink-0 rounded bg-[#212b5c] px-2 py-1 font-serif text-[10px] font-bold text-white"
+                >
+                  시작 →
+                </span>
+              </div>
+            </button>
           </template>
         </div>
       </section>
