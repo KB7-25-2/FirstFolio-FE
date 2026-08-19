@@ -124,22 +124,25 @@ export const mapTradeResult = (raw) => ({
 // FUNC-034 GET /portfolios/current — 포트폴리오 상세
 // ============================================================
 
-// 보유 상품 원본엔 asset_type/cycle_summary가 없어서(product_id만 있음),
-// 상품 카탈로그(productsById, FUNC-031로 미리 받아둔 것)와 조인해서 채운다.
-// 금액 필드는 전부 문자열("10000000.00")로 오므로 숫자로 변환한다.
+// 보유 상품 원본엔 asset_type이 이미 들어있다(PortfolioDetailResponse.Holding 기준) — 그걸
+// 우선 쓴다. cycle_summary(만기·이자주기 문구)만 이 API엔 없어서 상품 카탈로그(productsById,
+// FUNC-031로 미리 받아둔 것)와 조인해서 채운다. 카탈로그는 어디까지나 보조 수단이라 raw에 값이
+// 있으면 절대 덮어쓰지 않는다 — 카탈로그 페이지에 없는(판매중지 등) 상품이어도 자산군 판정이
+// 깨지지 않게 하기 위함이다. 금액 필드는 전부 문자열("10000000.00")로 오므로 숫자로 변환한다.
 const mapHoldingFromApi = (raw, productsById) => {
   const product = productsById[raw.product_id] ?? {}
+  const assetType = raw.asset_type ?? product.assetType ?? null
   const principalAmount = Number(raw.principal_amount ?? 0)
   const valuationAmount = Number(raw.valuation_amount ?? raw.principal_amount ?? 0)
   const quantity = Number(raw.quantity ?? 1)
   // 가입형(예·적금·채권)은 "평균낼 것이 없는 상품"이라 ERD상 average_cost가 NULL이다.
-  const isSubscription = getAssetTypeMeta(product.assetType).tradeType === 'SUBSCRIPTION'
+  const isSubscription = getAssetTypeMeta(assetType).tradeType === 'SUBSCRIPTION'
 
   return {
     holdingId: raw.holding_id,
     productId: raw.product_id,
     displayName: raw.display_name ?? product.displayName ?? '',
-    assetType: product.assetType ?? null,
+    assetType,
     cycleSummary: product.cycleSummary ?? null,
     quantity,
     principalAmount,
