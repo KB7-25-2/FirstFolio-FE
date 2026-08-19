@@ -21,6 +21,7 @@ import {
   isSubChapterFullyCompletedFromItem,
 } from '@/services/study/mappers/subChapterMapper.js'
 import { shouldFallbackStudyMock } from '@/services/study/studyResponseUtils.js'
+import { promoteNextCurriculumChapter } from '@/services/study/mock/studyMockEngine.js'
 import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
@@ -856,9 +857,12 @@ export const useStudyStore = defineStore('study', () => {
     const mainChapterId = scenarioMainChapterId.value
     if (!mainChapterId || !scenarioSteps.value.length) return null
 
-    const wasFoundationChapter =
-      curriculumItems.value.find((item) => item.mainChapterId === mainChapterId)?.chapterType ===
-      'FOUNDATION'
+    const chapterBeforeCompletion = curriculumItems.value.find(
+      (item) => item.mainChapterId === mainChapterId,
+    )
+    const wasFoundationChapter = chapterBeforeCompletion?.chapterType === 'FOUNDATION'
+    // 재응시 성공은 수료 전환이 아니므로 초기 자본 지급 세리머니를 다시 띄우지 않는다.
+    const wasFoundationAlreadyCompleted = chapterBeforeCompletion?.status === 'COMPLETED'
 
     const steps = scenarioSteps.value
     const totalCount = steps.length
@@ -902,10 +906,20 @@ export const useStudyStore = defineStore('study', () => {
       item.completedAt = item.completedAt ?? new Date().toISOString()
     }
 
+    // DEV/E2E 목업은 대단원 수료 전환을 별도로 기록해야 다음 대단원이 열린다.
+    if (data.mainChapterCompleted && shouldFallbackStudyMock()) {
+      promoteNextCurriculumChapter(mainChapterId)
+    }
+
     await Promise.all([fetchRoadmap({ force: true }), fetchContinuePosition()])
     applyLearningItemsFromStage(mainChapterId)
 
-    if (data.mainChapterCompleted && wasFoundationChapter && isFoundationCompletedFlag.value) {
+    if (
+      data.mainChapterCompleted &&
+      wasFoundationChapter &&
+      !wasFoundationAlreadyCompleted &&
+      isFoundationCompletedFlag.value
+    ) {
       pendingFoundationUnlock.value = true
     }
 
