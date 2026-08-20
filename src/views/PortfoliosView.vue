@@ -74,7 +74,7 @@ const handleResetConfirm = async () => {
       <div class="shrink-0">
         <PortfolioTabs />
       </div>
-      <div class="min-h-0 flex-1 overflow-hidden">
+      <div class="relative min-h-0 flex-1">
         <RouterView />
       </div>
     </div>
