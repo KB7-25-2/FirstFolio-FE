@@ -41,6 +41,14 @@ const profitLossLabel = computed(() => {
   return `${sign}${formatCurrency(amount)}`
 })
 
+// 서버가 계산한 손익률(%, 최초 지급 모의투자금 대비) — 프론트에서 재계산하지 않고 그대로 쓴다.
+const profitRateLabel = computed(() => {
+  const rate = props.summary.profitRate
+  if (rate == null) return null
+  const sign = rate > 0 ? '+' : ''
+  return `${sign}${Number(rate).toFixed(2)}%`
+})
+
 // 총자산 대비 현금을 제외한 투자 비중(%). 총자산이 0이면 계산하지 않는다.
 const investedRatio = computed(() => {
   const total = props.summary.totalAssetValue
@@ -87,6 +95,12 @@ const activeHoldingCount = computed(
             </p>
             <p class="whitespace-nowrap font-serif text-[11px] text-[rgba(41,33,26,0.55)]">
               평가손익 <span class="font-bold" :class="profitLossClass">{{ profitLossLabel }}</span>
+            </p>
+            <p
+              v-if="profitRateLabel"
+              class="whitespace-nowrap font-serif text-[11px] text-[rgba(41,33,26,0.55)]"
+            >
+              수익률 <span class="font-bold" :class="profitLossClass">{{ profitRateLabel }}</span>
             </p>
           </div>
         </div>
