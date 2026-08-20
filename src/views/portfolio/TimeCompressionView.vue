@@ -62,16 +62,22 @@ const buildGrowthCurve = (item) => {
   const r = rate / 100
   const intervalMonths = item.realTerms?.intervalMonths
 
+  // 이자소득세 15.4% — 백엔드 AssetEventCalculator.interest()가 지급 건마다 떼는 세율
+  // (TradePolicyProvider 기본값 trade.policy.interest-income-tax-rate:0.154)과 동일하게
+  // 맞춘다. API로 내려오는 값이 아니라 백엔드 기본 설정을 그대로 가정한 것이라, 배포 환경에서
+  // 이 값이 바뀌면 여기도 같이 바꿔야 한다.
+  const AFTER_TAX = 1 - 0.154
+
   // {day, value} 쌍을 순서대로 쌓는다. 계단식이라 같은 day에 지급 전/후 두 점을 넣는다.
   const points = [{ day: 0, value: principal }]
 
   if (intervalMonths && intervalMonths > 0) {
-    // 이표채: 주기마다 쿠폰 지급
+    // 이표채: 주기마다 쿠폰 지급(세후)
     let paidMonths = 0
     let cumulative = principal
     while (paidMonths + intervalMonths <= maturityMonths) {
       paidMonths += intervalMonths
-      const coupon = principal * r * (intervalMonths / 12)
+      const coupon = principal * r * (intervalMonths / 12) * AFTER_TAX
       const day = (paidMonths / maturityMonths) * serviceMaturityDays
       points.push({ day, value: cumulative })
       cumulative += coupon
@@ -79,21 +85,26 @@ const buildGrowthCurve = (item) => {
     }
     const remainderMonths = maturityMonths - paidMonths
     if (remainderMonths > 0) {
-      const coupon = principal * r * (remainderMonths / 12)
+      const coupon = principal * r * (remainderMonths / 12) * AFTER_TAX
       points.push({ day: serviceMaturityDays, value: cumulative })
       cumulative += coupon
       points.push({ day: serviceMaturityDays, value: cumulative })
     }
   } else {
-    // 예·적금, 복리채: 만기 시 일괄 지급
-    const isCompound = item.realTerms?.rateType === 'COMPOUND'
+    // 예·적금, 복리채: 만기 시 일괄 지급(세후)
+    // 예·적금은 rateType==='COMPOUND', 채권은 interestType에 "복리"가 포함되는지로 복리를
+    // 판정한다(백엔드 AssetEventTerms 기준 — 필드 자체가 자산군마다 다르다).
+    const isCompound =
+      item.realTerms?.rateType === 'COMPOUND' ||
+      (item.realTerms?.interestType?.includes('복리') ?? false)
     let totalInterest
     if (isCompound) {
       const years = Math.floor(maturityMonths / 12)
       const remainderMonths = maturityMonths % 12
-      totalInterest = principal * (1 + r) ** years * (1 + r * (remainderMonths / 12)) - principal
+      totalInterest =
+        (principal * (1 + r) ** years * (1 + r * (remainderMonths / 12)) - principal) * AFTER_TAX
     } else {
-      totalInterest = principal * r * (maturityMonths / 12)
+      totalInterest = principal * r * (maturityMonths / 12) * AFTER_TAX
     }
     points.push({ day: serviceMaturityDays, value: principal })
     points.push({ day: serviceMaturityDays, value: principal + totalInterest })
@@ -245,7 +256,7 @@ const goToIndex = (index) => {
 
             <div class="mt-3">
               <div class="flex items-baseline justify-between">
-                <h2 class="font-serif text-sm font-bold text-[#2c1810]">얼마나 오르나</h2>
+                <h2 class="font-serif text-sm font-bold text-[#2c1810]">얼마나 오르나 (세후)</h2>
                 <span
                   v-if="growthCurveProfitRate(item) != null"
                   class="font-serif text-sm font-bold"
