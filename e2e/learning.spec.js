@@ -106,9 +106,9 @@ test.describe('학습 플로우 (이어하기 · 수료)', () => {
     await primaryNav(page).getByRole('button', { name: '홈', exact: true }).click()
     await expect(page).toHaveURL(/\/home/)
 
-    const continueBtn = page.getByRole('button', { name: '이어서 →' })
-    await expect(continueBtn).toBeVisible({ timeout: 15_000 })
-    await continueBtn.click()
+    const processingLesson = page.locator('p').filter({ hasText: ' 현재 학습 현황 ' })
+    await expect(processingLesson).toBeVisible({ timeout: 15_000 })
+    await processingLesson.click()
     await expect(page).toHaveURL(/\/learning\/sub-chapters\/201|mainChapterId=3/)
   })
 })

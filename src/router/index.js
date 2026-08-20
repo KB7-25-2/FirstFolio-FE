@@ -208,6 +208,12 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminProductsView.vue'),
           meta: { title: '모의 금융상품' },
         },
+        {
+          path: 'news',
+          name: 'admin-news',
+          component: () => import('@/views/admin/AdminNewsView.vue'),
+          meta: { title: '뉴스 검수' },
+        },
       ],
     },
     {

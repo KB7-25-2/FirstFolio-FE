@@ -29,9 +29,13 @@ const isBlocked = computed(() => isSubscription.value && props.isHeld)
 const cycleSummaryText = computed(() => props.product.cycleSummary ?? '실시간 시세')
 
 // unit_price는 매수형(주식·펀드) 수량 환산에만 필요하다. 가입형은 금액을 자유롭게 입력하는
-// 방식이라 단가 표시 대신 안내 문구로 대체한다.
+// 방식이라 단가 대신 금리(realTerms.rate — 예·적금은 interest_rate, 채권은 coupon_rate를
+// 매퍼가 이미 rate 하나로 합쳐둠)를 보여준다. 금리가 없으면(데이터 누락) 안내 문구만 남긴다.
 const priceText = computed(() => {
-  if (isSubscription.value) return '금액 자유 입력'
+  if (isSubscription.value) {
+    const rate = props.product.realTerms?.rate
+    return rate != null ? `연 ${rate}% · 금액 자유 입력` : '금액 자유 입력'
+  }
   if (props.product.unitPrice == null) return '가격 정보 준비 중'
   return `1${quantityUnit.value} · ${props.product.unitPrice.toLocaleString('ko-KR')}원`
 })

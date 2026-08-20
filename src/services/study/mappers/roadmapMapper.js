@@ -101,6 +101,7 @@ export const buildRoadmapStage = (chapter, subChapters, mainChapterQuiz = null) 
 
   const quiz = mainChapterQuiz ?? {}
   const quizAvailable = Boolean(pickField(quiz, 'available'))
+  const scenarioStatus = String(pickField(quiz, 'status') ?? 'NOT_STARTED')
   // 통과한 대단원도 복습·재응시할 수 있다. 완료 상태는 선행 소단원 조건을 이미
   // 충족했으므로, 서버가 재응시용 available을 별도로 내려주지 않아도 CTA를 유지한다.
   const scenarioReady =
@@ -119,6 +120,7 @@ export const buildRoadmapStage = (chapter, subChapters, mainChapterQuiz = null) 
     displayOrder: chapter.displayOrder,
     periods,
     scenarioReady,
+    scenarioStatus,
     scenarioTitle: '대단원 실전 퀴즈',
     scenarioSubtitle: '배운 내용을 실전 상황에서 점검해요',
   }

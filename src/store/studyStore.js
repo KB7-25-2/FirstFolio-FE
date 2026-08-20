@@ -25,6 +25,7 @@ import { promoteNextCurriculumChapter } from '@/services/study/mock/studyMockEng
 import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
+import { findFocusedMainChapterId } from '@/utils/studyFocus.js'
 
 export const useStudyStore = defineStore('study', () => {
   const curriculumItems = ref([])
@@ -79,6 +80,25 @@ export const useStudyStore = defineStore('study', () => {
     () => curriculumItems.value.find((item) => item.status === 'ACTIVE') ?? null,
   )
 
+  /** 소단원·시나리오의 실제 진행 상태에 맞춘 홈 학습 노트 대단원 */
+  const focusedMainChapterId = computed(() =>
+    findFocusedMainChapterId({
+      continuePosition: continuePosition.value,
+      stages: roadmapStages.value,
+      curriculumItems: curriculumItems.value,
+    }),
+  )
+
+  const focusedCurriculumItem = computed(
+    () =>
+      curriculumItems.value.find((item) => item.mainChapterId === focusedMainChapterId.value) ??
+      activeCurriculumItem.value,
+  )
+
+  const isFocusedMainChapterCompleted = computed(
+    () => focusedCurriculumItem.value?.status === 'COMPLETED',
+  )
+
   /** 필수 선행 포트폴리오 기초 과정 */
   const foundationItem = computed(
     () => curriculumItems.value.find((item) => item.chapterType === 'FOUNDATION') ?? null,
@@ -93,7 +113,7 @@ export const useStudyStore = defineStore('study', () => {
   /** 포트폴리오 기능 잠금 (기초 미수료) */
   const isPortfolioLocked = computed(() => !isFoundationCompletedFlag.value)
 
-  const chapterTitle = computed(() => activeCurriculumItem.value?.title ?? '')
+  const chapterTitle = computed(() => focusedCurriculumItem.value?.title ?? '')
 
   const progressPercent = computed(
     () =>
@@ -254,6 +274,7 @@ export const useStudyStore = defineStore('study', () => {
     }
     const targetId =
       mainChapterId ??
+      focusedMainChapterId.value ??
       activeCurriculumItem.value?.mainChapterId ??
       roadmapStages.value.find((stage) => stage.status === 'ACTIVE')?.mainChapterId ??
       null
@@ -942,6 +963,7 @@ export const useStudyStore = defineStore('study', () => {
 
       const mainChapterId =
         options.mainChapterId ??
+        focusedMainChapterId.value ??
         activeCurriculumItem.value?.mainChapterId ??
         roadmapStages.value.find((stage) => stage.status === 'ACTIVE')?.mainChapterId ??
         null
@@ -976,6 +998,7 @@ export const useStudyStore = defineStore('study', () => {
     clearLesson()
     clearQuizSession()
     clearScenarioSession()
+    isLoading.value = false
     error.value = null
   }
 
@@ -1011,6 +1034,8 @@ export const useStudyStore = defineStore('study', () => {
     scenarioAttemptResult,
     scenarioFinalGrading,
     activeCurriculumItem,
+    focusedMainChapterId,
+    isFocusedMainChapterCompleted,
     foundationItem,
     needsFoundationGuide,
     isFoundationCompleted: isFoundationCompletedFlag,

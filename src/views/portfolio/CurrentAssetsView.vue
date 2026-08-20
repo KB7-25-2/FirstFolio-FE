@@ -8,9 +8,25 @@ import SellHoldingModal from '@/components/portfolio/SellHoldingModal.vue'
 import TradeResultModal from '@/components/portfolio/TradeResultModal.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
+import { ASSET_TYPE_META } from '@/constants/assetType.js'
 
 const store = usePortfolioStore()
 
+// 색상 점(color)을 넣어 어떤 색이 어떤 자산군인지 필터에서 바로 확인할 수 있게 한다.
+// PortfolioSummaryCard 범례·도넛 차트와 같은 색상 소스(ASSET_TYPE_META)를 써서 색이 어긋나지 않게 한다.
+const FILTERS = [
+  { value: 'ALL', label: '전체', color: null },
+  {
+    value: 'DEPOSIT_SAVINGS',
+    label: ASSET_TYPE_META.DEPOSIT_SAVINGS.label,
+    color: ASSET_TYPE_META.DEPOSIT_SAVINGS.color,
+  },
+  { value: 'BOND', label: ASSET_TYPE_META.BOND.label, color: ASSET_TYPE_META.BOND.color },
+  { value: 'STOCK', label: ASSET_TYPE_META.STOCK.label, color: ASSET_TYPE_META.STOCK.color },
+  { value: 'FUND', label: ASSET_TYPE_META.FUND.label, color: ASSET_TYPE_META.FUND.color },
+]
+
+const activeFilter = ref('ALL')
 const sellTargetHolding = ref(null)
 const isSelling = ref(false)
 const sellError = ref(null)
@@ -20,6 +36,11 @@ const tradeResult = ref(null) // 거래 완료 모달에 넘길 값(상품명·�
 const activeHoldings = computed(
   () => store.summary?.holdings.filter((holding) => holding.status === 'ACTIVE') ?? [],
 )
+
+const filteredHoldings = computed(() => {
+  if (activeFilter.value === 'ALL') return activeHoldings.value
+  return activeHoldings.value.filter((holding) => holding.assetType === activeFilter.value)
+})
 
 onMounted(() => {
   if (!store.summary) store.fetchSummary()
@@ -72,8 +93,36 @@ const closeTradeResult = () => {
       <ScrollReveal>
         <PortfolioSummaryCard :summary="store.summary" />
       </ScrollReveal>
+
+      <!-- ScrollReveal 밖에 둔다 — ScrollReveal이 인라인 transform을 걸어서, 그 안에서는
+           position: sticky가 스크롤 컨테이너 기준이 아니라 transform이 만든 새 컨테이닝 블록
+           기준으로 깨진다. -->
+      <div class="cork-board-patch sticky top-0 z-10 -mx-2 px-2 py-1.5">
+        <div class="flex gap-2 overflow-x-auto pb-1">
+          <button
+            v-for="filter in FILTERS"
+            :key="filter.value"
+            type="button"
+            class="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
+            :class="
+              activeFilter === filter.value
+                ? 'border-[1.5px] border-[#c17f24] bg-[#fff8ec] text-[#2c1810]'
+                : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)]'
+            "
+            @click="activeFilter = filter.value"
+          >
+            <span
+              v-if="filter.color"
+              class="size-2 rounded-full"
+              :style="{ backgroundColor: filter.color }"
+            />
+            {{ filter.label }}
+          </button>
+        </div>
+      </div>
+
       <ScrollReveal>
-        <HoldingsList :holdings="activeHoldings" @request-sell="openSellModal" />
+        <HoldingsList :holdings="filteredHoldings" @request-sell="openSellModal" />
       </ScrollReveal>
       <ScrollReveal v-if="store.summary.aiFeedback">
         <AiCoachCard :message="store.summary.aiFeedback" />

@@ -25,6 +25,8 @@ const {
   error,
   scenarioQuizReady,
   scenarioQuizItem,
+  isFocusedMainChapterCompleted,
+  focusedMainChapterId,
 } = storeToRefs(studyStore)
 const {
   learning,
@@ -40,30 +42,11 @@ const loadStudyNote = async () => {
     // dashboard 실패 시에도 학습 노트는 study store 경로로 폴백
   }
 
-  const dashLearning = learning.value
-  const dashMainChapterId =
-    dashLearning && dashLearning.available !== false ? dashLearning.mainChapterId : null
-
   // 로드맵·학습 노트가 store에 있으면 API 생략
   if (studyStore.hasRoadmap) {
-    if (dashMainChapterId != null) {
-      studyStore.applyLearningItemsFromStage(dashMainChapterId)
-    }
     if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
-      await studyStore.refreshLearningItems(dashMainChapterId, { syncProgress: true })
+      await studyStore.refreshLearningItems(undefined, { syncProgress: true })
       return
-    }
-  }
-
-  if (dashMainChapterId != null) {
-    studyStore.error = null
-    try {
-      await studyStore.fetchStudyNote({ mainChapterId: dashMainChapterId })
-      if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
-        return
-      }
-    } catch (err) {
-      studyStore.error = err?.message || '학습 현황을 불러오지 못했습니다.'
     }
   }
 
@@ -195,11 +178,11 @@ const goLearning = () => {
 
 const goScenarioQuiz = (event) => {
   event.stopPropagation()
-  const item = scenarioQuizItem.value
-  if (!item?.mainChapterId) return
+  const mainChapterId = scenarioQuizItem.value?.mainChapterId ?? focusedMainChapterId.value
+  if (!mainChapterId) return
   router.push({
     name: 'learning-scenario-quiz',
-    params: { mainChapterId: item.mainChapterId },
+    params: { mainChapterId },
   })
 }
 </script>
@@ -260,9 +243,16 @@ const goScenarioQuiz = (event) => {
             </p>
             <header class="flex h-9 items-end gap-2">
               <h2
-                class="min-w-0 flex-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]"
+                class="flex min-w-0 flex-1 items-center gap-1.5 font-serif font-bold text-[22px] leading-none text-[#212b5c]"
               >
-                {{ chapterTitle || '학습 현황' }}
+                <span class="truncate">{{ chapterTitle || '학습 현황' }}</span>
+                <span
+                  v-if="isFocusedMainChapterCompleted"
+                  class="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#598c52] font-sans text-[13px] text-white"
+                  aria-label="대단원 완료"
+                >
+                  ✓
+                </span>
               </h2>
             </header>
 
@@ -320,14 +310,14 @@ const goScenarioQuiz = (event) => {
                     class="flex size-8 items-center justify-center rounded-full border-[0.5px] font-serif text-[15px] leading-none"
                     :class="{
                       'border-[rgba(89,140,82,0.75)] bg-[#e8f5e4] text-[#598c52]':
-                        node.role === 'prev' && node.fullyCompleted,
+                        node.fullyCompleted,
                       'border-[#c17f24] bg-[#c17f24] text-[#fff8ec] shadow-[0_0_0_3px_rgba(193,127,36,0.22)]':
-                        node.role === 'current',
+                        node.role === 'current' && !node.fullyCompleted,
                       'border-[rgba(33,43,92,0.3)] bg-[#fffdf7] text-[rgba(33,43,92,0.5)]':
-                        node.role === 'next' || (node.role === 'prev' && !node.fullyCompleted),
+                        !node.fullyCompleted && (node.role === 'next' || node.role === 'prev'),
                     }"
                   >
-                    {{ node.role === 'prev' && node.fullyCompleted ? '✓' : node.order }}
+                    {{ node.fullyCompleted ? '✓' : node.order }}
                   </span>
                 </div>
 

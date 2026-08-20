@@ -70,6 +70,42 @@ export const mapFinancialProduct = (raw) => ({
   riskLevel: RISK_LEVEL_LABEL[raw.risk_level] ?? raw.risk_level,
   cycleSummary: formatCycleSummary(raw.simulation_terms, raw.real_terms),
   isTimeCompressionExempt: !raw.simulation_terms && !raw.real_terms,
+  // 시간 압축 타임라인 그래프용 raw 숫자값. cycleSummary는 이미 문구로 뭉쳐놨지만,
+  // 그래프는 숫자가 그대로 필요해서 따로 노출한다.
+  simulationTerms: raw.simulation_terms
+    ? {
+        maturityHours: raw.simulation_terms.service_maturity_hours ?? null,
+        intervalHours: raw.simulation_terms.service_interest_interval_hours ?? null,
+      }
+    : null,
+  realTerms: raw.real_terms
+    ? {
+        maturityMonths: raw.real_terms.maturity_months ?? null,
+        // 예·적금은 enum(interest_interval), 채권은 개월 수(interest_interval_months) —
+        // 필드명 자체가 다르다(formatCycleSummary 주석 참고).
+        interestInterval: raw.real_terms.interest_interval ?? null,
+        intervalMonths: raw.real_terms.interest_interval_months ?? null,
+        // 성장 곡선(시간 압축 그래프)용. 예·적금은 interest_rate, 채권은 coupon_rate로
+        // 필드명이 다르지만 둘 다 "연이율(%)"이라 하나로 합쳐 노출한다.
+        rate:
+          raw.real_terms.interest_rate != null
+            ? Number(raw.real_terms.interest_rate)
+            : raw.real_terms.coupon_rate != null
+              ? Number(raw.real_terms.coupon_rate)
+              : null,
+        // SIMPLE(단리)/COMPOUND(복리) — 채권엔 이 필드가 없고 interestIntervalMonths 유무로
+        // 이표채(주기 지급)/복리채(만기 일시불)를 구분한다.
+        rateType: raw.real_terms.interest_rate_type ?? null,
+        // 채권 복리 판정은 rateType이 아니라 interest_type 문자열에 "복리"가 들어있는지로 한다
+        // (백엔드 AssetEventTerms.of(BondRealTerms...) 기준 — 채권엔 interest_rate_type
+        // 필드 자체가 없어서 이걸로만 판별 가능하다. 원본: "이표채"/"복리채"/"할인채" 등).
+        interestType: raw.real_terms.interest_type ?? null,
+      }
+    : null,
+  // 목록 API(FUNC-031)엔 가격이 없다. 매수형(주식·펀드)은 store.hydrateProductPrices()가
+  // 상세 조회(FUNC-032)로 따로 채워 넣기 전까지 null — ProductListItem은 이 상태를
+  // "가격 정보 준비 중"으로 보여준다.
+  unitPrice: null,
 })
 
 export const mapFinancialProductsResponse = (raw) => ({

@@ -144,7 +144,7 @@ const resultCongratsMessage = computed(() =>
         </Transition>
       </div>
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-3 pt-1 pb-2">
+      <div class="scenario-quiz-scroll min-h-0 flex-1 overflow-y-auto px-3 pt-1 pb-2">
         <Transition name="scenario-phase" mode="out-in">
           <ScenarioClipboardBoard
             v-if="scenarioPhase === 'INTRO' && opening"
@@ -311,6 +311,17 @@ const resultCongratsMessage = computed(() =>
     />
   </div>
 </template>
+
+<style scoped>
+/* 문제 패널은 스크롤되지만, 시장 동향을 열어도 스크롤바 폭이 퀴즈 레이아웃에 반영되지 않는다. */
+.scenario-quiz-scroll {
+  scrollbar-width: none;
+}
+
+.scenario-quiz-scroll::-webkit-scrollbar {
+  display: none;
+}
+</style>
 
 <style scoped>
 .scenario-penguin {

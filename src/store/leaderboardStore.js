@@ -48,6 +48,7 @@ export const useLeaderboardStore = defineStore('leaderboard', () => {
     snapshot.value = null
     error.value = null
     errorCode.value = null
+    isLoading.value = false
   }
 
   return {
