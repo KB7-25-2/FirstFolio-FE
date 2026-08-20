@@ -204,13 +204,12 @@ npm run build
 npm run preview
 ```
 
-| 파일                          | 설명                |
-| ----------------------------- | ------------------- |
-| `public/icon.png`             | 앱 아이콘 (임시)    |
-| `public/pwa-192x192.png`      | PWA 아이콘 192×192  |
-| `public/pwa-512x512.png`      | PWA 아이콘 512×512  |
-| `public/apple-touch-icon.png` | iOS 홈 화면 아이콘  |
-| `src/pwa/register.js`         | Service Worker 등록 |
+| 파일                  | 설명                       |
+| --------------------- | -------------------------- |
+| `public/favicon.jpg`  | 브라우저·PWA·iOS 앱 아이콘 |
+| `public/logo.png`     | 서비스 로고                |
+| `public/splash.webp`  | 로그인 스플래시            |
+| `src/pwa/register.js` | Service Worker 등록        |
 
 ---
 
@@ -227,10 +226,9 @@ FirstFolio-FE/
 │   ├── pre-commit          # 커밋 전 lint-staged 실행
 │   └── commit-msg          # 커밋 메시지 commitlint 검사
 ├── public/
-│   ├── icon.png              # 앱 아이콘 (임시)
-│   ├── pwa-192x192.png
-│   ├── pwa-512x512.png
-│   └── apple-touch-icon.png
+│   ├── favicon.jpg           # 브라우저·PWA·iOS 앱 아이콘
+│   ├── logo.png              # 서비스 로고
+│   └── splash.webp           # 로그인 스플래시
 ├── src/
 │   ├── api/                # Axios 인스턴스 및 API 모듈
 │   │   ├── authApi.js

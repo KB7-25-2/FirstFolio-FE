@@ -8,6 +8,7 @@ import PointBalanceCard from '@/components/pointMarket/PointBalanceCard.vue'
 import GifticonGridItem from '@/components/pointMarket/GifticonGridItem.vue'
 import SelectedGifticonBar from '@/components/pointMarket/SelectedGifticonBar.vue'
 import RedemptionHistoryItem from '@/components/pointMarket/RedemptionHistoryItem.vue'
+import BaseToast from '@/components/BaseToast.vue'
 
 const gifticonStore = useGifticonStore()
 const userStore = useUserStore()
@@ -24,7 +25,7 @@ const currentView = ref('catalog') // 'catalog' | 'history'
 const activeFilter = ref('ALL')
 const selectedGifticonId = ref(null)
 const isRedeeming = ref(false)
-const redeemError = ref(null)
+const redeemToast = ref({ open: false, message: '', variant: 'success' })
 
 onMounted(() => {
   gifticonStore.fetchGifticons()
@@ -36,7 +37,6 @@ watch(currentView, (view) => {
     gifticonStore.fetchRedemptionHistory()
   }
   selectedGifticonId.value = null
-  redeemError.value = null
 })
 
 const filteredGifticons = computed(() => {
@@ -50,7 +50,6 @@ const selectedGifticon = computed(() =>
 
 const selectGifticon = (gifticon) => {
   if (!gifticon.isRedeemable) return
-  redeemError.value = null
   selectedGifticonId.value =
     selectedGifticonId.value === gifticon.gifticonId ? null : gifticon.gifticonId
 }
@@ -58,18 +57,28 @@ const selectGifticon = (gifticon) => {
 const handleRedeem = async () => {
   if (!selectedGifticon.value) return
   isRedeeming.value = true
-  redeemError.value = null
+
+  const displayName = selectedGifticon.value.displayName
 
   try {
     await gifticonStore.redeem(selectedGifticon.value)
     selectedGifticonId.value = null
     // 방금 신청한 게 내역에 바로 보이도록 다시 불러온다.
     gifticonStore.fetchRedemptionHistory()
+    redeemToast.value = { open: true, message: `${displayName} 교환 완료!`, variant: 'success' }
   } catch (err) {
-    redeemError.value = err.message || '교환 처리 중 문제가 발생했어요.'
+    redeemToast.value = {
+      open: true,
+      message: err.message || '교환 처리 중 문제가 발생했어요.',
+      variant: 'error',
+    }
   } finally {
     isRedeeming.value = false
   }
+}
+
+const closeRedeemToast = () => {
+  redeemToast.value.open = false
 }
 </script>
 
@@ -168,16 +177,9 @@ const handleRedeem = async () => {
         <!-- 하단 고정 바 자리 확보 (선택된 상품이 있을 때) -->
         <div v-if="selectedGifticon" class="h-20" aria-hidden="true" />
 
-        <p v-if="redeemError && !selectedGifticon" class="mt-3 font-serif text-sm text-[#c0433f]">
-          {{ redeemError }}
-        </p>
-
         <Teleport to="body">
           <div v-if="selectedGifticon" class="fixed inset-x-0 bottom-[64px] z-40 px-5">
             <div class="mx-auto max-w-[var(--mobile-width)]">
-              <p v-if="redeemError" class="mb-2 font-serif text-xs text-[#c0433f]">
-                {{ redeemError }}
-              </p>
               <SelectedGifticonBar
                 :gifticon="selectedGifticon"
                 :point-balance="userStore.pointBalance"
@@ -206,5 +208,13 @@ const handleRedeem = async () => {
         <p v-else class="font-serif text-sm text-[rgba(41,33,26,0.45)]">아직 교환 내역이 없어요.</p>
       </template>
     </div>
+
+    <BaseToast
+      :open="redeemToast.open"
+      :message="redeemToast.message"
+      :variant="redeemToast.variant"
+      data-testid="gifticon-redeem-toast"
+      @close="closeRedeemToast"
+    />
   </div>
 </template>

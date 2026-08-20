@@ -8,6 +8,12 @@ const store = usePortfolioStore()
 const carouselEl = ref(null)
 const activeIndex = ref(0)
 
+// "서비스 1일 만기 · 1일마다 이자 · 실제 1개월 만기 · 실제 만기 시 일괄 이자" 같은 한 문장을
+// 손글씨체 대형 텍스트로 그대로 찍으면 가독성이 떨어진다. "·" 기준으로 쪼개서 개별 칩으로
+// 보여주면 각 조건을 스캔하기 쉬워진다.
+const cycleSummaryChips = (product) =>
+  product.cycleSummary ? product.cycleSummary.split(' · ') : []
+
 onMounted(() => {
   if (!store.purchasableProducts.length) store.fetchPurchasableProducts()
   if (!store.summary) store.fetchSummary()
@@ -68,7 +74,7 @@ watch(
 <template>
   <div
     data-scroll-reveal-root
-    class="nav-scroll-pad hide-scrollbar flex h-full min-h-0 flex-col gap-3 overflow-y-auto overscroll-contain"
+    class="nav-scroll-pad hide-scrollbar absolute inset-0 flex flex-col gap-3 overflow-y-auto overscroll-contain"
   >
     <div class="flex shrink-0 items-baseline justify-between">
       <p class="font-pen text-base text-[#c17f24]">상품별 시간 압축 비교</p>
@@ -101,9 +107,17 @@ watch(
               {{ product.riskLevel }}
             </p>
 
-            <h2 class="mt-3 font-pen text-xl text-[#2c1810]">
-              {{ product.cycleSummary ?? '실시간 시세' }}
-            </h2>
+            <h2 class="mt-3 font-serif text-sm font-bold text-[#2c1810]">상품 조건</h2>
+            <div v-if="cycleSummaryChips(product).length" class="mt-1.5 flex flex-wrap gap-1.5">
+              <span
+                v-for="(chip, index) in cycleSummaryChips(product)"
+                :key="index"
+                class="rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[rgba(193,127,36,0.08)] px-2 py-1 font-serif text-[11px] font-medium text-[#8a5c1e]"
+              >
+                {{ chip }}
+              </span>
+            </div>
+            <p v-else class="mt-1.5 font-serif text-sm text-[rgba(41,33,26,0.55)]">실시간 시세</p>
             <p class="mt-2 font-serif text-sm leading-relaxed text-[rgba(41,33,26,0.65)]">
               서비스 안에서는 압축된 기간으로 빠르게 진행되지만, 실제 상품 기준으로는 위 기간을
               따릅니다. 계산은 동일 조건에서 재현 가능하게 관리돼요.

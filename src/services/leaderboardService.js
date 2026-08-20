@@ -1,12 +1,11 @@
 /**
- * GET /leaderboard 서비스
+ * GET /daily-quests/leaderboard 서비스
  * — 실 API 우선, DEV에서 실패 시 목업 폴백
- * — 404 LEADERBOARD_SNAPSHOT_NOT_FOUND 는 폴백하지 않고 UI에 전달
  */
 
 /**
  * @typedef {import('@/types/leaderboard.js').LeaderboardItem} LeaderboardItem
- * @typedef {import('@/types/leaderboard.js').LeaderboardSnapshot} LeaderboardSnapshot
+ * @typedef {import('@/types/leaderboard.js').DailyQuestLeaderboard} DailyQuestLeaderboard
  */
 
 import { getLeaderboard as getLeaderboardApi } from '@/api/user/leaderboardApi.js'
@@ -15,8 +14,7 @@ import { ApiError } from '@/api/user/errorHandler.js'
 /** @type {Record<string, string>} */
 const LEADERBOARD_ERROR_MESSAGES = {
   UNAUTHORIZED: '인증이 필요합니다. 다시 로그인해 주세요.',
-  LEADERBOARD_SNAPSHOT_NOT_FOUND:
-    '이번 주 리더보드를 집계하는 중이에요. 잠시 후 다시 확인해 주세요.',
+  INVALID_LEADERBOARD_PAGE: '리더보드 페이지 조건이 올바르지 않습니다.',
 }
 
 export class LeaderboardApiError extends Error {
@@ -40,18 +38,24 @@ export class LeaderboardApiError extends Error {
 const mapItem = (raw) => ({
   rank: raw.rank,
   nickname: raw.nickname,
-  weeklyScore: raw.weekly_score ?? raw.weeklyScore,
+  score: raw.score,
 })
 
 /**
  * @param {object} raw
- * @returns {LeaderboardSnapshot}
+ * @returns {DailyQuestLeaderboard}
  */
-export const mapLeaderboardSnapshot = (raw) => ({
-  snapshotDate: raw.snapshot_date ?? raw.snapshotDate ?? '',
-  weekStartDate: raw.week_start_date ?? raw.weekStartDate ?? '',
+export const mapDailyQuestLeaderboard = (raw) => ({
+  questDate: raw.quest_date ?? raw.questDate ?? '',
+  calculatedAt: raw.calculated_at ?? raw.calculatedAt ?? '',
   items: (raw.items ?? []).map(mapItem),
-  myRank: raw.my_rank || raw.myRank ? mapItem(raw.my_rank ?? raw.myRank) : null,
+  myRank:
+    raw.my_rank || raw.myRank
+      ? {
+          rank: (raw.my_rank ?? raw.myRank).rank,
+          score: (raw.my_rank ?? raw.myRank).score,
+        }
+      : null,
   nextCursor: raw.next_cursor ?? raw.nextCursor ?? null,
 })
 
@@ -125,7 +129,7 @@ const MOCK_NICKNAMES = [
 ]
 
 /**
- * @returns {{ rank: number, nickname: string, weekly_score: number }[]}
+ * @returns {{ rank: number, nickname: string, score: number }[]}
  */
 const buildMockItems = () =>
   Array.from({ length: 40 }, (_, index) => {
@@ -133,7 +137,7 @@ const buildMockItems = () =>
     return {
       rank,
       nickname: MOCK_NICKNAMES[index] ?? `투자자${rank}`,
-      weekly_score: Math.max(1, 41 - rank),
+      score: Math.max(0, 5 - Math.floor((rank - 1) / 8)),
     }
   })
 
@@ -142,7 +146,7 @@ const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms))
 
 /**
  * @param {{ cursor?: string, size?: number }} [params]
- * @returns {Promise<{ data: LeaderboardSnapshot }>}
+ * @returns {Promise<{ data: DailyQuestLeaderboard }>}
  */
 const getLeaderboardMock = async (params = {}) => {
   await delay()
@@ -155,14 +159,13 @@ const getLeaderboardMock = async (params = {}) => {
   const nextCursor = nextStart < MOCK_ALL_ITEMS.length ? String(nextStart) : null
 
   return {
-    data: mapLeaderboardSnapshot({
-      snapshot_date: '2026-07-30',
-      week_start_date: '2026-07-27',
+    data: mapDailyQuestLeaderboard({
+      quest_date: '2026-08-20',
+      calculated_at: '2026-08-20T06:30:00Z',
       items: pageItems,
       my_rank: {
         rank: 47,
-        nickname: '채권꿈나무',
-        weekly_score: 18,
+        score: 3,
       },
       next_cursor: nextCursor,
     }),
@@ -170,9 +173,9 @@ const getLeaderboardMock = async (params = {}) => {
 }
 
 /**
- * GET /leaderboard
+ * GET /daily-quests/leaderboard
  * @param {{ cursor?: string, size?: number }} [params]
- * @returns {Promise<{ data: LeaderboardSnapshot }>}
+ * @returns {Promise<{ data: DailyQuestLeaderboard }>}
  */
 export const getLeaderboard = async (params = {}) => {
   const query = {}
@@ -182,7 +185,7 @@ export const getLeaderboard = async (params = {}) => {
   try {
     const { data } = await getLeaderboardApi(query)
     const raw = data?.data ?? data
-    return { data: mapLeaderboardSnapshot(raw) }
+    return { data: mapDailyQuestLeaderboard(raw) }
   } catch (error) {
     const mapped = mapLeaderboardError(
       error,
@@ -190,19 +193,7 @@ export const getLeaderboard = async (params = {}) => {
       '리더보드를 불러오지 못했습니다.',
     )
 
-    // 스냅샷 없음(명시 코드)은 목업으로 가리지 않고 UI에 전달
-    if (mapped.code === 'LEADERBOARD_SNAPSHOT_NOT_FOUND') {
-      throw mapped
-    }
-
-    if (!import.meta.env.DEV) {
-      if (mapped.status === 404) {
-        throw new LeaderboardApiError(
-          'LEADERBOARD_SNAPSHOT_NOT_FOUND',
-          LEADERBOARD_ERROR_MESSAGES.LEADERBOARD_SNAPSHOT_NOT_FOUND,
-          404,
-        )
-      }
+    if (mapped.code === 'INVALID_LEADERBOARD_PAGE' || !import.meta.env.DEV) {
       throw mapped
     }
 
@@ -214,12 +205,12 @@ export const getLeaderboard = async (params = {}) => {
 /**
  * TOP 목록 (화면 초기 로드용, size 기본 40)
  * @param {{ size?: number }} [params]
- * @returns {Promise<{ data: LeaderboardSnapshot }>}
+ * @returns {Promise<{ data: DailyQuestLeaderboard }>}
  */
 export const getLeaderboardTop40 = async (params = {}) =>
   getLeaderboard({ size: params.size ?? 40 })
 
 /** @internal 테스트용 */
-export const __mapLeaderboardSnapshot = mapLeaderboardSnapshot
+export const __mapDailyQuestLeaderboard = mapDailyQuestLeaderboard
 export const __MOCK_TOP40_COUNT = MOCK_ALL_ITEMS.length
 export const __getLeaderboardMock = getLeaderboardMock

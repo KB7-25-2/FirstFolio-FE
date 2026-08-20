@@ -41,6 +41,7 @@ const radioClass = computed(() => {
 <template>
   <button
     type="button"
+    :data-testid="`scenario-choice-${optionKey}`"
     class="scenario-choice flex w-full items-start gap-3 rounded-[10px] border-[0.5px] px-3 py-2.5 text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out disabled:cursor-default"
     :class="[shellClass, interactive ? 'scenario-choice--interactive' : '']"
     :disabled="disabled"

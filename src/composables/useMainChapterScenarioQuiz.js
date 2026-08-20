@@ -199,7 +199,10 @@ export const useMainChapterScenarioQuiz = () => {
       return
     }
     studyStore.clearScenarioSession()
-    router.push({ name: 'learning' })
+    router.push({
+      name: 'learning',
+      query: { mainChapterId: String(mainChapterId.value) },
+    })
   }
 
   const dismissUnlockCeremony = () => {

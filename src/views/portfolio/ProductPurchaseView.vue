@@ -94,7 +94,10 @@ const closeTradeResult = () => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3">
+  <div
+    data-scroll-reveal-root
+    class="nav-scroll-pad absolute inset-0 flex flex-col gap-3 overflow-y-auto overscroll-contain"
+  >
     <ScrollReveal>
       <div class="flex gap-2 overflow-x-auto pb-1">
         <button

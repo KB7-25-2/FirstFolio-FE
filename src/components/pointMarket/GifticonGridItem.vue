@@ -29,6 +29,10 @@ const accentColor = computed(() => {
   )
   return match?.color ?? DEFAULT_ACCENT
 })
+
+// "선택"(구매 대상으로 고른 상태)과 헷갈리지 않게, 품절은 작은 코너 뱃지가 아니라
+// 이미지 전체를 덮는 도장 형태로 확실히 다르게 보여준다.
+const isSoldOut = computed(() => props.gifticon.stockStatus === 'SOLD_OUT')
 </script>
 
 <template>
@@ -62,6 +66,20 @@ const accentColor = computed(() => {
       >
         선택
       </span>
+
+      <!-- 품절: "선택" 코너 뱃지와 헷갈리지 않게, 이미지 전체를 어둡게 덮고 가운데 도장처럼 보여준다. -->
+      <div
+        v-else-if="isSoldOut"
+        class="absolute inset-0 flex items-center justify-center bg-[rgba(44,24,16,0.55)]"
+      >
+        <span
+          class="-rotate-6 rounded-[2px] border-2 border-[#fff8ec] px-2 py-0.5 font-serif text-[11px] font-black tracking-wider text-[#fff8ec]"
+        >
+          품절
+        </span>
+      </div>
+
+      <!-- 재고는 있지만 포인트가 부족한 경우는 기존처럼 작은 코너 뱃지만 보여준다. -->
       <span
         v-else-if="!gifticon.isRedeemable"
         class="absolute top-1.5 right-1.5 rounded-full bg-[#fff8ec] px-1.5 py-0.5 font-serif text-[9px] font-bold text-[rgba(41,33,26,0.5)]"

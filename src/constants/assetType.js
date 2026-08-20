@@ -53,6 +53,15 @@ export const ASSET_TYPE_META = {
     buyActionLabel: '매수',
     quantityUnit: '좌',
   },
+  OTHER: {
+    label: '기타',
+    dotClass: 'bg-[var(--pf-asset-cash)]',
+    color: 'var(--pf-asset-cash)',
+    tradeType: 'MARKET',
+    sellActionLabel: '매도',
+    buyActionLabel: '매수',
+    quantityUnit: null,
+  },
 }
 
 export const CASH_META = {

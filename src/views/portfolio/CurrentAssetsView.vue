@@ -64,7 +64,7 @@ const closeTradeResult = () => {
 <template>
   <div
     data-scroll-reveal-root
-    class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-2"
+    class="nav-scroll-pad absolute inset-0 flex flex-col gap-4 overflow-y-auto overscroll-contain px-2"
   >
     <p v-if="store.error" class="text-sm text-[var(--pf-negative)]">{{ store.error }}</p>
 

@@ -18,6 +18,9 @@ defineEmits(['request-sell'])
 
 const sellActionLabel = computed(() => getAssetTypeMeta(props.holding.assetType).sellActionLabel)
 const quantityUnit = computed(() => getAssetTypeMeta(props.holding.assetType).quantityUnit)
+const isSubscription = computed(
+  () => getAssetTypeMeta(props.holding.assetType).tradeType === 'SUBSCRIPTION',
+)
 
 // 원금이 아니라 "지금 이 상품이 얼마짜리인지"(평가액)를 보여준다.
 const displayAmount = computed(() => props.holding.valuationAmount ?? props.holding.principalAmount)
@@ -25,9 +28,27 @@ const formattedAmount = computed(() => `${displayAmount.value.toLocaleString('ko
 
 const formattedQuantity = computed(() =>
   quantityUnit.value
-    ? `${props.holding.quantity.toLocaleString('ko-KR')}${quantityUnit.value} · `
+    ? `${props.holding.quantity.toLocaleString('ko-KR')}${quantityUnit.value}`
     : '',
 )
+
+// 예·적금·채권(SUBSCRIPTION)은 cycleSummary(만기·이자주기)가 있지만, 주식·펀드(MARKET)는
+// 만기 개념이 없어 cycleSummary가 항상 null이다 — 그 자리에 대신 현재가(unitPrice)를 보여준다.
+// unitPrice는 mapHoldingFromApi에서 이미 valuationAmount / quantity로 계산돼 있다.
+const formattedUnitPrice = computed(() =>
+  props.holding.unitPrice != null
+    ? `현재가 ${Math.round(props.holding.unitPrice).toLocaleString('ko-KR')}원`
+    : null,
+)
+const secondaryText = computed(() =>
+  isSubscription.value
+    ? props.holding.cycleSummary
+    : (formattedUnitPrice.value ?? props.holding.cycleSummary),
+)
+const formattedSecondaryLine = computed(() => {
+  const parts = [formattedQuantity.value, secondaryText.value].filter(Boolean)
+  return parts.join(' · ')
+})
 </script>
 
 <template>
@@ -41,7 +62,7 @@ const formattedQuantity = computed(() =>
 
     <div class="flex items-center justify-between gap-2">
       <p class="truncate font-serif text-[11px] text-[rgba(41,33,26,0.55)]">
-        {{ formattedQuantity }}{{ holding.cycleSummary }}
+        {{ formattedSecondaryLine }}
       </p>
       <button
         type="button"

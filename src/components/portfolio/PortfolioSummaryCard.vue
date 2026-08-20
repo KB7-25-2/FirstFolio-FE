@@ -16,6 +16,17 @@ const props = defineProps({
 
 const formatCurrency = (value) => `${Number(value ?? 0).toLocaleString('ko-KR')}원`
 
+// 총자산 폭이 도넛 차트(96px 고정) 때문에 좁아, 금액 자릿수가 늘면 "원"이 다음 줄로
+// 밀려 내려가는 문제가 있었다. 줄바꿈을 아예 막고(whitespace-nowrap) 자릿수에 맞춰
+// 폰트 크기를 단계적으로 줄여 한 줄 안에 들어오게 한다.
+const totalAssetText = computed(() => formatCurrency(props.summary.totalAssetValue))
+const totalAssetFontClass = computed(() => {
+  const length = totalAssetText.value.length
+  if (length > 14) return 'text-[20px]'
+  if (length > 11) return 'text-[24px]'
+  return 'text-[30px]'
+})
+
 const profitLossClass = computed(() => {
   if (props.summary.profitLossAmount > 0) return 'text-[#1D9E75]'
   if (props.summary.profitLossAmount < 0) return 'text-[#c0433f]'
@@ -55,12 +66,15 @@ const activeHoldingCount = computed(
       />
 
       <div class="relative flex items-start justify-between gap-4 pt-1.5">
-        <div class="flex flex-col gap-1">
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
           <p class="font-serif text-[10px] font-bold tracking-wide text-[rgba(193,127,36,0.85)]">
             총 자산
           </p>
-          <p class="font-pen text-[30px] leading-none text-[#2c1810]">
-            {{ formatCurrency(summary.totalAssetValue) }}
+          <p
+            class="font-pen whitespace-nowrap leading-tight text-[#2c1810]"
+            :class="totalAssetFontClass"
+          >
+            {{ totalAssetText }}
           </p>
           <p class="mt-1 font-serif text-[11px] text-[rgba(41,33,26,0.55)]">
             현금 {{ formatCurrency(summary.cashBalance) }} · 평가손익

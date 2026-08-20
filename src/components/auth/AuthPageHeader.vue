@@ -1,4 +1,6 @@
 <script setup>
+import { BRAND_WORDMARK_SRC } from '@/constants/brandAssets.js'
+
 defineProps({
   tagline: {
     type: String,
@@ -9,8 +11,15 @@ defineProps({
 
 <template>
   <header class="flex flex-col items-center text-center">
-    <h1 class="font-serif text-[34px] leading-none font-bold text-[var(--auth-title)]">
-      Firstfolio
+    <h1>
+      <img
+        :src="BRAND_WORDMARK_SRC"
+        alt="firstfolio"
+        class="h-auto w-[min(52vw,200px)]"
+        width="200"
+        height="50"
+        draggable="false"
+      />
     </h1>
     <p class="mt-2 text-[12px] text-[var(--auth-subtitle)]">{{ tagline }}</p>
   </header>

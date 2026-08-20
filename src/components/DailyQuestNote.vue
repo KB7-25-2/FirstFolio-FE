@@ -47,16 +47,16 @@ const questCtaLabel = computed(() => {
   return '시작하기 →'
 })
 
-/** 오늘 퀘스트 점수 우선, 없으면 주간 점수 */
+/** 오늘 퀘스트 점수 우선, 없으면 오늘 순위 점수 */
 const scoreDisplay = computed(() => {
   if (score.value > 0) return score.value.toLocaleString('ko-KR')
-  if (myRank.value?.weeklyScore != null) return myRank.value.weeklyScore.toLocaleString('ko-KR')
+  if (myRank.value?.score != null) return myRank.value.score.toLocaleString('ko-KR')
   return '0'
 })
 
 const scoreHint = computed(() => {
   if (score.value > 0) return '오늘 획득'
-  if (myRank.value?.weeklyScore != null) return '주간 점수'
+  if (myRank.value?.score != null) return '오늘 순위 점수'
   return '점수'
 })
 
