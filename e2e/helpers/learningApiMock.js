@@ -52,6 +52,10 @@ const PAGE_TITLES = {
 const MAIN_CHAPTER_QUIZ_ATTEMPT_ID = 9201
 const MAIN_CHAPTER_QUIZ_QUESTION_COUNT = 3
 
+/** E2E 대단원 시나리오 퀴즈 mock 정답 key (buildMainChapterQuizQuestions choices[0]) */
+export const MAIN_CHAPTER_SCENARIO_CORRECT_KEY = '1'
+export const MAIN_CHAPTER_SCENARIO_QUESTION_COUNT = MAIN_CHAPTER_QUIZ_QUESTION_COUNT
+
 const buildMainChapterQuizQuestions = (mainChapterId) =>
   Array.from({ length: MAIN_CHAPTER_QUIZ_QUESTION_COUNT }, (_, index) => ({
     question_id: 9200 + index,
