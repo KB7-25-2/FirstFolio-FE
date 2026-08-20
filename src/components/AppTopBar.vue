@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { BRAND_WORDMARK_SRC } from '@/constants/brandAssets.js'
 import { useUserStore } from '@/store/userStore.js'
 
 defineProps({
@@ -34,7 +35,7 @@ const avatarInitial = computed(() => nickname.value?.trim()?.charAt(0)?.toUpperC
       class="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 px-12"
       aria-hidden="true"
     >
-      <img src="/logo.png" :alt="title" class="h-6 w-auto max-w-[132px] object-contain" />
+      <img :src="BRAND_WORDMARK_SRC" :alt="title" class="h-6 w-auto max-w-[132px] object-contain" />
     </div>
 
     <button

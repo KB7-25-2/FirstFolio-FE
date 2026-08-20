@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.jpg'],
+        includeAssets: ['firstfolio-app-icon-f.svg'],
         manifest: {
           name: 'FirstFolio',
           short_name: 'FirstFolio',
@@ -27,9 +27,9 @@ export default defineConfig(({ mode }) => {
           start_url: '/',
           icons: [
             {
-              src: 'favicon.jpg',
+              src: 'firstfolio-app-icon-f.svg',
               sizes: '1024x1024',
-              type: 'image/jpeg',
+              type: 'image/svg+xml',
               purpose: 'any maskable',
             },
           ],

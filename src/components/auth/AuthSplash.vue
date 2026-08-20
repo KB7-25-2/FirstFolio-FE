@@ -1,5 +1,6 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { BRAND_WORDMARK_SRC } from '@/constants/brandAssets.js'
 
 defineProps({
   brand: {
@@ -96,11 +97,11 @@ onBeforeUnmount(() => {
         <img
           v-if="phase === 'logo'"
           key="logo"
-          src="/logo.png"
+          :src="BRAND_WORDMARK_SRC"
           :alt="brand"
           class="auth-splash__logo absolute h-auto w-[min(72vw,280px)] select-none object-contain"
           width="280"
-          height="280"
+          height="77"
           decoding="async"
           draggable="false"
         />

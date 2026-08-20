@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
+import { BRAND_APP_ICON_SRC } from '@/constants/brandAssets.js'
 import { useAuthStore } from '@/store/authStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import '@/assets/styles/admin.css'
@@ -35,7 +36,11 @@ const handleLogout = async () => {
   <div class="admin-shell">
     <aside class="admin-sidebar">
       <div class="admin-sidebar__brand">
-        <img src="/logo.png" alt="firstfolio" class="admin-sidebar__brand-kicker h-6 w-auto" />
+        <img
+          :src="BRAND_APP_ICON_SRC"
+          alt="firstfolio"
+          class="admin-sidebar__brand-kicker h-8 w-8 rounded-[6px]"
+        />
         <p class="admin-sidebar__brand-title">Admin Console</p>
       </div>
 
