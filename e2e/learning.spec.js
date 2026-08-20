@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { primaryNav, seedHomeSession } from './helpers/authSession.js'
-import { resolveQuizAnswerKeys } from './helpers/learningApiMock.js'
+import {
+  MAIN_CHAPTER_SCENARIO_CORRECT_KEY,
+  MAIN_CHAPTER_SCENARIO_QUESTION_COUNT,
+  resolveQuizAnswerKeys,
+} from './helpers/learningApiMock.js'
 
 /**
  * 학습 플로우 E2E (이슈 G 수동 스모크 대응)
@@ -211,24 +215,40 @@ async function answerQuizQuestion(page, key) {
 
 /** 시나리오 인트로 → 전 스텝 정답 → 수료증 → 로드맵 */
 async function completeScenarioQuiz(page) {
-  await page.getByRole('button', { name: /게임 시작|퀴즈 시작/ }).click()
+  await expect(page).toHaveURL(/\/scenario-quiz/)
 
-  for (let step = 0; step < 6; step += 1) {
-    if (await page.getByRole('button', { name: '학습 로드맵으로' }).isVisible()) break
+  const roadmapBtn = page.getByRole('button', { name: '학습 로드맵으로' })
+  if (await roadmapBtn.isVisible()) {
+    await roadmapBtn.click()
+    return
+  }
 
-    const balanced = page.getByRole('button', { name: /예금 40%.*주식 40%.*채권 20%/ })
-    await expect(balanced).toBeVisible({ timeout: 10_000 })
-    await balanced.click()
+  const startBtn = page.getByRole('button', { name: /^(게임 시작|퀴즈 시작)/ })
+  if (await startBtn.isVisible()) {
+    await startBtn.click()
+  }
+
+  const correctChoice = page.getByTestId(`scenario-choice-${MAIN_CHAPTER_SCENARIO_CORRECT_KEY}`)
+
+  for (let step = 0; step < MAIN_CHAPTER_SCENARIO_QUESTION_COUNT; step += 1) {
+    if (await roadmapBtn.isVisible()) break
+
+    await expect(correctChoice).toBeVisible({ timeout: 15_000 })
+    await correctChoice.click()
 
     await page.getByRole('button', { name: /결과 확인/ }).click()
 
     const next = page.getByRole('button', { name: /다음 문항|결과 확인/ })
-    await expect(next).toBeEnabled()
+    await expect(next).toBeEnabled({ timeout: 10_000 })
     await next.click()
+
+    // 마지막 문항 채점 후 completeScenarioAttempt가 RESULT로 전환할 때까지 대기
+    if (step === MAIN_CHAPTER_SCENARIO_QUESTION_COUNT - 1) {
+      await expect(roadmapBtn).toBeVisible({ timeout: 15_000 })
+      break
+    }
   }
 
-  await expect(page.getByRole('button', { name: '학습 로드맵으로' })).toBeVisible({
-    timeout: 10_000,
-  })
-  await page.getByRole('button', { name: '학습 로드맵으로' }).click()
+  await expect(roadmapBtn).toBeVisible({ timeout: 15_000 })
+  await roadmapBtn.click()
 }

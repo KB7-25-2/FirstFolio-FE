@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   __getLeaderboardMock,
-  __mapLeaderboardSnapshot,
+  mapDailyQuestLeaderboard,
   __MOCK_TOP40_COUNT,
   getLeaderboard,
   getLeaderboardTop40,
@@ -20,32 +20,32 @@ describe('leaderboardService (unit)', () => {
     vi.clearAllMocks()
   })
 
-  it('스냅샷 응답을 camelCase로 매핑한다', () => {
-    const data = __mapLeaderboardSnapshot({
-      snapshot_date: '2026-07-30',
-      week_start_date: '2026-07-27',
-      items: [{ rank: 1, nickname: '금융새싹', weekly_score: 32 }],
-      my_rank: { rank: 47, nickname: '채권꿈나무', weekly_score: 18 },
+  it('일일 리더보드 응답을 camelCase로 매핑한다', () => {
+    const data = mapDailyQuestLeaderboard({
+      quest_date: '2026-08-20',
+      calculated_at: '2026-08-20T06:30:00Z',
+      items: [{ rank: 1, nickname: '금융새싹', score: 5 }],
+      my_rank: { rank: 47, score: 3 },
       next_cursor: null,
     })
 
     expect(data).toEqual({
-      snapshotDate: '2026-07-30',
-      weekStartDate: '2026-07-27',
-      items: [{ rank: 1, nickname: '금융새싹', weeklyScore: 32 }],
-      myRank: { rank: 47, nickname: '채권꿈나무', weeklyScore: 18 },
+      questDate: '2026-08-20',
+      calculatedAt: '2026-08-20T06:30:00Z',
+      items: [{ rank: 1, nickname: '금융새싹', score: 5 }],
+      myRank: { rank: 47, score: 3 },
       nextCursor: null,
     })
   })
 
-  it('실 API 성공 시 매핑된 스냅샷을 반환한다', async () => {
+  it('실 API 성공 시 매핑된 일일 리더보드을 반환한다', async () => {
     getLeaderboardApi.mockResolvedValue({
       data: {
         data: {
-          snapshot_date: '2026-07-30',
-          week_start_date: '2026-07-27',
-          items: [{ rank: 1, nickname: '금융새싹', weekly_score: 32 }],
-          my_rank: { rank: 2, nickname: '예금왕', weekly_score: 28 },
+          quest_date: '2026-08-20',
+          calculated_at: '2026-08-20T06:30:00Z',
+          items: [{ rank: 1, nickname: '금융새싹', score: 5 }],
+          my_rank: { rank: 2, score: 4 },
           next_cursor: null,
         },
       },
@@ -53,20 +53,16 @@ describe('leaderboardService (unit)', () => {
 
     const { data } = await getLeaderboard({ size: 10 })
     expect(getLeaderboardApi).toHaveBeenCalledWith({ size: 10 })
-    expect(data.items[0]).toEqual({ rank: 1, nickname: '금융새싹', weeklyScore: 32 })
-    expect(data.myRank?.nickname).toBe('예금왕')
+    expect(data.items[0]).toEqual({ rank: 1, nickname: '금융새싹', score: 5 })
+    expect(data.myRank).toEqual({ rank: 2, score: 4 })
   })
 
-  it('404 LEADERBOARD_SNAPSHOT_NOT_FOUND 는 폴백하지 않고 던진다', async () => {
+  it('INVALID_LEADERBOARD_PAGE는 DEV에서도 목업으로 대체하지 않는다', async () => {
     getLeaderboardApi.mockRejectedValue(
-      new ApiError('집계 없음', 404, null, 'LEADERBOARD_SNAPSHOT_NOT_FOUND'),
+      new ApiError('잘못된 페이지', 400, null, 'INVALID_LEADERBOARD_PAGE'),
     )
 
-    await expect(getLeaderboard()).rejects.toMatchObject({
-      code: 'LEADERBOARD_SNAPSHOT_NOT_FOUND',
-      status: 404,
-    })
-    await expect(getLeaderboard()).rejects.toBeInstanceOf(LeaderboardApiError)
+    await expect(getLeaderboard({ size: 101 })).rejects.toBeInstanceOf(LeaderboardApiError)
   })
 
   it('DEV에서 기타 API 실패 시 목업으로 폴백한다', async () => {
@@ -76,7 +72,7 @@ describe('leaderboardService (unit)', () => {
     expect(__MOCK_TOP40_COUNT).toBe(40)
     expect(data.items).toHaveLength(40)
     expect(data.items[0]).toMatchObject({ rank: 1, nickname: '금융새싹' })
-    expect(data.myRank).toEqual({ rank: 47, nickname: '채권꿈나무', weeklyScore: 18 })
+    expect(data.myRank).toEqual({ rank: 47, score: 3 })
   })
 
   it('목업은 cursor·size로 페이지를 자른다', async () => {

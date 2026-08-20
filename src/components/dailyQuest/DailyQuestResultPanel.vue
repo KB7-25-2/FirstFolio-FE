@@ -32,8 +32,8 @@ const rankLabel = computed(() => {
 })
 
 const rankSub = computed(() => {
-  if (!myRank.value) return '주간 리더보드에 점수가 반영됩니다.'
-  return `주간 점수 ${myRank.value.weeklyScore.toLocaleString('ko-KR')}점 · 리더보드 반영`
+  if (!myRank.value) return '오늘의 리더보드에 점수가 반영됩니다.'
+  return `오늘 점수 ${myRank.value.score.toLocaleString('ko-KR')}점 · 리더보드 반영`
 })
 
 const accuracyLabel = computed(

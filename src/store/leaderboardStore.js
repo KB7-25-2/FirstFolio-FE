@@ -10,10 +10,9 @@ export const useLeaderboardStore = defineStore('leaderboard', () => {
 
   const items = computed(() => snapshot.value?.items ?? [])
   const myRank = computed(() => snapshot.value?.myRank ?? null)
-  const snapshotDate = computed(() => snapshot.value?.snapshotDate ?? '')
-  const weekStartDate = computed(() => snapshot.value?.weekStartDate ?? '')
+  const questDate = computed(() => snapshot.value?.questDate ?? '')
+  const calculatedAt = computed(() => snapshot.value?.calculatedAt ?? '')
   const nextCursor = computed(() => snapshot.value?.nextCursor ?? null)
-  const isSnapshotMissing = computed(() => errorCode.value === 'LEADERBOARD_SNAPSHOT_NOT_FOUND')
 
   /**
    * @param {{ cursor?: string, size?: number }} [params]
@@ -30,7 +29,7 @@ export const useLeaderboardStore = defineStore('leaderboard', () => {
         cursor: params.cursor,
         size: params.size ?? 40,
       })
-      snapshot.value = data
+      snapshot.value = params.append ? { ...data, items: [...items.value, ...data.items] } : data
     } catch (err) {
       snapshot.value = null
       error.value = err?.message || '리더보드를 불러오지 못했습니다.'
@@ -38,6 +37,11 @@ export const useLeaderboardStore = defineStore('leaderboard', () => {
     } finally {
       isLoading.value = false
     }
+  }
+
+  const loadMore = async (size = 40) => {
+    if (!nextCursor.value || isLoading.value) return
+    await fetchLeaderboard({ cursor: nextCursor.value, size, append: true })
   }
 
   const clear = () => {
@@ -53,11 +57,11 @@ export const useLeaderboardStore = defineStore('leaderboard', () => {
     errorCode,
     items,
     myRank,
-    snapshotDate,
-    weekStartDate,
+    questDate,
+    calculatedAt,
     nextCursor,
-    isSnapshotMissing,
     fetchLeaderboard,
+    loadMore,
     clear,
   }
 })

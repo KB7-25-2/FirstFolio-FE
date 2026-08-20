@@ -26,8 +26,8 @@ const {
   myRank,
   isLoading,
   error,
-  isSnapshotMissing,
-  snapshotDate,
+  questDate: leaderboardDate,
+  nextCursor,
 } = storeToRefs(leaderboardStore)
 
 const {
@@ -143,11 +143,11 @@ const pagedRanks = computed(() => {
 const pageLabel = computed(() => `${currentPage.value} / ${totalPages.value}`)
 
 const canGoPrev = computed(() => currentPage.value > 1)
-const canGoNext = computed(() => currentPage.value < totalPages.value)
+const canGoNext = computed(() => currentPage.value < totalPages.value || nextCursor.value != null)
 
 const myScoreLabel = computed(() => {
   if (!myRank.value) return '—'
-  return `${myRank.value.weeklyScore.toLocaleString('ko-KR')} 점`
+  return `${myRank.value.score.toLocaleString('ko-KR')} 점`
 })
 
 const myRankLabel = computed(() => {
@@ -163,8 +163,8 @@ const formatDotDate = (date = new Date()) => {
 }
 
 const docDateLabel = computed(() => {
-  if (snapshotDate.value) {
-    const [y, m, d] = snapshotDate.value.split('-')
+  if (leaderboardDate.value) {
+    const [y, m, d] = leaderboardDate.value.split('-')
     if (y && m && d) return `${y}. ${m}. ${d}`
   }
   return formatDotDate()
@@ -185,8 +185,13 @@ const goPrevPage = () => {
   currentPage.value -= 1
 }
 
-const goNextPage = () => {
+const goNextPage = async () => {
   if (!canGoNext.value) return
+  if (currentPage.value < totalPages.value) {
+    currentPage.value += 1
+    return
+  }
+  await leaderboardStore.loadMore(PAGE_SIZE)
   currentPage.value += 1
 }
 
@@ -373,7 +378,7 @@ const onHubSubmit = async () => {
                         {{ item.nickname }}
                       </span>
                       <span class="shrink-0" :class="rankScoreClass(item.rank)">
-                        {{ item.weeklyScore.toLocaleString('ko-KR') }} 점
+                        {{ item.score.toLocaleString('ko-KR') }} 점
                       </span>
                     </li>
                   </ol>
@@ -447,16 +452,6 @@ const onHubSubmit = async () => {
                 </div>
 
                 <div
-                  v-else-if="isSnapshotMissing"
-                  class="rounded-[8px] border-[0.5px] border-dashed border-[rgba(139,100,60,0.35)] px-3 py-4 text-center"
-                >
-                  <p class="font-serif text-[12px] font-bold text-[#3d1f08]">집계 준비 중</p>
-                  <p class="mt-1 font-serif text-[11px] text-[rgba(139,100,60,0.65)]">
-                    {{ error }}
-                  </p>
-                </div>
-
-                <div
                   v-else-if="error"
                   class="rounded-[8px] border-[0.5px] border-[rgba(213,42,45,0.35)] bg-[rgba(213,42,45,0.08)] px-3 py-3 text-center"
                 >
@@ -517,7 +512,7 @@ const onHubSubmit = async () => {
                           {{ item.nickname }}
                         </span>
                         <span class="shrink-0" :class="rankScoreClass(item.rank)">
-                          {{ item.weeklyScore.toLocaleString('ko-KR') }} 점
+                          {{ item.score.toLocaleString('ko-KR') }} 점
                         </span>
                       </li>
                     </ol>

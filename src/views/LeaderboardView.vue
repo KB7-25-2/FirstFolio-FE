@@ -6,16 +6,15 @@ import { useLeaderboardStore } from '@/store/leaderboardStore.js'
 
 const router = useRouter()
 const leaderboardStore = useLeaderboardStore()
-const { items, myRank, snapshotDate, weekStartDate, isLoading, error, isSnapshotMissing } =
-  storeToRefs(leaderboardStore)
+const { items, myRank, questDate, nextCursor, isLoading, error } = storeToRefs(leaderboardStore)
 
 onMounted(() => {
   leaderboardStore.fetchLeaderboard({ size: 50 })
 })
 
-const weekLabel = computed(() => {
-  if (!weekStartDate.value || !snapshotDate.value) return ''
-  return `${formatDateLabel(weekStartDate.value)} ~ ${formatDateLabel(snapshotDate.value)}`
+const dayLabel = computed(() => {
+  if (!questDate.value || !questDate.value) return ''
+  return `${formatDateLabel(questDate.value)} ~ ${formatDateLabel(questDate.value)}`
 })
 
 /**
@@ -48,8 +47,7 @@ const rankToneClass = (rank) => {
 /**
  * @param {import('@/types/leaderboard.js').LeaderboardItem} item
  */
-const isMe = (item) =>
-  myRank.value && item.rank === myRank.value.rank && item.nickname === myRank.value.nickname
+const isMe = () => false
 </script>
 
 <template>
@@ -65,9 +63,9 @@ const isMe = (item) =>
           <span class="font-serif text-[18px] leading-none" aria-hidden="true">←</span>
         </button>
         <div class="min-w-0">
-          <h1 class="font-serif text-[20px] font-black text-[#f5edd9]">이번 주 리더보드</h1>
-          <p v-if="weekLabel" class="mt-0.5 font-serif text-[11px] text-[rgba(245,237,217,0.45)]">
-            일일 퀘스트 점수 · {{ weekLabel }}
+          <h1 class="font-serif text-[20px] font-black text-[#f5edd9]">오늘의 리더보드</h1>
+          <p v-if="dayLabel" class="mt-0.5 font-serif text-[11px] text-[rgba(245,237,217,0.45)]">
+            오늘 완료한 일일 퀘스트 점수 · {{ dayLabel }}
           </p>
         </div>
       </div>
@@ -79,16 +77,6 @@ const isMe = (item) =>
         class="py-16 text-center font-serif text-sm text-[rgba(245,237,217,0.5)]"
       >
         순위를 불러오는 중…
-      </div>
-
-      <div
-        v-else-if="isSnapshotMissing"
-        class="rounded-2xl border-[0.5px] border-[rgba(245,237,217,0.12)] bg-[#161b22] px-4 py-10 text-center"
-      >
-        <p class="font-serif text-[15px] font-bold text-[#f5edd9]">집계 준비 중</p>
-        <p class="mt-2 font-serif text-[12px] leading-relaxed text-[rgba(245,237,217,0.55)]">
-          {{ error }}
-        </p>
       </div>
 
       <div
@@ -118,10 +106,10 @@ const isMe = (item) =>
           <div class="mt-1 flex items-end justify-between gap-3">
             <div class="min-w-0">
               <p class="truncate font-serif text-[16px] font-bold text-[#f5edd9]">
-                {{ myRank.nickname }}
+                오늘의 일일 퀘스트
               </p>
               <p class="mt-0.5 font-serif text-[11px] text-[rgba(245,237,217,0.5)]">
-                이번 주 일일 퀘스트 점수
+                오늘 완료한 일일 퀘스트 점수
               </p>
             </div>
             <div class="shrink-0 text-right">
@@ -129,7 +117,7 @@ const isMe = (item) =>
                 {{ myRank.rank }}
               </p>
               <p class="mt-1 font-serif text-[12px] font-bold text-[#f5edd9]">
-                {{ myRank.weeklyScore }}점
+                {{ myRank.score }}점
               </p>
             </div>
           </div>
@@ -144,7 +132,7 @@ const isMe = (item) =>
             class="flex items-center justify-between border-b border-[rgba(224,160,122,0.35)] px-3.5 py-2.5"
           >
             <p class="font-serif text-[11px] font-bold text-[rgba(61,31,8,0.7)]">전체 순위</p>
-            <p class="font-serif text-[10px] text-[rgba(139,100,60,0.55)]">주간 점수</p>
+            <p class="font-serif text-[10px] text-[rgba(139,100,60,0.55)]">오늘 점수</p>
           </div>
 
           <ol v-if="items.length" class="divide-y divide-[rgba(224,160,122,0.25)]">
@@ -175,7 +163,7 @@ const isMe = (item) =>
                 </span>
               </span>
               <span class="shrink-0 font-serif text-[13px] font-bold text-[rgba(61,31,8,0.8)]">
-                {{ item.weeklyScore }}
+                {{ item.score }}
               </span>
             </li>
           </ol>
@@ -188,8 +176,16 @@ const isMe = (item) =>
           </p>
         </section>
 
+        <button
+          v-if="nextCursor"
+          type="button"
+          class="study-continue-cta mt-4 w-full rounded px-3 py-2 font-serif text-[12px] font-bold text-[rgba(193,127,36,0.95)]"
+          @click="leaderboardStore.loadMore(50)"
+        >
+          더 보기
+        </button>
         <p class="mt-4 text-center font-serif text-[10px] text-[rgba(245,237,217,0.35)]">
-          매일 00:00에 스냅샷이 갱신돼요 · 닉네임만 공개
+          오늘 완료된 일일 퀘스트 점수 기준 · 실시간 순위
         </p>
       </template>
     </div>

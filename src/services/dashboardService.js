@@ -84,6 +84,7 @@ export const mapDashboardSummary = (raw) => ({
     totalAssets: raw.portfolio?.totalAssets ?? raw.portfolio?.total_assets,
     profitLoss: raw.portfolio?.profitLoss ?? raw.portfolio?.profit_loss,
     profitRate: raw.portfolio?.profitRate ?? raw.portfolio?.profit_rate,
+    cashBalance: raw.portfolio?.cashBalance ?? raw.portfolio?.cash_balance,
     allocation: (raw.portfolio?.allocation ?? []).map(mapAllocation),
   },
   dailyQuest: mapDashboardDailyQuest(raw.dailyQuest ?? raw.daily_quest ?? {}),
@@ -169,6 +170,7 @@ const getDashboardMock = async () => {
         available: true,
         total_assets: portfolio.summary.totalAssets,
         profit_loss: portfolio.summary.profitLoss,
+        cash_balance: portfolio.cashBalance,
         allocation: portfolio.allocation.map((item) => ({
           asset_type: item.assetType,
           ratio: item.ratio,
