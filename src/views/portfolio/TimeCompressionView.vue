@@ -180,11 +180,24 @@ const profitRateClass = (rate) => {
   return 'text-[rgba(41,33,26,0.5)]'
 }
 
-// 데이터가 로드되면 첫 슬라이드로 스크롤 위치를 맞춘다.
+// 첫 로드 또는 보고 있던 보유 상품이 사라졌을 때만 첫 슬라이드로 이동한다.
+// 가격 폴링은 카탈로그 배열을 갱신하므로, 현재 선택한 holdingId가 그대로라면
+// 캐러셀 위치를 유지해야 한다.
 watch(
   heldTimeCompressedItems,
-  async (items) => {
-    if (!items.length) return
+  async (items, previousItems) => {
+    if (!items.length) {
+      activeIndex.value = 0
+      return
+    }
+
+    const activeHoldingId = previousItems?.[activeIndex.value]?.holdingId
+    const preservedIndex = items.findIndex((item) => item.holdingId === activeHoldingId)
+    if (preservedIndex >= 0) {
+      activeIndex.value = preservedIndex
+      return
+    }
+
     activeIndex.value = 0
     await nextTick()
     if (carouselEl.value) carouselEl.value.scrollTo({ left: 0 })

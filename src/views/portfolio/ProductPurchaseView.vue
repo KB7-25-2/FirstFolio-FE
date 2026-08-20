@@ -28,7 +28,7 @@ const buyError = ref(null)
 const tradeResult = ref(null) // 거래 완료 모달에 넘길 값(상품명·자산군 포함)
 
 onMounted(() => {
-  store.fetchPurchasableProducts().then(() => store.hydrateProductPrices())
+  if (!store.purchasableProducts.length) store.refreshProductPrices()
   if (!store.summary) store.fetchSummary()
 })
 
