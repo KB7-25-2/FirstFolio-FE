@@ -49,7 +49,7 @@ const loadMore = async () => {
 <template>
   <div
     data-scroll-reveal-root
-    class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain"
+    class="nav-scroll-pad absolute inset-0 flex flex-col gap-3 overflow-y-auto overscroll-contain"
   >
     <ScrollReveal>
       <div class="flex gap-2 overflow-x-auto pb-1">
