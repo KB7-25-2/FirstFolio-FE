@@ -95,6 +95,10 @@ export const useStudyStore = defineStore('study', () => {
       activeCurriculumItem.value,
   )
 
+  const isFocusedMainChapterCompleted = computed(
+    () => focusedCurriculumItem.value?.status === 'COMPLETED',
+  )
+
   /** 필수 선행 포트폴리오 기초 과정 */
   const foundationItem = computed(
     () => curriculumItems.value.find((item) => item.chapterType === 'FOUNDATION') ?? null,
@@ -1031,6 +1035,7 @@ export const useStudyStore = defineStore('study', () => {
     scenarioFinalGrading,
     activeCurriculumItem,
     focusedMainChapterId,
+    isFocusedMainChapterCompleted,
     foundationItem,
     needsFoundationGuide,
     isFoundationCompleted: isFoundationCompletedFlag,

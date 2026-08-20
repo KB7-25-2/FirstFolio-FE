@@ -497,8 +497,17 @@ onActivated(async () => {
                           {{ periodDoneCount(stage) }}/{{ periodTotalCount(stage) }}
                         </p>
                       </div>
-                      <h2 class="mt-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]">
-                        {{ stage.title }}
+                      <h2
+                        class="mt-1 flex items-center gap-1.5 font-serif font-bold text-[22px] leading-none text-[#212b5c]"
+                      >
+                        <span class="truncate">{{ stage.title }}</span>
+                        <span
+                          v-if="stage.status === 'COMPLETED'"
+                          class="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#598c52] font-sans text-[13px] text-white"
+                          aria-label="대단원 완료"
+                        >
+                          ✓
+                        </span>
                       </h2>
                       <p
                         v-if="stage.description"

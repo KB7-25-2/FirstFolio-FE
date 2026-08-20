@@ -25,6 +25,7 @@ const {
   error,
   scenarioQuizReady,
   scenarioQuizItem,
+  isFocusedMainChapterCompleted,
 } = storeToRefs(studyStore)
 const {
   learning,
@@ -241,9 +242,16 @@ const goScenarioQuiz = (event) => {
             </p>
             <header class="flex h-9 items-end gap-2">
               <h2
-                class="min-w-0 flex-1 font-serif font-bold text-[22px] leading-none text-[#212b5c]"
+                class="flex min-w-0 flex-1 items-center gap-1.5 font-serif font-bold text-[22px] leading-none text-[#212b5c]"
               >
-                {{ chapterTitle || '학습 현황' }}
+                <span class="truncate">{{ chapterTitle || '학습 현황' }}</span>
+                <span
+                  v-if="isFocusedMainChapterCompleted"
+                  class="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#598c52] font-sans text-[13px] text-white"
+                  aria-label="대단원 완료"
+                >
+                  ✓
+                </span>
               </h2>
             </header>
 
