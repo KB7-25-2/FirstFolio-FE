@@ -293,6 +293,9 @@ export const useCurriculumStore = defineStore('curriculum', () => {
     orderedItems.value = []
     confirmed.value = false
     editMode.value = false
+    isLoading.value = false
+    isSaving.value = false
+    isConfirming.value = false
     error.value = null
   }
 

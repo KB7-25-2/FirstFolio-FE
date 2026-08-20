@@ -4,6 +4,7 @@ import App from './App.vue'
 import router from './router'
 import { registerPwa } from '@/pwa/register.js'
 import { initAuthSessionSync, syncAuthSessionOnce } from '@/bootstrap/authSessionSync.js'
+import { initUserSessionCleanupListener } from '@/utils/userSessionCleanup.js'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -39,6 +40,7 @@ const app = createApp(App)
 
 initAuthSessionSync()
 app.use(createPinia())
+initUserSessionCleanupListener()
 app.use(router)
 app.component('FontAwesomeIcon', FontAwesomeIcon)
 

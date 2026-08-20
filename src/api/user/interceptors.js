@@ -6,6 +6,11 @@ import {
   getIdToken,
   signOutFirebase,
 } from '@/services/firebaseAuthService.js'
+import {
+  advanceSessionEpoch,
+  getSessionEpoch,
+  isCurrentSessionEpoch,
+} from '@/utils/sessionEpoch.js'
 
 let isRedirecting = false
 
@@ -13,6 +18,7 @@ const redirectToLogin = async () => {
   if (isRedirecting) return
 
   isRedirecting = true
+  advanceSessionEpoch()
   removeToken()
 
   try {
@@ -20,6 +26,13 @@ const redirectToLogin = async () => {
   } catch {
     // Firebase 세션이 없거나 이미 종료된 경우
   }
+  try {
+    localStorage.clear()
+    sessionStorage.clear()
+  } catch {
+    // 저장소 접근이 막힌 환경은 무시한다.
+  }
+  window.dispatchEvent(new Event('ff:clear-user-session'))
 
   const currentPath = router.currentRoute.value.fullPath
 
@@ -54,6 +67,7 @@ export const resolveAuthorizationToken = async (forceRefresh = false) => {
 }
 
 const attachAuthorizationHeader = async (config, forceRefresh = false) => {
+  config._sessionEpoch = getSessionEpoch()
   const hasAuthorization = config.headers?.Authorization || config.headers?.authorization
   if (hasAuthorization) return config
 
@@ -74,9 +88,28 @@ export const setupRequestInterceptor = (apiClient) => {
 
 export const setupResponseInterceptor = (apiClient) => {
   apiClient.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      if (
+        response.config?._sessionEpoch != null &&
+        !isCurrentSessionEpoch(response.config._sessionEpoch)
+      ) {
+        return Promise.reject(
+          Object.assign(new Error('이전 사용자 세션의 응답입니다.'), {
+            code: 'STALE_SESSION_RESPONSE',
+          }),
+        )
+      }
+      return response
+    },
     async (error) => {
       const config = error?.config
+      if (config?._sessionEpoch != null && !isCurrentSessionEpoch(config._sessionEpoch)) {
+        return Promise.reject(
+          Object.assign(new Error('이전 사용자 세션의 응답입니다.'), {
+            code: 'STALE_SESSION_RESPONSE',
+          }),
+        )
+      }
       const apiError = parseApiError(error)
 
       if (apiError.status === 401 && config && !config._authRetry) {

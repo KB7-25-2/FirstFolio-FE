@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as portfolioService from '@/services/portfolioTradeService.js'
+import { getKoreanMarketSession } from '@/utils/koreanMarketSession.js'
 
 export const usePortfolioStore = defineStore('portfolio', () => {
+  const PRODUCT_PRICE_POLLING_INTERVAL_MS = 2_000
   const summary = ref(null)
   const purchasableProducts = ref([])
   const productsNextCursor = ref(null)
@@ -12,6 +14,18 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
   const isLoading = ref(false)
   const error = ref(null)
+  const pricePollingCheckedAt = ref(new Date())
+  let productsFetchPromise = null
+  let productPricePollingTimer = null
+  let productPriceRefreshPromise = null
+
+  const logProductPricePolling = (message, details = {}) => {
+    if (!import.meta.env.DEV) return
+    // eslint-disable-next-line no-console -- 개발 중 2초 가격 폴링 확인용
+    console.log(`[portfolio] ${message}`, details)
+  }
+
+  const marketSession = computed(() => getKoreanMarketSession(pricePollingCheckedAt.value))
 
   // productId → 상품 정보 맵. 포트폴리오 상세 응답의 holdings엔 asset_type/cycle_summary가
   // 없어서(product_id만 있음), 이 맵으로 조인해 채운다.
@@ -19,37 +33,43 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     Object.fromEntries(purchasableProducts.value.map((product) => [product.productId, product]))
 
   const fetchPurchasableProducts = async (params = {}) => {
+    if (productsFetchPromise) return productsFetchPromise
+
     isLoading.value = true
     error.value = null
-
-    try {
-      // GET /financial-products는 한 번에 최대 20개(size 기본값)만 준다. 필터 없이 한 번만
-      // 받아오면 product_id가 늦은 자산군(채권·펀드 등)이 첫 페이지 밖으로 밀려 어떤 탭에서도
-      // 안 보이는 문제가 생긴다. purchasableProducts는 이 화면뿐 아니라 시간 압축 탭,
-      // 보유 목록 cycleSummary 조인(buildProductsById)까지 전역으로 쓰이는 "전체 카탈로그"라
-      // 커서를 따라 끝까지 모아 하나로 합친다. 무한 루프 방지용 안전장치로 최대 50페이지.
-      const items = []
-      let cursor = params.cursor
-      for (let page = 0; page < 50; page += 1) {
-        const result = await portfolioService.getPurchasableProductsList({
-          ...params,
-          cursor,
-          size: params.size ?? 100,
-        })
-        items.push(...result.items)
-        if (!result.nextCursor) {
-          break
+    productsFetchPromise = (async () => {
+      try {
+        // GET /financial-products는 한 번에 최대 20개(size 기본값)만 준다. 필터 없이 한 번만
+        // 받아오면 product_id가 늦은 자산군(채권·펀드 등)이 첫 페이지 밖으로 밀려 어떤 탭에서도
+        // 안 보이는 문제가 생긴다. purchasableProducts는 이 화면뿐 아니라 시간 압축 탭,
+        // 보유 목록 cycleSummary 조인(buildProductsById)까지 전역으로 쓰이는 "전체 카탈로그"라
+        // 커서를 따라 끝까지 모아 하나로 합친다. 무한 루프 방지용 안전장치로 최대 50페이지.
+        const items = []
+        let cursor = params.cursor
+        for (let page = 0; page < 50; page += 1) {
+          const result = await portfolioService.getPurchasableProductsList({
+            ...params,
+            cursor,
+            size: params.size ?? 100,
+          })
+          items.push(...result.items)
+          if (!result.nextCursor) {
+            break
+          }
+          cursor = result.nextCursor
         }
-        cursor = result.nextCursor
+        purchasableProducts.value = items
+        productsNextCursor.value = null
+      } catch (err) {
+        error.value = err.message
+        throw err
+      } finally {
+        isLoading.value = false
+        productsFetchPromise = null
       }
-      purchasableProducts.value = items
-      productsNextCursor.value = null
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    })()
+
+    return productsFetchPromise
   }
 
   // 구매 모달을 열 때 호출한다. 목록 API엔 가격이 없어서, 확인을 누르기 전에
@@ -62,9 +82,9 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   // 계획이었다는 매퍼 주석만 남아있고 실제 구현이 빠져 있었음). 목록을 받아온 뒤, 아직 가격이
   // 없는 매수형 상품들의 상세를 병렬로 조회해 채운다. isTimeCompressionExempt는 STOCK/FUND
   // (=매수형) 판별에 그대로 재사용 — 시간압축 예외 = 실시간 시세 상품이라는 뜻이라서다.
-  const hydrateProductPrices = async () => {
+  const hydrateProductPrices = async ({ force = false } = {}) => {
     const targets = purchasableProducts.value.filter(
-      (product) => product.isTimeCompressionExempt && product.unitPrice == null,
+      (product) => product.isTimeCompressionExempt && (force || product.unitPrice == null),
     )
     if (!targets.length) return
 
@@ -85,6 +105,66 @@ export const usePortfolioStore = defineStore('portfolio', () => {
         ? { ...product, unitPrice: priceByProductId.get(product.productId) }
         : product,
     )
+  }
+
+  /**
+   * 가격 변동 상품의 상세 GET을 다시 호출해 현재가를 동기화한다.
+   * 목록 API에는 현재가가 없으므로 상세 API를 사용한다.
+   */
+  const refreshProductPrices = async () => {
+    if (productPriceRefreshPromise) return productPriceRefreshPromise
+
+    logProductPricePolling('상품 가격 폴링 요청', {
+      requestedAt: new Date().toISOString(),
+    })
+    productPriceRefreshPromise = (async () => {
+      if (!purchasableProducts.value.length) {
+        await fetchPurchasableProducts()
+      }
+      await hydrateProductPrices({ force: true })
+      logProductPricePolling('상품 가격 폴링 완료', {
+        refreshedAt: new Date().toISOString(),
+        productCount: purchasableProducts.value.filter((product) => product.isTimeCompressionExempt)
+          .length,
+        products: purchasableProducts.value.map((product) => ({
+          ...product,
+          current_price: product.unitPrice,
+        })),
+      })
+    })().finally(() => {
+      productPriceRefreshPromise = null
+    })
+
+    return productPriceRefreshPromise
+  }
+
+  /** 포트폴리오 화면이 열려 있는 동안 2초마다 가격 변동 상품을 갱신한다. */
+  const startProductPricePolling = () => {
+    if (productPricePollingTimer != null) return
+
+    logProductPricePolling('상품 가격 폴링 시작', {
+      intervalMs: PRODUCT_PRICE_POLLING_INTERVAL_MS,
+    })
+    const runProductPriceRefresh = () => {
+      pricePollingCheckedAt.value = new Date()
+      void refreshProductPrices().catch((err) => {
+        if (import.meta.env.DEV) {
+          console.warn('[portfolio] 상품 가격 폴링 실패', err)
+        }
+      })
+    }
+
+    runProductPriceRefresh()
+    productPricePollingTimer = window.setInterval(() => {
+      runProductPriceRefresh()
+    }, PRODUCT_PRICE_POLLING_INTERVAL_MS)
+  }
+
+  const stopProductPricePolling = () => {
+    if (productPricePollingTimer == null) return
+    window.clearInterval(productPricePollingTimer)
+    productPricePollingTimer = null
+    logProductPricePolling('상품 가격 폴링 중지')
   }
 
   const fetchSummary = async () => {
@@ -192,16 +272,32 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
   const fetchPortfolioSummary = fetchSummary
 
+  const clear = () => {
+    stopProductPricePolling()
+    summary.value = null
+    purchasableProducts.value = []
+    productsNextCursor.value = null
+    lastTradeResult.value = null
+    transactions.value = []
+    transactionsNextCursor.value = null
+    isLoading.value = false
+    error.value = null
+  }
+
   return {
     summary,
     purchasableProducts,
     productsNextCursor,
     isLoading,
     error,
+    marketSession,
     fetchSummary,
     fetchPurchasableProducts,
     fetchProductDetail,
     hydrateProductPrices,
+    refreshProductPrices,
+    startProductPricePolling,
+    stopProductPricePolling,
     sellHolding,
     buyProduct,
     lastTradeResult,
@@ -210,6 +306,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     transactions,
     transactionsNextCursor,
     fetchTransactions,
+    clear,
     // 홈 위젯 호환용 별칭
     portfolioSummary,
     allocationView,

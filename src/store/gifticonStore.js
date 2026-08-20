@@ -93,6 +93,15 @@ export const useGifticonStore = defineStore('gifticon', () => {
     return disclosure
   }
 
+  const clear = () => {
+    gifticons.value = []
+    nextCursor.value = null
+    redemptionHistory.value = []
+    lastRedemption.value = null
+    isLoading.value = false
+    error.value = null
+  }
+
   return {
     gifticons,
     nextCursor,
@@ -105,5 +114,6 @@ export const useGifticonStore = defineStore('gifticon', () => {
     fetchRedemptionHistory,
     fetchOrderDetail,
     discloseCode,
+    clear,
   }
 })

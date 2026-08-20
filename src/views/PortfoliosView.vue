@@ -1,7 +1,7 @@
 <script setup>
 defineOptions({ name: 'PortfoliosView' })
 
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import PortfolioTabs from '@/components/portfolio/PortfolioTabs.vue'
 import BankruptcyConfirmModal from '@/components/portfolio/BankruptcyConfirmModal.vue'
@@ -13,10 +13,19 @@ const store = usePortfolioStore()
 const title = computed(() => route.meta.title ?? '포트폴리오')
 const subtitle = computed(() => route.meta.subtitle ?? '')
 const showBankruptcyAction = computed(() => Boolean(route.meta.showBankruptcyAction))
+const marketSession = computed(() => store.marketSession)
 
 const isBankruptcyModalOpen = ref(false)
 const isResetting = ref(false)
 const resetError = ref(null)
+
+onMounted(() => {
+  store.startProductPricePolling()
+})
+
+onUnmounted(() => {
+  store.stopProductPricePolling()
+})
 
 const openBankruptcyModal = () => {
   resetError.value = null
@@ -48,9 +57,22 @@ const handleResetConfirm = async () => {
     <header class="chalk-header shrink-0 px-5 pt-5">
       <div class="flex w-full items-center justify-between gap-2">
         <div class="min-w-0">
-          <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
-            {{ subtitle }}
-          </p>
+          <div class="flex items-center gap-2">
+            <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
+              {{ subtitle }}
+            </p>
+            <span
+              class="shrink-0 rounded-full px-1.5 py-0.5 font-serif text-[9px] font-bold"
+              :class="
+                marketSession.isOpen
+                  ? 'bg-[rgba(89,140,82,0.28)] text-[#d7f0cf]'
+                  : 'bg-[rgba(240,217,160,0.2)] text-[var(--chalk-text-muted)]'
+              "
+              :title="marketSession.scheduleLabel"
+            >
+              {{ marketSession.label }}
+            </span>
+          </div>
           <h1
             class="chalk-header__title mt-1 truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
           >

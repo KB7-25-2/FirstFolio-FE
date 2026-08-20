@@ -11,7 +11,11 @@ import { isPeriodQuizDue, needsQuizAttempt } from '@/services/study/mappers/subC
  */
 export const useLearningRoadmap = () => {
   const studyStore = useStudyStore()
-  const { roadmapStages, hasRoadmap: hasRoadmapInStore } = storeToRefs(studyStore)
+  const {
+    roadmapStages,
+    hasRoadmap: hasRoadmapInStore,
+    focusedMainChapterId: currentProgressMainChapterId,
+  } = storeToRefs(studyStore)
   const router = useRouter()
   const route = useRoute()
 
@@ -53,13 +57,20 @@ export const useLearningRoadmap = () => {
 
   const loadStages = async (options = {}) => {
     const force = options.force ?? false
-    if (!force && hasRoadmapInStore.value) return
-
     isLoading.value = true
     error.value = null
     actionError.value = null
     try {
-      await (force ? studyStore.fetchRoadmap({ force: true }) : studyStore.ensureRoadmap())
+      await Promise.all([
+        force
+          ? studyStore.fetchRoadmap({ force: true })
+          : hasRoadmapInStore.value
+            ? Promise.resolve()
+            : studyStore.ensureRoadmap(),
+        // 이어하기 API는 현재 진행 중인 소단원·시나리오를 포함하므로, 로드맵의 첫 포커스에
+        // 사용한다. 조회 실패는 기존 로드맵 ACTIVE 상태 폴백을 유지한다.
+        studyStore.fetchContinuePosition().catch(() => {}),
+      ])
     } catch (err) {
       if (err?.code === 'CURRICULUM_NOT_FOUND') {
         error.value = '확정된 커리큘럼이 없습니다.'
@@ -72,7 +83,7 @@ export const useLearningRoadmap = () => {
   }
 
   onMounted(() => {
-    if (!hasRoadmapInStore.value) loadStages()
+    void loadStages()
   })
 
   const statusLabel = (status) => {
@@ -229,6 +240,7 @@ export const useLearningRoadmap = () => {
     startScenarioQuiz,
     selectStage,
     focusMainChapterId,
+    currentProgressMainChapterId,
     loadStages,
   }
 }

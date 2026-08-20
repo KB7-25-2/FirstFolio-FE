@@ -10,6 +10,7 @@ const upcoming = [
   { label: '강좌 JSON 버전·게시', phase: 'A2' },
   { label: '퀴즈 문항 검수·게시', phase: 'A3' },
   { label: '모의 금융상품', phase: 'A4 · ready' },
+  { label: '뉴스 검수', phase: 'A5 · ready' },
 ]
 </script>
 

@@ -327,6 +327,9 @@ export const useLevelTestStore = defineStore('levelTest', () => {
     draftChoices.value = {}
     submitResult.value = null
     currentQuestionIndex.value = 0
+    isLoading.value = false
+    isSaving.value = false
+    isSubmitting.value = false
     error.value = null
   }
 
