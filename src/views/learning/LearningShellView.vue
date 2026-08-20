@@ -88,11 +88,11 @@ const onAfterLeave = () => {
     </Teleport>
     <div class="relative z-10 flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
       <RouterView v-slot="{ Component, route: viewRoute }">
-        <Transition :name="pageTransition" mode="out-in" @after-leave="onAfterLeave">
-          <KeepAlive :include="['LearningRoadmapView']">
+        <KeepAlive :include="['LearningRoadmapView']">
+          <Transition :name="pageTransition" mode="out-in" @after-leave="onAfterLeave">
             <component :is="Component" :key="viewRoute.name" class="h-full min-h-0" />
-          </KeepAlive>
-        </Transition>
+          </Transition>
+        </KeepAlive>
       </RouterView>
     </div>
   </div>

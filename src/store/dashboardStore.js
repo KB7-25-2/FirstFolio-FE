@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { getDashboard } from '@/services/dashboardService.js'
-import { getAssetTypeMeta } from '@/constants/assetType.js'
+import { getAssetTypeMeta, CASH_META } from '@/constants/assetType.js'
 
 /**
  * 홈 통합 요약 — GET /dashboard
@@ -23,7 +23,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   const allocationView = computed(() => {
     const items = portfolio.value?.allocation ?? []
-    return items.map((item) => {
+    const view = items.map((item) => {
       const meta = getAssetTypeMeta(item.assetType)
       return {
         assetType: item.assetType,
@@ -32,6 +32,35 @@ export const useDashboardStore = defineStore('dashboard', () => {
         color: meta.color,
       }
     })
+
+    const hasCash = view.some((item) => item.assetType === 'CASH')
+    if (hasCash) return view
+
+    const totalAssets = Number(portfolio.value?.totalAssets ?? 0)
+    const cashBalance = Number(portfolio.value?.cashBalance ?? 0)
+
+    if (cashBalance > 0 && totalAssets > 0) {
+      view.push({
+        assetType: 'CASH',
+        label: CASH_META.label,
+        ratio: Math.round((cashBalance / totalAssets) * 100),
+        color: CASH_META.color,
+      })
+      return view
+    }
+
+    const investedRatio = view.reduce((sum, item) => sum + item.ratio, 0)
+    const cashRatio = 100 - investedRatio
+    if (cashRatio > 0) {
+      view.push({
+        assetType: 'CASH',
+        label: CASH_META.label,
+        ratio: cashRatio,
+        color: CASH_META.color,
+      })
+    }
+
+    return view
   })
 
   const totalAssetsDisplay = computed(() => {

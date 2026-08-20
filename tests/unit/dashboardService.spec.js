@@ -17,6 +17,7 @@ vi.mock('@/services/portfolioService.js', () => ({
           totalAssets: '10000000.00',
           profitLoss: '200000.00',
         },
+        cashBalance: '1000000.00',
         allocation: [{ assetType: 'BOND', ratio: 40 }],
       },
     }),
@@ -50,6 +51,7 @@ describe('dashboardService (unit)', () => {
         available: true,
         total_assets: '30420000.00',
         profit_loss: '420000.00',
+        cash_balance: '5000000.00',
         allocation: [{ asset_type: 'BOND', ratio: 40 }],
       },
       daily_quest: {
@@ -80,6 +82,7 @@ describe('dashboardService (unit)', () => {
       totalCount: 5,
     })
     expect(data.portfolio.totalAssets).toBe('30420000.00')
+    expect(data.portfolio.cashBalance).toBe('5000000.00')
     expect(data.learning.progressPercent).toBe(35)
     expect(data.learning.available).toBe(true)
     expect(data.latestNews[0].knowledgeContentId).toBe(9001)
