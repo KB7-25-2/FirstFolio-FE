@@ -15,10 +15,9 @@ import {
   getStoredOnboardingStep,
   setStoredOnboardingStep,
 } from '@/utils/onboardingStep.js'
+import { clearPersistedUserSession, clearUserScopedStores } from '@/utils/userSessionCleanup.js'
+import { advanceSessionEpoch } from '@/utils/sessionEpoch.js'
 import { useUserStore } from '@/store/userStore.js'
-import { useLevelTestStore } from '@/store/levelTestStore.js'
-import { useCurriculumStore } from '@/store/curriculumStore.js'
-import { useDashboardStore } from '@/store/dashboardStore.js'
 import router from '@/router/index.js'
 
 const REMEMBER_KEY = 'auth_remember_email'
@@ -34,6 +33,9 @@ export const useAuthStore = defineStore('auth', () => {
    * @param {string | undefined} [nextOnboardingStep]
    */
   const establishSession = async (idToken, nextOnboardingStep) => {
+    // 같은 탭에서 다른 계정으로 전환해도 이전 Pinia 데이터가 보이지 않게 한다.
+    advanceSessionEpoch()
+    clearUserScopedStores()
     setToken(idToken)
     if (nextOnboardingStep) {
       setOnboardingStep(nextOnboardingStep)
@@ -101,16 +103,17 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = async () => {
+    // 로그아웃 API는 기존 토큰으로 호출하되, 화면과 이전 요청은 즉시 무효화한다.
+    advanceSessionEpoch()
+    clearUserScopedStores()
     try {
       await logoutApi()
     } finally {
       removeToken()
       onboardingStep.value = null
+      rememberedEmail.value = ''
       clearStoredOnboardingStep()
-      useUserStore().clearProfile()
-      useLevelTestStore().clear()
-      useCurriculumStore().clear()
-      useDashboardStore().clear()
+      clearPersistedUserSession()
       await router.push({ path: '/login' })
     }
   }
