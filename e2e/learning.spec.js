@@ -216,9 +216,9 @@ async function completeScenarioQuiz(page) {
   for (let step = 0; step < 6; step += 1) {
     if (await page.getByRole('button', { name: '학습 로드맵으로' }).isVisible()) break
 
-    const balanced = page.getByRole('button', { name: /예금 40%.*주식 40%.*채권 20%/ })
-    await expect(balanced).toBeVisible({ timeout: 10_000 })
-    await balanced.click()
+    const correctChoice = page.getByTestId('scenario-choice-1')
+    await expect(correctChoice).toBeVisible({ timeout: 10_000 })
+    await correctChoice.click()
 
     await page.getByRole('button', { name: /결과 확인/ }).click()
 
