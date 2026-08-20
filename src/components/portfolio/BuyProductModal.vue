@@ -34,7 +34,9 @@ const confirmLabel = computed(() => `${actionLabel.value}하기`)
 const processingLabel = computed(() => `${actionLabel.value} 처리 중…`)
 const cycleSummaryText = computed(() => props.product.cycleSummary ?? '실시간 시세')
 
-const hasPriceInfo = computed(() => props.product.unitPrice != null)
+// 예·적금·채권(SUBSCRIPTION)은 서버가 current_price를 아예 내려주지 않는다(설계상 정상).
+// "가격 정보 없음" 판정은 매수형(주식·펀드)에만 적용한다.
+const hasPriceInfo = computed(() => isSubscription.value || props.product.unitPrice != null)
 const amount = ref(0)
 
 // 2026-08-12(#75): 매수 수수료(주식·펀드만 0.015%)는 체결액 밖에서 추가로 나간다
