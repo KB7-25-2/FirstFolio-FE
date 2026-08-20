@@ -26,6 +26,7 @@ const {
   scenarioQuizReady,
   scenarioQuizItem,
   isFocusedMainChapterCompleted,
+  focusedMainChapterId,
 } = storeToRefs(studyStore)
 const {
   learning,
@@ -177,11 +178,11 @@ const goLearning = () => {
 
 const goScenarioQuiz = (event) => {
   event.stopPropagation()
-  const item = scenarioQuizItem.value
-  if (!item?.mainChapterId) return
+  const mainChapterId = scenarioQuizItem.value?.mainChapterId ?? focusedMainChapterId.value
+  if (!mainChapterId) return
   router.push({
     name: 'learning-scenario-quiz',
-    params: { mainChapterId: item.mainChapterId },
+    params: { mainChapterId },
   })
 }
 </script>

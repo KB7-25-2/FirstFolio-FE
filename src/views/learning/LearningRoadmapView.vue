@@ -9,10 +9,8 @@ import BaseLoading from '@/components/BaseLoading.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 import { useLearningRoadmap } from '@/composables/useLearningRoadmap.js'
 import {
-  getDidInitialAutoFocus,
   getPersistedFocusStageIndex,
   getPersistedListScrollTop,
-  markInitialAutoFocusDone,
   persistRoadmapFocus,
   setPersistedFocusStageIndex,
   setPersistedListScrollTop,
@@ -33,11 +31,14 @@ const {
   startScenarioQuiz,
   selectStage,
   focusMainChapterId,
+  currentProgressMainChapterId,
 } = useLearningRoadmap()
 
 const listRef = ref(null)
 /** 스크롤로 보이는 대단원 (상단 강조) */
 const focusStageIndex = ref(getPersistedFocusStageIndex())
+/** 화면 진입 시 실제 진행 대단원으로 자동 포커스했는지 여부 */
+const hasFocusedCurrentProgress = ref(false)
 /** 탭 전환으로 비활성일 때 activeStage 동기화가 포커스를 덮어쓰지 않게 */
 const isViewActive = ref(true)
 
@@ -124,12 +125,6 @@ const scrollRootByDelta = (el, align = 'start', behavior = 'auto') => {
   else root.scrollTop = nextTop
   setPersistedListScrollTop(nextTop)
   return nextTop
-}
-
-const scrollToElement = (id, behavior = 'smooth') => {
-  const el = document.getElementById(id)
-  if (!el) return
-  scrollRootByDelta(el, 'center', behavior)
 }
 
 /** 클릭으로 이동 중에는 스크롤 스파이가 강조를 되돌리지 않게 잠금 */
@@ -245,18 +240,17 @@ const focusCurrentPeriod = async () => {
   await nextTick()
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
 
+  const currentProgressStageIndex = stages.value.findIndex(
+    (stage) => stage.mainChapterId === currentProgressMainChapterId.value,
+  )
+  if (currentProgressStageIndex >= 0) {
+    await jumpToStage(currentProgressStageIndex)
+    return
+  }
+
   const target = findCurrentPeriodTarget()
-  if (target) {
-    if (target.stageIndex >= 0) {
-      focusStageIndex.value = target.stageIndex
-      persistRoadmapFocus(target.stageIndex, target.stage.mainChapterId)
-      lockScrollSpyTemporarily(400, target.stageIndex)
-      if (target.stageIndex !== activeStageIndex.value) {
-        selectStage(target.stageIndex)
-        await nextTick()
-      }
-    }
-    scrollToElement(periodDomId(target.stage, target.period), 'auto')
+  if (target?.stageIndex >= 0) {
+    await jumpToStage(target.stageIndex)
     return
   }
 
@@ -264,12 +258,7 @@ const focusCurrentPeriod = async () => {
     const chapterIndex = stages.value.findIndex(
       (stage) => stage.mainChapterId === focusMainChapterId.value,
     )
-    if (chapterIndex >= 0) {
-      focusStageIndex.value = chapterIndex
-      persistRoadmapFocus(chapterIndex, focusMainChapterId.value)
-    }
-    lockScrollSpyTemporarily(400, chapterIndex >= 0 ? chapterIndex : null)
-    scrollToElement(`chapter-${focusMainChapterId.value}`, 'auto')
+    if (chapterIndex >= 0) await jumpToStage(chapterIndex)
   }
 }
 
@@ -312,13 +301,13 @@ watch(
   async ([ready, loading]) => {
     if (!ready || loading) return
 
-    // 이미 한 번 자동 포커스했으면, 리마운트/재진입 시 저장된 위치만 복원
-    if (getDidInitialAutoFocus()) {
+    // 같은 화면 인스턴스에서는 사용자가 고른 스크롤 위치를 유지한다.
+    if (hasFocusedCurrentProgress.value) {
       await restoreFocusSnapshot()
       return
     }
 
-    markInitialAutoFocusDone()
+    hasFocusedCurrentProgress.value = true
     focusStageIndex.value = activeStageIndex.value
     const stage = stages.value[activeStageIndex.value]
     if (stage) persistRoadmapFocus(activeStageIndex.value, stage.mainChapterId)
@@ -347,7 +336,9 @@ onBeforeUnmount(() => {
 
 onActivated(async () => {
   isViewActive.value = true
-  await restoreFocusSnapshot()
+  // KeepAlive 재진입 시에도 실제 진행 중 대단원을 먼저 보여준다.
+  // useLearningRoadmap의 onActivated가 이어하기·로드맵을 재조회한 뒤 watch에서 포커스한다.
+  hasFocusedCurrentProgress.value = false
 })
 </script>
 
