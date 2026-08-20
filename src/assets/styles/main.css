@@ -546,6 +546,33 @@
       100% 100%;
     background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
     background-blend-mode: soft-light, multiply, normal, normal, normal;
+    /* fixed로 두면 이 배경의 타일 위상이 뷰포트 좌표에 고정된다. .cork-board-patch(스크롤
+       중 뒤로 지나가는 콘텐츠를 가릴 sticky 바 등)도 같은 좌표계를 쓰면, 타일 크기가
+       고정 px라 두 요소가 서로 다른 위치/크기여도 무늬가 이어져 보인다. */
+    background-attachment: fixed;
+  }
+
+  /* 스크롤 컨테이너 안의 sticky 요소(자산군 필터 바 등)에 쓴다. .cork-board와 같은
+     레시피 + background-attachment: fixed라, 뷰포트 기준으로 타일이 이어져서 뒤에
+     깔린 .cork-board 배경과 이어붙인 것처럼 보인다(그라데이션 레이어는 요소 크기에 따라
+     퍼센트로 다시 계산되긴 하지만, 미세한 톤 차이라 반복무늬만큼 눈에 띄지 않는다). */
+  .cork-board-patch {
+    background-color: var(--cork-base);
+    background-image:
+      url('../auth/paper-texture.png'),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.3 0 0 0 0 0.24 0 0 0 0.45 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)' opacity='0.28'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 120% 80% at 10% -10%, rgba(255, 255, 255, 0.55), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 95% 105%, rgba(90, 70, 50, 0.06), transparent 50%),
+      linear-gradient(165deg, var(--cork-light) 0%, var(--cork-base) 48%, var(--cork-deep) 100%);
+    background-size:
+      160px 160px,
+      180px 180px,
+      100% 100%,
+      100% 100%,
+      100% 100%;
+    background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+    background-blend-mode: soft-light, multiply, normal, normal, normal;
+    background-attachment: fixed;
   }
 
   /* 학습 화면 페이지 헤더 */

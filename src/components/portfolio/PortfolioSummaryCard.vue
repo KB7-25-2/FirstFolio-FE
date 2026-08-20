@@ -14,7 +14,9 @@ const props = defineProps({
   },
 })
 
-const formatCurrency = (value) => `${Number(value ?? 0).toLocaleString('ko-KR')}원`
+// API 금액은 "29999218.45"처럼 소수점이 붙은 문자열/숫자로 온다. 원화는 소수 단위가 없어서
+// 화면 표시는 반올림해 정수로만 보여준다(내부 계산엔 원래 값을 그대로 쓴다).
+const formatCurrency = (value) => `${Math.round(Number(value ?? 0)).toLocaleString('ko-KR')}원`
 
 // 총자산 폭이 도넛 차트(96px 고정) 때문에 좁아, 금액 자릿수가 늘면 "원"이 다음 줄로
 // 밀려 내려가는 문제가 있었다. 줄바꿈을 아예 막고(whitespace-nowrap) 자릿수에 맞춰
@@ -76,10 +78,17 @@ const activeHoldingCount = computed(
           >
             {{ totalAssetText }}
           </p>
-          <p class="mt-1 font-serif text-[11px] text-[rgba(41,33,26,0.55)]">
-            현금 {{ formatCurrency(summary.cashBalance) }} · 평가손익
-            <span :class="profitLossClass">{{ profitLossLabel }}</span>
-          </p>
+          <div class="mt-1 flex flex-col gap-0.5">
+            <p class="whitespace-nowrap font-serif text-[11px] text-[rgba(41,33,26,0.55)]">
+              현금
+              <span class="font-bold text-[#2c1810]">{{
+                formatCurrency(summary.cashBalance)
+              }}</span>
+            </p>
+            <p class="whitespace-nowrap font-serif text-[11px] text-[rgba(41,33,26,0.55)]">
+              평가손익 <span class="font-bold" :class="profitLossClass">{{ profitLossLabel }}</span>
+            </p>
+          </div>
         </div>
 
         <AllocationDonutChart :segments="summary.allocations">
