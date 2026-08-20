@@ -96,6 +96,10 @@ export const mapFinancialProduct = (raw) => ({
         // SIMPLE(단리)/COMPOUND(복리) — 채권엔 이 필드가 없고 interestIntervalMonths 유무로
         // 이표채(주기 지급)/복리채(만기 일시불)를 구분한다.
         rateType: raw.real_terms.interest_rate_type ?? null,
+        // 채권 복리 판정은 rateType이 아니라 interest_type 문자열에 "복리"가 들어있는지로 한다
+        // (백엔드 AssetEventTerms.of(BondRealTerms...) 기준 — 채권엔 interest_rate_type
+        // 필드 자체가 없어서 이걸로만 판별 가능하다. 원본: "이표채"/"복리채"/"할인채" 등).
+        interestType: raw.real_terms.interest_type ?? null,
       }
     : null,
   // 목록 API(FUNC-031)엔 가격이 없다. 매수형(주식·펀드)은 store.hydrateProductPrices()가
