@@ -976,6 +976,7 @@ export const useStudyStore = defineStore('study', () => {
     clearLesson()
     clearQuizSession()
     clearScenarioSession()
+    isLoading.value = false
     error.value = null
   }
 

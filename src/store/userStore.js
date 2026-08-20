@@ -75,6 +75,8 @@ export const useUserStore = defineStore('user', () => {
 
   const clearProfile = () => {
     profile.value = null
+    isLoading.value = false
+    isSaving.value = false
     error.value = null
   }
 

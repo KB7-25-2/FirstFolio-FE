@@ -192,6 +192,17 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
   const fetchPortfolioSummary = fetchSummary
 
+  const clear = () => {
+    summary.value = null
+    purchasableProducts.value = []
+    productsNextCursor.value = null
+    lastTradeResult.value = null
+    transactions.value = []
+    transactionsNextCursor.value = null
+    isLoading.value = false
+    error.value = null
+  }
+
   return {
     summary,
     purchasableProducts,
@@ -210,6 +221,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     transactions,
     transactionsNextCursor,
     fetchTransactions,
+    clear,
     // 홈 위젯 호환용 별칭
     portfolioSummary,
     allocationView,

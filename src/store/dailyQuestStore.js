@@ -242,6 +242,9 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
     currentItemIndex.value = 0
     error.value = null
     errorCode.value = null
+    isLoading.value = false
+    isSaving.value = false
+    isSubmitting.value = false
     resetDailyQuestState()
   }
 

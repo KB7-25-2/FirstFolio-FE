@@ -53,6 +53,7 @@ export const useNewsStore = defineStore('news', () => {
     items.value = []
     selectedId.value = null
     error.value = null
+    isLoading.value = false
   }
 
   return {
