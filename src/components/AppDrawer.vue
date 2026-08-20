@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { BRAND_WORDMARK_SRC } from '@/constants/brandAssets.js'
 import { useUserStore } from '@/store/userStore.js'
 import { useAuthStore } from '@/store/authStore.js'
 import { useNavTabs } from '@/composables/useNavTabs.js'
@@ -74,7 +75,7 @@ const confirmLogout = async () => {
       aria-label="메뉴"
     >
       <div class="flex items-center justify-between px-4 pt-5">
-        <span class="font-serif text-[15px] font-bold text-[var(--cork-ink)]">Firstfolio</span>
+        <img :src="BRAND_WORDMARK_SRC" alt="firstfolio" class="h-5 w-auto" />
         <button type="button" class="app-drawer__close" aria-label="메뉴 닫기" @click="close">
           <font-awesome-icon icon="fa-solid fa-xmark" class="text-[14px]" />
         </button>

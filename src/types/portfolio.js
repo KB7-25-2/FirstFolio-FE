@@ -18,6 +18,7 @@
  * @property {string} [totalAssets] 금액 문자열
  * @property {string} [profitLoss] 금액 문자열
  * @property {number} [profitRate] 손익률(%)
+ * @property {string | number} [cashBalance] 현금 잔액
  * @property {AssetAllocation[]} [allocation]
  */
 

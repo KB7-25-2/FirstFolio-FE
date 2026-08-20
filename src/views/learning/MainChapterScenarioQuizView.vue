@@ -111,175 +111,188 @@ const resultCongratsMessage = computed(() =>
           </span>
         </div>
 
-        <template v-if="showClientScene && conditions">
-          <div class="absolute bottom-1.5 left-1.5 z-[1]">
-            <ScenarioPersonaCard
-              :name="conditions.persona.name"
-              :age="conditions.persona.age"
-              :job="conditions.persona.job"
-              :monthly-income="conditions.persona.monthlyIncome"
-              :monthly-saving="conditions.persona.monthlySaving"
-            />
-          </div>
-          <div class="pointer-events-none absolute inset-x-0 bottom-1 z-[2] flex justify-center">
-            <div class="scenario-penguin">
-              <img
-                :src="penguin"
-                alt=""
-                class="h-[82px] w-[110px] object-contain"
-                width="110"
-                height="82"
+        <Transition name="scenario-client">
+          <div v-if="showClientScene && conditions" class="absolute inset-0">
+            <div class="absolute bottom-1.5 left-1.5 z-[1]">
+              <ScenarioPersonaCard
+                :name="conditions.persona.name"
+                :age="conditions.persona.age"
+                :job="conditions.persona.job"
+                :monthly-income="conditions.persona.monthlyIncome"
+                :monthly-saving="conditions.persona.monthlySaving"
+              />
+            </div>
+            <div class="pointer-events-none absolute inset-x-0 bottom-1 z-[2] flex justify-center">
+              <div class="scenario-penguin">
+                <img
+                  :src="penguin"
+                  alt=""
+                  class="h-[82px] w-[110px] object-contain"
+                  width="110"
+                  height="82"
+                />
+              </div>
+            </div>
+            <div class="absolute right-1.5 bottom-2 z-[1]">
+              <ScenarioRequirementsCard
+                :assets="conditions.requirements.assets"
+                :risk="conditions.requirements.risk"
+                :goal="conditions.requirements.goal"
               />
             </div>
           </div>
-          <div class="absolute right-1.5 bottom-2 z-[1]">
-            <ScenarioRequirementsCard
-              :assets="conditions.requirements.assets"
-              :risk="conditions.requirements.risk"
-              :goal="conditions.requirements.goal"
-            />
-          </div>
-        </template>
+        </Transition>
       </div>
 
       <div class="min-h-0 flex-1 overflow-y-auto px-3 pt-1 pb-2">
-        <ScenarioClipboardBoard v-if="scenarioPhase === 'INTRO' && opening" paper-title="">
-          <ScenarioBriefDocument
-            :document-title="opening.documentTitle"
-            :doc-no="opening.docNo"
-            :doc-date="opening.docDate"
-            :org-name="opening.orgName"
-            :title="opening.title"
-            :mission="opening.mission"
-            :issuer-label="opening.issuerLabel"
-            :issuer-name="opening.issuerName"
-            :start-label="opening.startLabel"
-            @start="startGame"
-          />
-        </ScenarioClipboardBoard>
+        <Transition name="scenario-phase" mode="out-in">
+          <ScenarioClipboardBoard
+            v-if="scenarioPhase === 'INTRO' && opening"
+            key="intro"
+            paper-title=""
+          >
+            <ScenarioBriefDocument
+              :document-title="opening.documentTitle"
+              :doc-no="opening.docNo"
+              :doc-date="opening.docDate"
+              :org-name="opening.orgName"
+              :title="opening.title"
+              :mission="opening.mission"
+              :issuer-label="opening.issuerLabel"
+              :issuer-name="opening.issuerName"
+              :start-label="opening.startLabel"
+              @start="startGame"
+            />
+          </ScenarioClipboardBoard>
 
-        <ScenarioClipboardBoard
-          v-else-if="scenarioPhase === 'PLAY' && scenarioCurrentStep"
-          :paper-title="scenarioCurrentStep.paperTitle || '포트폴리오 추천서'"
-        >
-          <ScenarioClipboardQuestion :prompt="scenarioCurrentStep.prompt">
-            <template v-if="scenarioUiStatus === 'CORRECT' && stepCorrectOption">
-              <div
-                class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[#c17f24] bg-[rgba(193,127,36,0.15)] px-3 py-2.5 shadow-[0_2px_8px_rgba(139,80,20,0.2)]"
-              >
-                <div class="flex items-start gap-3 pr-16">
-                  <span
-                    class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#c17f24] text-[10px] text-white"
-                    aria-hidden="true"
-                  >
-                    ✓
-                  </span>
-                  <div>
-                    <p class="font-serif text-[14px] font-semibold text-[#3d1f08]">
-                      {{ stepCorrectOption.label }}
-                    </p>
-                    <p
-                      v-if="stepCorrectOption.description"
-                      class="mt-0.5 text-[11px] font-medium text-[#9a7050]"
-                    >
-                      {{ stepCorrectOption.description }}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  class="absolute top-2 right-2 inline-flex items-center gap-1 rounded bg-[#c17f24] px-2 py-0.5 font-serif text-[10px] font-bold text-[#fff8ec]"
+          <ScenarioClipboardBoard
+            v-else-if="scenarioPhase === 'PLAY' && scenarioCurrentStep"
+            key="play"
+            :paper-title="scenarioCurrentStep.paperTitle || '포트폴리오 추천서'"
+          >
+            <ScenarioClipboardQuestion :prompt="scenarioCurrentStep.prompt">
+              <template v-if="scenarioUiStatus === 'CORRECT' && stepCorrectOption">
+                <div
+                  class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[#c17f24] bg-[rgba(193,127,36,0.15)] px-3 py-2.5 shadow-[0_2px_8px_rgba(139,80,20,0.2)]"
                 >
-                  ★ 정답
-                </span>
-              </div>
-              <ScenarioEvaluationBlock
-                :key="`eval-ok-${scenarioCurrentStep.stepId}`"
-                tone="pass"
-                stamp-label="최적"
-                :quiz-score="evaluationScore"
-                :summary="scenarioCurrentStep.explanation"
-              />
-            </template>
-
-            <template v-else-if="scenarioUiStatus === 'WRONG' && stepSelectedOption">
-              <div
-                class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[rgba(196,92,74,0.55)] bg-[#faebe5] px-3 py-2.5 shadow-[0_2px_8px_rgba(168,56,42,0.16)]"
-              >
-                <div class="flex items-start gap-3 pr-16">
-                  <span
-                    class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#c45c4a] text-[10px] text-white"
-                    aria-hidden="true"
-                  >
-                    ✕
-                  </span>
-                  <div>
-                    <p class="font-serif text-[14px] font-semibold text-[#3d1f08]">
-                      {{ stepSelectedOption.label }}
-                    </p>
-                    <p
-                      v-if="stepSelectedOption.description"
-                      class="mt-0.5 text-[11px] font-medium text-[#9a7050]"
+                  <div class="flex items-start gap-3 pr-16">
+                    <span
+                      class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#c17f24] text-[10px] text-white"
+                      aria-hidden="true"
                     >
-                      {{ stepSelectedOption.description }}
-                    </p>
+                      ✓
+                    </span>
+                    <div>
+                      <p class="font-serif text-[14px] font-semibold text-[#3d1f08]">
+                        {{ stepCorrectOption.label }}
+                      </p>
+                      <p
+                        v-if="stepCorrectOption.description"
+                        class="mt-0.5 text-[11px] font-medium text-[#9a7050]"
+                      >
+                        {{ stepCorrectOption.description }}
+                      </p>
+                    </div>
                   </div>
+                  <span
+                    class="absolute top-2 right-2 inline-flex items-center gap-1 rounded bg-[#c17f24] px-2 py-0.5 font-serif text-[10px] font-bold text-[#fff8ec]"
+                  >
+                    ★ 정답
+                  </span>
                 </div>
-                <span
-                  class="absolute top-2 right-2 inline-flex items-center gap-1 rounded bg-[#c45c4a] px-2 py-0.5 font-serif text-[10px] font-bold text-[#fff8ec]"
+                <ScenarioEvaluationBlock
+                  :key="`eval-ok-${scenarioCurrentStep.stepId}`"
+                  tone="pass"
+                  stamp-label="최적"
+                  :quiz-score="evaluationScore"
+                  :summary="scenarioCurrentStep.explanation"
+                />
+              </template>
+
+              <template v-else-if="scenarioUiStatus === 'WRONG' && stepSelectedOption">
+                <div
+                  class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[rgba(196,92,74,0.55)] bg-[#faebe5] px-3 py-2.5 shadow-[0_2px_8px_rgba(168,56,42,0.16)]"
                 >
-                  오답
-                </span>
-              </div>
-              <ScenarioEvaluationBlock
-                :key="`eval-ng-${scenarioCurrentStep.stepId}`"
-                tone="fail"
-                stamp-label="부적합"
-                :quiz-score="evaluationScore"
-                :summary="scenarioCurrentStep.explanation"
-              />
-            </template>
+                  <div class="flex items-start gap-3 pr-16">
+                    <span
+                      class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#c45c4a] text-[10px] text-white"
+                      aria-hidden="true"
+                    >
+                      ✕
+                    </span>
+                    <div>
+                      <p class="font-serif text-[14px] font-semibold text-[#3d1f08]">
+                        {{ stepSelectedOption.label }}
+                      </p>
+                      <p
+                        v-if="stepSelectedOption.description"
+                        class="mt-0.5 text-[11px] font-medium text-[#9a7050]"
+                      >
+                        {{ stepSelectedOption.description }}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    class="absolute top-2 right-2 inline-flex items-center gap-1 rounded bg-[#c45c4a] px-2 py-0.5 font-serif text-[10px] font-bold text-[#fff8ec]"
+                  >
+                    오답
+                  </span>
+                </div>
+                <ScenarioEvaluationBlock
+                  :key="`eval-ng-${scenarioCurrentStep.stepId}`"
+                  tone="fail"
+                  stamp-label="부적합"
+                  :quiz-score="evaluationScore"
+                  :summary="scenarioCurrentStep.explanation"
+                />
+              </template>
 
-            <template v-else>
-              <ScenarioChoiceOption
-                v-for="opt in scenarioOptions"
-                :key="opt.key"
-                :option-key="opt.key"
-                :label="opt.label"
-                :description="opt.description || ''"
-                :variant="optionVariant(opt.key)"
-                :disabled="scenarioIsGraded"
-                @select="selectOption"
-              />
-            </template>
+              <template v-else>
+                <ScenarioChoiceOption
+                  v-for="opt in scenarioOptions"
+                  :key="opt.key"
+                  :option-key="opt.key"
+                  :label="opt.label"
+                  :description="opt.description || ''"
+                  :variant="optionVariant(opt.key)"
+                  :disabled="scenarioIsGraded"
+                  @select="selectOption"
+                />
+              </template>
 
-            <template #footer>
-              <button
-                type="button"
-                class="mt-1 flex h-11 w-full items-center justify-center gap-1 rounded-[10px] font-serif text-[14px] font-bold tracking-wide disabled:cursor-not-allowed disabled:opacity-70"
-                :class="[
-                  primaryEnabled
-                    ? 'btn-hover bg-[#c17f24] text-[#fff8ec]'
-                    : 'bg-[rgba(232,214,180,0.75)] text-[rgba(61,31,8,0.45)]',
-                ]"
-                :disabled="!primaryEnabled"
-                @click="onPrimaryAction"
-              >
-                {{ primaryLabel }}
-                <span aria-hidden="true">→</span>
-              </button>
-            </template>
-          </ScenarioClipboardQuestion>
-        </ScenarioClipboardBoard>
+              <template #footer>
+                <button
+                  type="button"
+                  class="mt-1 flex h-11 w-full items-center justify-center gap-1 rounded-[10px] font-serif text-[14px] font-bold tracking-wide disabled:cursor-not-allowed disabled:opacity-70"
+                  :class="[
+                    primaryEnabled
+                      ? 'btn-hover bg-[#c17f24] text-[#fff8ec]'
+                      : 'bg-[rgba(232,214,180,0.75)] text-[rgba(61,31,8,0.45)]',
+                  ]"
+                  :disabled="!primaryEnabled"
+                  @click="onPrimaryAction"
+                >
+                  {{ primaryLabel }}
+                  <span aria-hidden="true">→</span>
+                </button>
+              </template>
+            </ScenarioClipboardQuestion>
+          </ScenarioClipboardBoard>
 
-        <ScenarioClipboardBoard v-else-if="scenarioPhase === 'RESULT'" paper-title="">
-          <ScenarioResultPanel
-            :subject-name="chapterTitle"
-            :congrats-message="resultCongratsMessage"
-            :confirm-label="resultConfirmLabel"
-            :completed="!retryMainChapterQuiz"
-            @confirm="goToRoadmap"
-          />
-        </ScenarioClipboardBoard>
+          <ScenarioClipboardBoard
+            v-else-if="scenarioPhase === 'RESULT'"
+            key="result"
+            paper-title=""
+          >
+            <ScenarioResultPanel
+              :subject-name="chapterTitle"
+              :congrats-message="resultCongratsMessage"
+              :confirm-label="resultConfirmLabel"
+              :completed="!retryMainChapterQuiz"
+              @confirm="goToRoadmap"
+            />
+          </ScenarioClipboardBoard>
+        </Transition>
       </div>
 
       <ScenarioMarketBar
@@ -310,6 +323,38 @@ const resultCongratsMessage = computed(() =>
   animation: scenario-grade-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.scenario-phase-enter-active,
+.scenario-phase-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scenario-phase-enter-from,
+.scenario-phase-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+}
+
+.scenario-client-enter-active {
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scenario-client-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.scenario-client-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.scenario-client-leave-to {
+  opacity: 0;
+}
+
 @keyframes scenario-penguin-breath {
   0%,
   100% {
@@ -334,6 +379,19 @@ const resultCongratsMessage = computed(() =>
 @media (prefers-reduced-motion: reduce) {
   .scenario-penguin {
     animation: none;
+  }
+
+  .scenario-phase-enter-active,
+  .scenario-phase-leave-active,
+  .scenario-client-enter-active,
+  .scenario-client-leave-active {
+    transition: opacity 0.15s ease;
+  }
+
+  .scenario-phase-enter-from,
+  .scenario-phase-leave-to,
+  .scenario-client-enter-from {
+    transform: none;
   }
 }
 </style>

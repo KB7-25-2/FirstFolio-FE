@@ -368,7 +368,7 @@ const goScenarioQuiz = (event) => {
                     <button
                       v-else-if="node.role === 'current' && effectiveContinueRoute"
                       type="button"
-                      class="study-continue-cta shrink-0 rounded px-1.5 py-0.5 font-serif text-[12px] font-bold whitespace-nowrap text-[var(--study-continue)]"
+                      class="shrink-0 rounded bg-[rgba(89,140,82,0.9)] px-2 py-1 font-serif text-[10px] font-bold whitespace-nowrap text-white transition-transform duration-150 hover:scale-[1.02] active:scale-[0.97]"
                       @click.stop="onContinue"
                     >
                       이어서 →

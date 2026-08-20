@@ -14,38 +14,28 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.png', 'favicon.svg'],
+        includeAssets: ['firstfolio-app-icon-f.svg'],
         manifest: {
           name: 'FirstFolio',
           short_name: 'FirstFolio',
           description: '배우며 완성하는 나의 첫 자산 포트폴리오',
-          theme_color: '#F5C518',
-          background_color: '#F5C518',
+          theme_color: '#f7f1e4',
+          background_color: '#f7f1e4',
           display: 'standalone',
           orientation: 'portrait',
           scope: '/',
           start_url: '/',
           icons: [
             {
-              src: 'pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
+              src: 'firstfolio-app-icon-f.svg',
+              sizes: '1024x1024',
+              type: 'image/svg+xml',
               purpose: 'any maskable',
             },
           ],
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          globPatterns: ['**/*.{js,css,html,ico,png,jpg,webp,svg,woff2}'],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith('/api'),

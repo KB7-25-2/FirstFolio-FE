@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import AuthPageHeader from '@/components/auth/AuthPageHeader.vue'
 import AuthDocTabs from '@/components/auth/AuthDocTabs.vue'
 import AuthClipboardBoard from '@/components/auth/AuthClipboardBoard.vue'
@@ -12,49 +12,14 @@ import AuthMethodCard from '@/components/auth/AuthMethodCard.vue'
 import AuthSplash from '@/components/auth/AuthSplash.vue'
 import { useLoginView } from '@/composables/useLoginView.js'
 
-const SPLASH_KEY = 'ff-login-splash-seen'
-const SPLASH_HOLD_MS = 2100
+/** 로그인 화면 진입(마운트)마다 스플래시 표시 */
+const showSplash = ref(true)
+const loginReady = ref(false)
 
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-const splashSeen = () => {
-  try {
-    return sessionStorage.getItem(SPLASH_KEY) === '1'
-  } catch {
-    return true
-  }
+const dismissSplash = () => {
+  showSplash.value = false
+  loginReady.value = true
 }
-
-const markSplashSeen = () => {
-  try {
-    sessionStorage.setItem(SPLASH_KEY, '1')
-  } catch {
-    /* ignore */
-  }
-}
-
-const showSplash = ref(!splashSeen() && !prefersReducedMotion())
-const loginReady = ref(!showSplash.value)
-
-let splashTimer = 0
-
-onMounted(() => {
-  if (!showSplash.value) {
-    loginReady.value = true
-    return
-  }
-
-  splashTimer = window.setTimeout(() => {
-    showSplash.value = false
-    loginReady.value = true
-    markSplashSeen()
-  }, SPLASH_HOLD_MS)
-})
-
-onBeforeUnmount(() => {
-  if (splashTimer) window.clearTimeout(splashTimer)
-})
 
 const {
   activeTab,
@@ -357,7 +322,7 @@ watch(signupStep, (step, prev) => {
     </div>
 
     <Transition name="auth-splash">
-      <AuthSplash v-if="showSplash" />
+      <AuthSplash v-if="showSplash" @finished="dismissSplash" />
     </Transition>
   </div>
 </template>

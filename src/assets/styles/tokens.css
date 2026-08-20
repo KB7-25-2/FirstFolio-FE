@@ -1,6 +1,7 @@
 @theme {
   --font-sans: 'Gowun Dodum', sans-serif;
   --font-serif: 'Gowun Batang', serif;
+  --font-brand: 'Avenir Next', Avenir, 'Helvetica Neue', Arial, sans-serif;
 
   --color-auth-page: #d6bc8e;
   --color-auth-title: #2c1810;

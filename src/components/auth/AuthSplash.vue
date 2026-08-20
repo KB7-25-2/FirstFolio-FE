@@ -1,46 +1,111 @@
 <script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { BRAND_WORDMARK_SRC } from '@/constants/brandAssets.js'
+
 defineProps({
   brand: {
     type: String,
-    default: 'Firstfolio',
+    default: 'firstfolio',
   },
-  tagline: {
-    type: String,
-    default: '배우며 완성하는 나의 첫 자산 포트폴리오',
-  },
+})
+
+const emit = defineEmits(['finished'])
+const SPLASH_DURATION_MS = 3920
+const SPLASH_TAIL_MS = 200
+const LOGO_HOLD_MS = 1600
+const SPLASH_FAILSAFE_MS = 10000
+
+const phase = ref('splash')
+const splashRef = ref(null)
+
+let finishTimer = 0
+let logoTimer = 0
+let failsafeTimer = 0
+let finished = false
+let splashEndScheduled = false
+
+const finish = () => {
+  if (finished) return
+  finished = true
+  if (finishTimer) window.clearTimeout(finishTimer)
+  if (logoTimer) window.clearTimeout(logoTimer)
+  if (failsafeTimer) window.clearTimeout(failsafeTimer)
+  emit('finished')
+}
+
+const showLogoThenFinish = () => {
+  if (phase.value === 'logo') return
+  phase.value = 'logo'
+  if (logoTimer) window.clearTimeout(logoTimer)
+  logoTimer = window.setTimeout(finish, LOGO_HOLD_MS)
+}
+
+const scheduleSplashEnd = () => {
+  if (splashEndScheduled) return
+  splashEndScheduled = true
+  finishTimer = window.setTimeout(showLogoThenFinish, SPLASH_DURATION_MS + SPLASH_TAIL_MS)
+}
+
+const onSplashLoad = () => {
+  if (splashRef.value?.naturalWidth) scheduleSplashEnd()
+}
+
+const onSplashError = () => {
+  showLogoThenFinish()
+}
+
+onMounted(() => {
+  failsafeTimer = window.setTimeout(showLogoThenFinish, SPLASH_FAILSAFE_MS)
+  if (splashRef.value?.complete && splashRef.value.naturalWidth) onSplashLoad()
+})
+
+onBeforeUnmount(() => {
+  if (finishTimer) window.clearTimeout(finishTimer)
+  if (logoTimer) window.clearTimeout(logoTimer)
+  if (failsafeTimer) window.clearTimeout(failsafeTimer)
 })
 </script>
 
 <template>
   <div
-    class="auth-splash absolute inset-0 z-20 flex items-center justify-center"
+    class="auth-splash fixed inset-0 z-100 flex items-center justify-center overflow-hidden bg-[var(--cork-base)]"
     role="status"
     aria-live="polite"
-    aria-label="Firstfolio 시작 화면"
+    :aria-label="`${brand} 시작 화면`"
   >
-    <div class="auth-splash__glow" aria-hidden="true" />
-    <div class="flex flex-col items-center px-6 text-center">
-      <p
-        class="auth-splash__eyebrow font-serif text-[10px] tracking-[0.22em] text-[var(--cork-ink-faint)]"
-      >
-        FIRSTFOLIO
-      </p>
-      <h1
-        class="auth-splash__brand mt-3 font-serif text-[44px] leading-none font-bold text-[var(--cork-ink)]"
-      >
-        {{ brand }}
-      </h1>
-      <p
-        class="auth-splash__tagline mt-4 max-w-[16rem] font-serif text-[13px] leading-relaxed text-[var(--cork-ink-muted)]"
-      >
-        {{ tagline }}
-      </p>
-      <span
-        class="auth-splash__stamp mt-8 rotate-[-8deg] rounded border border-[var(--cork-stamp-border)] px-3 py-1.5 font-serif text-[11px] tracking-wide text-[var(--cork-stamp)]"
-        aria-hidden="true"
-      >
-        OPEN
-      </span>
+    <div
+      class="auth-splash__stage relative flex h-full w-full max-w-[var(--mobile-width)] items-center justify-center"
+    >
+      <Transition name="auth-splash-cross">
+        <img
+          v-if="phase === 'splash'"
+          ref="splashRef"
+          key="splash"
+          src="/splash.webp"
+          :alt="brand"
+          class="auth-splash__media absolute max-h-[42dvh] w-[min(58vw,220px)] select-none object-contain"
+          width="220"
+          height="476"
+          decoding="async"
+          draggable="false"
+          @load="onSplashLoad"
+          @error="onSplashError"
+        />
+      </Transition>
+
+      <Transition name="auth-splash-cross">
+        <img
+          v-if="phase === 'logo'"
+          key="logo"
+          :src="BRAND_WORDMARK_SRC"
+          :alt="brand"
+          class="auth-splash__logo absolute h-auto w-[min(72vw,280px)] select-none object-contain"
+          width="280"
+          height="77"
+          decoding="async"
+          draggable="false"
+        />
+      </Transition>
     </div>
   </div>
 </template>
