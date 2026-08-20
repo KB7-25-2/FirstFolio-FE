@@ -23,9 +23,27 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     error.value = null
 
     try {
-      const { items, nextCursor } = await portfolioService.getPurchasableProductsList(params)
+      // GET /financial-products는 한 번에 최대 20개(size 기본값)만 준다. 필터 없이 한 번만
+      // 받아오면 product_id가 늦은 자산군(채권·펀드 등)이 첫 페이지 밖으로 밀려 어떤 탭에서도
+      // 안 보이는 문제가 생긴다. purchasableProducts는 이 화면뿐 아니라 시간 압축 탭,
+      // 보유 목록 cycleSummary 조인(buildProductsById)까지 전역으로 쓰이는 "전체 카탈로그"라
+      // 커서를 따라 끝까지 모아 하나로 합친다. 무한 루프 방지용 안전장치로 최대 50페이지.
+      const items = []
+      let cursor = params.cursor
+      for (let page = 0; page < 50; page += 1) {
+        const result = await portfolioService.getPurchasableProductsList({
+          ...params,
+          cursor,
+          size: params.size ?? 100,
+        })
+        items.push(...result.items)
+        if (!result.nextCursor) {
+          break
+        }
+        cursor = result.nextCursor
+      }
       purchasableProducts.value = items
-      productsNextCursor.value = nextCursor
+      productsNextCursor.value = null
     } catch (err) {
       error.value = err.message
       throw err

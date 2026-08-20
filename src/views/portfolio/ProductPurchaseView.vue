@@ -10,11 +10,15 @@ import { ASSET_TYPE_META } from '@/constants/assetType.js'
 const store = usePortfolioStore()
 
 const FILTERS = [
-  { value: 'ALL', label: '전체' },
-  { value: 'DEPOSIT_SAVINGS', label: ASSET_TYPE_META.DEPOSIT_SAVINGS.label },
-  { value: 'BOND', label: ASSET_TYPE_META.BOND.label },
-  { value: 'STOCK', label: ASSET_TYPE_META.STOCK.label },
-  { value: 'FUND', label: ASSET_TYPE_META.FUND.label },
+  { value: 'ALL', label: '전체', color: null },
+  {
+    value: 'DEPOSIT_SAVINGS',
+    label: ASSET_TYPE_META.DEPOSIT_SAVINGS.label,
+    color: ASSET_TYPE_META.DEPOSIT_SAVINGS.color,
+  },
+  { value: 'BOND', label: ASSET_TYPE_META.BOND.label, color: ASSET_TYPE_META.BOND.color },
+  { value: 'STOCK', label: ASSET_TYPE_META.STOCK.label, color: ASSET_TYPE_META.STOCK.color },
+  { value: 'FUND', label: ASSET_TYPE_META.FUND.label, color: ASSET_TYPE_META.FUND.color },
 ]
 
 const activeFilter = ref('ALL')
@@ -98,7 +102,10 @@ const closeTradeResult = () => {
     data-scroll-reveal-root
     class="nav-scroll-pad absolute inset-0 flex flex-col gap-3 overflow-y-auto overscroll-contain"
   >
-    <ScrollReveal>
+    <!-- ScrollReveal 밖에 둔다 — ScrollReveal이 인라인 transform을 걸어서, 그 안에서는
+         position: sticky가 스크롤 컨테이너 기준이 아니라 transform이 만든 새 컨테이닝 블록
+         기준으로 깨진다. -->
+    <div class="cork-board-patch sticky top-0 z-10 py-1.5">
       <div class="flex gap-2 overflow-x-auto pb-1">
         <button
           v-for="filter in FILTERS"
@@ -107,15 +114,20 @@ const closeTradeResult = () => {
           class="shrink-0 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
           :class="
             activeFilter === filter.value
-              ? 'bg-[#c17f24] text-[#fff8ec]'
+              ? 'border-[1.5px] border-[#c17f24] bg-[#fff8ec] text-[#2c1810]'
               : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)]'
           "
           @click="activeFilter = filter.value"
         >
+          <span
+            v-if="filter.color"
+            class="mr-1.5 inline-block size-2 rounded-full align-middle"
+            :style="{ backgroundColor: filter.color }"
+          />
           {{ filter.label }}
         </button>
       </div>
-    </ScrollReveal>
+    </div>
 
     <ScrollReveal v-if="store.summary">
       <p class="font-serif text-xs text-[rgba(41,33,26,0.55)]">
