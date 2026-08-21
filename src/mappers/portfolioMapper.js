@@ -305,9 +305,7 @@ export const mapTransaction = (raw) => ({
   amount: Number(raw.amount ?? 0),
   quantity: raw.quantity != null ? Number(raw.quantity) : null, // 매수·매도 이력에만 값 있음
   unitPrice: raw.unit_price != null ? Number(raw.unit_price) : null,
-  status: raw.status,
-  isScheduled: raw.status === 'SCHEDULED', // 아직 반영 안 된 예정 이벤트(이자·배당·만기)
-  scheduledAt: raw.scheduled_at ?? null,
+  status: raw.status, // 스토어(fetchTransactions)가 COMPLETED만 남기고 걸러낸다
   processedAt: raw.processed_at ?? null,
   detail: raw.detail ?? null,
 })

@@ -64,10 +64,8 @@ const loadMore = async () => {
   }
 }
 
-const transactionDate = (transaction) => {
-  const raw = transaction.isScheduled ? transaction.scheduledAt : transaction.processedAt
-  return raw ? new Date(raw) : null
-}
+const transactionDate = (transaction) =>
+  transaction.processedAt ? new Date(transaction.processedAt) : null
 
 const isSameDay = (a, b) =>
   a.getFullYear() === b.getFullYear() &&
