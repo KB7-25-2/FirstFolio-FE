@@ -46,8 +46,8 @@ export const ASSET_TYPE_META = {
   },
   FUND: {
     label: '펀드',
-    dotClass: 'bg-[var(--pf-asset-stock)]',
-    color: 'var(--pf-asset-stock)',
+    dotClass: 'bg-[var(--pf-asset-fund)]',
+    color: 'var(--pf-asset-fund)',
     tradeType: 'MARKET',
     sellActionLabel: '환매',
     buyActionLabel: '매수',
