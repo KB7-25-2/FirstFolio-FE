@@ -507,12 +507,6 @@ onActivated(async () => {
                           ✓
                         </span>
                       </h2>
-                      <p
-                        v-if="stage.description"
-                        class="mt-1.5 font-serif text-[11px] leading-snug text-[rgba(61,31,8,0.6)]"
-                      >
-                        {{ stage.description }}
-                      </p>
                     </div>
                   </button>
 

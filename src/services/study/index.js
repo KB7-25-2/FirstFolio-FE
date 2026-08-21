@@ -19,12 +19,6 @@ export {
   startSubChapterQuizAttempt,
   startMainChapterQuizAttempt,
   gradeQuizAttemptAnswer,
-  getQuizQuestions,
-  submitQuizAttempt,
 } from './quizStudyService.js'
 
-export { getChapterGame, getScenario, submitScenarioAttempt } from './scenarioStudyService.js'
-
 export { getContinuePosition } from './continueService.js'
-
-export { __setMockLearningProfile, __getMockLearningProfile } from './mock/studyMockProfile.js'

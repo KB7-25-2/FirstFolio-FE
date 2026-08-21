@@ -16,7 +16,6 @@ import FoundationGuideOverlay from '@/components/FoundationGuideOverlay.vue'
 import FoundationUnlockCeremony from '@/components/FoundationUnlockCeremony.vue'
 import BaseToast from '@/components/BaseToast.vue'
 import { useFoundationGuide } from '@/composables/useFoundationGuide.js'
-import { __setMockLearningProfile } from '@/services/studyService.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -57,8 +56,6 @@ const closePortfolioLockedToast = () => {
 }
 
 const confirmUnlockPreview = async () => {
-  // 미리보기: 기초 수료 상태로 맞춘 뒤 지급·포트폴리오 진입
-  __setMockLearningProfile('mid-curriculum')
   await studyStore.fetchCurriculum()
   await portfolioStore.grantFoundationCash()
   studyStore.clearFoundationUnlock()

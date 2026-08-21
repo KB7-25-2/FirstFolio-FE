@@ -5,7 +5,6 @@ import {
   getCurriculum,
   getLearningRoadmap,
   getLessonPages,
-  getQuizQuestions,
   getSubChapterContent,
   gradeQuizAttemptAnswer,
   mergeLearningItemsWithProgress,
@@ -13,15 +12,11 @@ import {
   saveLessonProgress,
   startMainChapterQuizAttempt,
   startSubChapterQuizAttempt,
-  submitQuizAttempt,
 } from '@/services/studyService.js'
-import { StudyApiError } from '@/services/study/studyApiError.js'
 import {
   needsQuizAttempt,
   isSubChapterFullyCompletedFromItem,
 } from '@/services/study/mappers/subChapterMapper.js'
-import { shouldFallbackStudyMock } from '@/services/study/studyResponseUtils.js'
-import { promoteNextCurriculumChapter } from '@/services/study/mock/studyMockEngine.js'
 import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import { shouldShowFoundationGuide, isFoundationCompleted } from '@/utils/foundationGuide.js'
@@ -471,44 +466,11 @@ export const useStudyStore = defineStore('study', () => {
     clearQuizSession()
     quizSubChapterId.value = subChapterId
 
-    /** @type {{ data?: { attemptId?: number, questions?: unknown[] } } | null} */
-    let attempt = null
-    try {
-      attempt = await startSubChapterQuizAttempt(subChapterId)
-    } catch (error) {
-      const mapped =
-        error instanceof StudyApiError
-          ? error
-          : new StudyApiError(
-              error?.code ?? 'QUIZ_START_FAILED',
-              error?.message ?? '퀴즈를 시작하지 못했습니다.',
-              error?.status ?? 500,
-            )
-      if (!shouldFallbackStudyMock(mapped)) throw mapped
-      console.warn('[studyStore] quiz start 실패 — mock 문항으로 대체합니다.', mapped)
-    }
-
-    if (attempt?.data?.questions?.length) {
-      applyQuizAttemptSession(attempt.data)
-      return
-    }
-
-    if (
-      !lessonQuizQuestionIds.value.length ||
-      currentContent.value?.subChapterId !== subChapterId
-    ) {
-      await fetchLessonContent(subChapterId)
-    }
-
-    const ids = lessonQuizQuestionIds.value
-    if (!ids.length) {
+    const attempt = await startSubChapterQuizAttempt(subChapterId)
+    if (!attempt?.data?.questions?.length) {
       throw Object.assign(new Error('퀴즈 문항이 없습니다.'), { code: 'QUESTIONS_NOT_FOUND' })
     }
-
-    const { data } = await getQuizQuestions(ids)
-    quizQuestions.value = data.items
-    quizIndex.value = 0
-    resetQuizQuestionUi()
+    applyQuizAttemptSession(attempt.data)
   }
 
   const selectQuizOption = (key) => {
@@ -565,55 +527,41 @@ export const useStudyStore = defineStore('study', () => {
     const subChapterId = quizSubChapterId.value
     if (!subChapterId || !quizQuestions.value.length) return null
 
-    if (quizAttemptId.value != null && Object.keys(quizGradeByQuestionId.value).length) {
-      const grades = quizQuestions.value.map((q) => quizGradeByQuestionId.value[q.questionId])
-      const correctCount = grades.filter((g) => g?.isCorrect).length
-      const totalCount = quizQuestions.value.length
-      const last = grades[grades.length - 1]
-      const pointsGranted = last?.reward?.points ?? 0
-      const data = {
-        subChapterId,
-        totalCount,
-        correctCount,
-        quizScore:
-          last?.attempt?.score ?? (totalCount ? Math.round((correctCount / totalCount) * 100) : 0),
-        pointsGranted,
-        wrongAnswers: grades
-          .filter((g) => g && !g.isCorrect)
-          .map((g) => ({
-            questionId: g.questionId,
-            selectedKey: g.selectedKey,
-            correctKey: g.correctAnswer?.key,
-          })),
-        gradedAnswers: grades.filter(Boolean).map((g) => ({
-          questionId: g.questionId,
-          selectedKey: g.selectedKey,
-          isCorrect: g.isCorrect,
-        })),
-      }
-      quizAttemptResult.value = data
-      useDashboardStore().invalidate()
-      if (data.pointsGranted > 0) {
-        const userStore = useUserStore()
-        await userStore.addPoints(data.pointsGranted)
-      }
-    } else {
-      const answers = quizQuestions.value.map((q) => ({
-        questionId: q.questionId,
-        selectedKey: quizAnswers.value[q.questionId] ?? '',
-      }))
-
-      const { data } = await submitQuizAttempt({ subChapterId, answers })
-      quizAttemptResult.value = data
-      useDashboardStore().invalidate()
-
-      if (data.pointsGranted > 0) {
-        const userStore = useUserStore()
-        await userStore.addPoints(data.pointsGranted)
-      }
+    if (quizAttemptId.value == null || !Object.keys(quizGradeByQuestionId.value).length) {
+      throw Object.assign(new Error('퀴즈 응시 정보가 없습니다.'), { code: 'INVALID_ATTEMPT' })
     }
 
-    const data = quizAttemptResult.value
+    const grades = quizQuestions.value.map((q) => quizGradeByQuestionId.value[q.questionId])
+    const correctCount = grades.filter((g) => g?.isCorrect).length
+    const totalCount = quizQuestions.value.length
+    const last = grades[grades.length - 1]
+    const pointsGranted = last?.reward?.points ?? 0
+    const data = {
+      subChapterId,
+      totalCount,
+      correctCount,
+      quizScore:
+        last?.attempt?.score ?? (totalCount ? Math.round((correctCount / totalCount) * 100) : 0),
+      pointsGranted,
+      wrongAnswers: grades
+        .filter((g) => g && !g.isCorrect)
+        .map((g) => ({
+          questionId: g.questionId,
+          selectedKey: g.selectedKey,
+          correctKey: g.correctAnswer?.key,
+        })),
+      gradedAnswers: grades.filter(Boolean).map((g) => ({
+        questionId: g.questionId,
+        selectedKey: g.selectedKey,
+        isCorrect: g.isCorrect,
+      })),
+    }
+    quizAttemptResult.value = data
+    useDashboardStore().invalidate()
+    if (data.pointsGranted > 0) {
+      const userStore = useUserStore()
+      await userStore.addPoints(data.pointsGranted)
+    }
 
     const alreadyCompleted =
       currentContent.value?.subChapterId === subChapterId &&
@@ -925,11 +873,6 @@ export const useStudyStore = defineStore('study', () => {
       item.status = 'COMPLETED'
       item.quizScore = data.quizScore
       item.completedAt = item.completedAt ?? new Date().toISOString()
-    }
-
-    // DEV/E2E 목업은 대단원 수료 전환을 별도로 기록해야 다음 대단원이 열린다.
-    if (data.mainChapterCompleted && shouldFallbackStudyMock()) {
-      promoteNextCurriculumChapter(mainChapterId)
     }
 
     await Promise.all([fetchRoadmap({ force: true }), fetchContinuePosition()])

@@ -36,7 +36,7 @@ const SUB_CHAPTER_FIXTURES = {
   },
 }
 
-/** 소단원 퀴즈 정답 key (studyMockData MOCK_QUIZ_QUESTIONS와 동기) */
+/** 소단원 퀴즈 정답 key (E2E mock 문항 choices[0]과 동기) */
 export const QUIZ_ANSWER_KEYS = {
   103: ['2', '3', '1'],
   104: ['2', '3', '2'],

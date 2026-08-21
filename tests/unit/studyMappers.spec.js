@@ -9,7 +9,6 @@ import {
   mapRoadmapSubChapter,
 } from '@/services/study/mappers/roadmapMapper.js'
 import { pickStageLearningItems } from '@/services/study/roadmapService.js'
-import { buildMockLearningRoadmap } from '@/services/study/mock/studyMockEngine.js'
 import {
   mapSubChapterListItem,
   mergeProgressIntoItem,
@@ -217,17 +216,6 @@ describe('roadmapMapper', () => {
     const items = pickStageLearningItems(stages)
     expect(items).toHaveLength(1)
     expect(items[0].subChapterId).toBe(101)
-  })
-})
-
-describe('buildMockLearningRoadmap (E2E/DEV fallback)', () => {
-  it('예·적금 ACTIVE 대단원에 103 IN_PROGRESS 소단원을 포함한다', () => {
-    const { curriculumItems, stages } = buildMockLearningRoadmap()
-    const active = curriculumItems.find((item) => item.status === 'ACTIVE')
-    expect(active?.mainChapterId).toBe(2)
-
-    const items = pickStageLearningItems(stages, 2)
-    expect(items.some((row) => row.subChapterId === 103 && row.status === 'IN_PROGRESS')).toBe(true)
   })
 })
 
