@@ -18,13 +18,11 @@ const { profile, email, pointBalanceDisplay, isSaving } = storeToRefs(userStore)
 const nicknameInput = ref('')
 const newsletterOptIn = ref(false)
 const formError = ref('')
-const saveSuccess = ref(false)
 
 const syncFromProfile = () => {
   nicknameInput.value = profile.value?.nickname ?? ''
   newsletterOptIn.value = Boolean(profile.value?.newsletterOptIn)
   formError.value = ''
-  saveSuccess.value = false
 }
 
 watch(
@@ -50,7 +48,6 @@ const onSave = async () => {
   if (!isDirty.value || isSaving.value) return
 
   formError.value = ''
-  saveSuccess.value = false
 
   /** @type {{ nickname?: string, newsletterOptIn?: boolean }} */
   const payload = {}
@@ -65,8 +62,7 @@ const onSave = async () => {
 
   try {
     await userStore.updateProfile(payload)
-    syncFromProfile()
-    saveSuccess.value = true
+    emit('close')
   } catch (err) {
     formError.value = err?.message || '프로필을 저장하지 못했습니다.'
   }
@@ -164,9 +160,6 @@ const onSave = async () => {
 
       <p v-if="formError" class="mt-3 font-serif text-[12px] text-[#e8a0a0]" role="alert">
         {{ formError }}
-      </p>
-      <p v-else-if="saveSuccess" class="mt-3 font-serif text-[12px] text-[rgba(140,200,140,0.9)]">
-        프로필이 저장되었습니다.
       </p>
 
       <button
