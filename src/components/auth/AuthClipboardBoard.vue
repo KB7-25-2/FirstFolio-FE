@@ -51,7 +51,7 @@ defineProps({
       <Transition :name="paperTransition" mode="out-in">
         <div
           :key="paperKey"
-          class="auth-paper relative flex h-[520px] flex-col overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.5px] border-[var(--auth-paper-border)] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
+          class="auth-paper relative flex h-[460px] flex-col overflow-hidden rounded-t-[4px] rounded-b-[10px] border-[0.5px] border-[var(--auth-paper-border)] shadow-[0_1px_0_rgba(255,255,255,0.5)]"
         >
           <img
             :src="paperTexture"

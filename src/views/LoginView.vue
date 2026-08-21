@@ -32,7 +32,6 @@ const {
   rememberMe,
   error,
   isLoading,
-  todayLabel,
   isLogin,
   clipboardHeader,
   signatureName,
@@ -106,13 +105,6 @@ watch(signupStep, (step, prev) => {
             <!-- 로그인 -->
             <template v-if="isLogin">
               <div class="flex flex-col gap-1.5">
-                <div
-                  class="flex items-start justify-between font-serif text-[9px] text-[var(--auth-doc-meta)]"
-                >
-                  <span>제 2026-입장-001 호</span>
-                  <span>{{ todayLabel }}</span>
-                </div>
-
                 <AuthDocDivider />
 
                 <h2
@@ -122,11 +114,6 @@ watch(signupStep, (step, prev) => {
                 </h2>
 
                 <AuthDocDivider />
-
-                <p class="text-center font-serif text-[10px] text-[var(--auth-doc-guide)]">
-                  아래 항목을 정자로 기재하여 제출하시오.
-                </p>
-
                 <AuthDocField
                   id="login-email"
                   v-model="email"
@@ -148,7 +135,7 @@ watch(signupStep, (step, prev) => {
                   :disabled="isLoading || showSplash"
                 />
 
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between pb-2">
                   <AuthRememberCheck v-model="rememberMe" :disabled="isLoading || showSplash" />
                   <button
                     type="button"
@@ -183,14 +170,7 @@ watch(signupStep, (step, prev) => {
 
             <!-- 회원가입 · 방식 선택 -->
             <template v-else-if="signupStep === 'method'">
-              <div class="flex flex-col gap-3">
-                <div
-                  class="flex items-start justify-between font-serif text-[9px] text-[var(--auth-doc-meta)]"
-                >
-                  <span>제 2026-등록-002 호</span>
-                  <span>{{ todayLabel }}</span>
-                </div>
-
+              <div class="flex flex-col gap-1 pb-2">
                 <AuthDocDivider />
 
                 <h2
@@ -200,7 +180,8 @@ watch(signupStep, (step, prev) => {
                 </h2>
 
                 <AuthDocDivider />
-
+              </div>
+              <div class="flex flex-col gap-3">
                 <p class="text-center font-serif text-[10px] text-[var(--auth-doc-guide)]">
                   하나를 선택하여 표기(v)하시오.
                 </p>
@@ -235,14 +216,7 @@ watch(signupStep, (step, prev) => {
 
             <!-- 회원가입 · 이메일 폼 -->
             <template v-else>
-              <div class="flex flex-col gap-3">
-                <div
-                  class="flex items-start justify-between font-serif text-[9px] text-[var(--auth-doc-meta)]"
-                >
-                  <span>제 2026-등록-001 호</span>
-                  <span>{{ todayLabel }}</span>
-                </div>
-
+              <div class="flex flex-col gap-1 pb-2">
                 <AuthDocDivider />
 
                 <h2
@@ -252,7 +226,8 @@ watch(signupStep, (step, prev) => {
                 </h2>
 
                 <AuthDocDivider />
-
+              </div>
+              <div class="flex flex-col gap-3">
                 <p class="text-center font-serif text-[10px] text-[var(--auth-doc-guide)]">
                   신규 등록을 위해 아래 항목을 빠짐없이 기재하시오.
                 </p>

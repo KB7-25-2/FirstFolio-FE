@@ -2,7 +2,7 @@
 defineProps({
   name: {
     type: String,
-    default: '김투자',
+    default: '',
   },
   sealLabel: {
     type: String,
@@ -18,7 +18,7 @@ defineProps({
       name
     }}</span>
     <div class="flex h-[23px] w-[34px] items-center justify-center">
-      <div class="rotate-8 rounded border-[0.5px] border-[var(--auth-seal)] px-[7px] py-[3px]">
+      <div class="rotate-1 rounded border-[0.5px] border-[var(--auth-seal)] px-[7px] py-[1px]">
         <span class="font-serif text-[9px] font-black whitespace-nowrap text-[var(--auth-seal)]">
           {{ sealLabel }}
         </span>

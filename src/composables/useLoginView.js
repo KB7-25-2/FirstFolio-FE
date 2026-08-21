@@ -39,7 +39,7 @@ export const useLoginView = () => {
 
   const isLogin = computed(() => activeTab.value === 'login')
   const clipboardHeader = computed(() => (isLogin.value ? '입 장 서 류' : '등 록 서 류'))
-  const signatureName = computed(() => nickname.value || '김투자')
+  const signatureName = computed(() => nickname.value || '')
 
   const fallbackHome = computed(() =>
     typeof route.query.redirect === 'string' ? route.query.redirect : '/home',
