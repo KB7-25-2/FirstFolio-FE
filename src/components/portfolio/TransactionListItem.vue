@@ -46,11 +46,11 @@ const displayAmount = computed(() => {
 })
 
 const dateLabel = computed(() => {
-  const raw = props.transaction.isScheduled
-    ? props.transaction.scheduledAt
-    : props.transaction.processedAt
-  if (!raw) return null
-  return new Date(raw).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
+  if (!props.transaction.processedAt) return null
+  return new Date(props.transaction.processedAt).toLocaleDateString('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+  })
 })
 </script>
 
@@ -92,13 +92,7 @@ const dateLabel = computed(() => {
       </p>
     </div>
 
-    <div class="flex items-center justify-end gap-1.5">
-      <span
-        v-if="transaction.isScheduled"
-        class="rounded-full bg-[rgba(193,127,36,0.15)] px-1.5 py-0.5 font-serif text-[9px] font-bold text-[#c17f24]"
-      >
-        예정
-      </span>
+    <div class="flex justify-end">
       <span class="font-serif text-[11px] text-[rgba(41,33,26,0.45)]">{{ dateLabel }}</span>
     </div>
   </li>

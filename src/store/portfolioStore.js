@@ -210,7 +210,11 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     try {
       const { items, nextCursor } = await portfolioService.getPortfolioTransactionsList(queryParams)
       if (requestId !== transactionsRequestId) return // 더 최신 요청이 이미 나간 뒤라 이 응답은 버린다
-      transactions.value = append ? [...transactions.value, ...items] : items
+      // API는 status 필터가 없어서(type/cursor/size만 지원) SCHEDULED(예정)·CANCELLED(취소)까지
+      // 전부 내려준다. 화면엔 실제로 처리 완료된 이력만 보여준다 — 예정 이벤트는 아직 안 일어난
+      // 일이라 목록에 섞이면(취소되면 더더욱) 헷갈린다.
+      const completedItems = items.filter((item) => item.status === 'COMPLETED')
+      transactions.value = append ? [...transactions.value, ...completedItems] : completedItems
       transactionsNextCursor.value = nextCursor
     } catch (err) {
       if (requestId === transactionsRequestId) error.value = err.message

@@ -78,11 +78,11 @@ const breakdownRows = computed(() => {
 })
 
 const dateLabel = computed(() => {
-  const raw = props.transaction.isScheduled
-    ? props.transaction.scheduledAt
-    : props.transaction.processedAt
-  if (!raw) return null
-  return new Date(raw).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
+  if (!props.transaction.processedAt) return null
+  return new Date(props.transaction.processedAt).toLocaleDateString('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+  })
 })
 </script>
 
@@ -118,9 +118,7 @@ const dateLabel = computed(() => {
       <div
         class="flex items-center justify-between border-t border-[rgba(193,127,36,0.2)] pt-3 font-serif text-[13px]"
       >
-        <span class="text-[rgba(41,33,26,0.55)]">{{
-          transaction.isScheduled ? '예정일' : '처리일'
-        }}</span>
+        <span class="text-[rgba(41,33,26,0.55)]">처리일</span>
         <span class="font-bold text-[#2c1810]">{{ dateLabel }}</span>
       </div>
     </div>
