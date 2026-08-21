@@ -296,7 +296,16 @@ const goScenarioQuiz = (event) => {
                   : 'border-[rgba(89,140,82,0.45)] bg-[rgba(238,248,234,0.85)]'
               "
             >
-              <span
+              <img
+                src="/dance.gif"
+                alt="dance"
+                class="max-h-[100px] w-[100px] select-none object-contain"
+                width="100"
+                height="100"
+                decoding="async"
+                draggable="false"
+              />
+              <!-- <span
                 class="flex size-11 items-center justify-center rounded-full font-sans text-[22px] text-white"
                 :class="
                   hasRecommendableChapters
@@ -306,7 +315,7 @@ const goScenarioQuiz = (event) => {
                 aria-hidden="true"
               >
                 {{ hasRecommendableChapters ? '＋' : '✓' }}
-              </span>
+              </span> -->
               <p
                 class="mt-3 font-serif text-[17px] leading-snug font-black"
                 :class="hasRecommendableChapters ? 'text-[#7a4e12]' : 'text-[#2f5a2c]'"
