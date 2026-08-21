@@ -11,9 +11,17 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  selected: {
+    type: Boolean,
+    default: false,
+  },
+  selectable: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-defineEmits(['buy'])
+defineEmits(['buy', 'select'])
 
 const meta = computed(() => getAssetTypeMeta(props.product.assetType))
 const dotClass = computed(() => meta.value.dotClass)
@@ -42,8 +50,17 @@ const priceText = computed(() => {
 </script>
 
 <template>
-  <li class="flex items-center justify-between gap-3 px-4 py-3.5">
-    <div class="flex min-w-0 items-start gap-2">
+  <li
+    class="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors"
+    :class="selected ? 'bg-[rgba(193,127,36,0.12)]' : ''"
+  >
+    <button
+      type="button"
+      class="flex min-w-0 flex-1 items-start gap-2 text-left"
+      :class="selectable ? 'cursor-pointer' : 'cursor-default'"
+      :disabled="!selectable"
+      @click="selectable && $emit('select', product)"
+    >
       <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="dotClass" />
       <div class="min-w-0">
         <div class="flex items-center gap-1.5">
@@ -62,7 +79,7 @@ const priceText = computed(() => {
         </p>
         <p class="mt-1 font-serif text-sm font-bold text-[#c17f24]">{{ priceText }}</p>
       </div>
-    </div>
+    </button>
 
     <button
       v-if="!isBlocked"
