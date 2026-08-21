@@ -3,19 +3,25 @@ import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/store/dashboardStore.js'
+import { useStudyStore } from '@/store/studyStore.js'
 import { resolveInvestmentStyle } from '@/utils/investmentStyle.js'
 import { PORTFOLIO_LOCKED_MESSAGE } from '@/utils/foundationGuide.js'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
 
 const dashboardStore = useDashboardStore()
+const studyStore = useStudyStore()
 const router = useRouter()
 const { portfolio, allocationView, totalAssetsDisplay, isLoading, error, portfolioAvailable } =
   storeToRefs(dashboardStore)
+const { isPortfolioLocked } = storeToRefs(studyStore)
 
 onMounted(() => {
   if (!dashboardStore.hasDashboard) {
     dashboardStore.ensureDashboard()
+  }
+  if (!studyStore.curriculumItems.length) {
+    studyStore.fetchCurriculum().catch(() => {})
   }
 })
 
@@ -34,7 +40,7 @@ const emptyMessage = computed(() => {
 })
 
 const goPortfolios = () => {
-  if (dashboardStore.isPortfolioLocked.value) {
+  if (isPortfolioLocked.value) {
     router.push({ name: 'learning', query: { mainChapterId: '1' } })
     return
   }
@@ -135,7 +141,7 @@ const goPortfolios = () => {
       </div>
 
       <div
-        v-if="!isPortfolioLocked && portfolioSummary?.available"
+        v-if="!isPortfolioLocked && portfolioAvailable"
         class="pointer-events-none absolute top-11 right-3 z-10 flex max-w-[42%] items-center gap-1.5 rounded-[14px] border-[0.5px] border-[var(--portfolio-chip-border)] bg-[var(--portfolio-chip-bg)] px-2.5 py-[5px]"
         aria-hidden="true"
       >
