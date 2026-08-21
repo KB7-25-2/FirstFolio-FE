@@ -18,7 +18,7 @@
 export const MARKET_BUY_FEE_RATE = 0.00015
 export const ASSET_TYPE_META = {
   DEPOSIT_SAVINGS: {
-    label: '예금',
+    label: '예·적금',
     dotClass: 'bg-[var(--pf-asset-deposit)]',
     color: 'var(--pf-asset-deposit)',
     tradeType: 'SUBSCRIPTION',
@@ -52,15 +52,6 @@ export const ASSET_TYPE_META = {
     sellActionLabel: '환매',
     buyActionLabel: '매수',
     quantityUnit: '좌',
-  },
-  OTHER: {
-    label: '기타',
-    dotClass: 'bg-[var(--pf-asset-cash)]',
-    color: 'var(--pf-asset-cash)',
-    tradeType: 'MARKET',
-    sellActionLabel: '매도',
-    buyActionLabel: '매수',
-    quantityUnit: null,
   },
 }
 

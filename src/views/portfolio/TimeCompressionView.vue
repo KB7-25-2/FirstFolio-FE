@@ -2,17 +2,34 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import ScrollReveal from '@/components/ScrollReveal.vue'
+import { INTEREST_INTERVAL_LABEL } from '@/mappers/portfolioMapper.js'
 
 const store = usePortfolioStore()
 
 const carouselEl = ref(null)
 const activeIndex = ref(0)
 
-// "서비스 1일 만기 · 1일마다 이자 · 실제 1개월 만기 · 실제 만기 시 일괄 이자" 같은 한 문장을
-// 손글씨체 대형 텍스트로 그대로 찍으면 가독성이 떨어진다. "·" 기준으로 쪼개서 개별 칩으로
-// 보여주면 각 조건을 스캔하기 쉬워진다.
+// "1일 만기 · 1일마다 이자" 같은 한 문장을 손글씨체 대형 텍스트로 그대로 찍으면 가독성이
+// 떨어진다. "·" 기준으로 쪼개서 개별 칩으로 보여주면 각 조건을 스캔하기 쉬워진다.
+// item.cycleSummary는 서비스(압축) 기간만 담고 있다(#82에서 실제 기간 정보를 뺐음) — 이
+// 화면은 "서비스 vs 실제" 비교가 핵심이라, 실제 기간은 item.realTerms에서 별도로 조합한다.
 const cycleSummaryChips = (product) =>
   product.cycleSummary ? product.cycleSummary.split(' · ') : []
+
+// 실제(real_terms) 만기·이자 조건 칩. 예·적금은 interestInterval이 enum 문자열, 채권은
+// intervalMonths가 숫자(개월)로 온다 — 필드명 자체가 다르다(portfolioMapper.js 주석 참고).
+const realTermsChips = (item) => {
+  const rt = item.realTerms
+  if (!rt) return []
+  const chips = []
+  if (rt.maturityMonths != null) chips.push(`실제 ${rt.maturityMonths}개월 만기`)
+  if (rt.interestInterval != null) {
+    chips.push(`실제 ${INTEREST_INTERVAL_LABEL[rt.interestInterval] ?? rt.interestInterval} 이자`)
+  } else if (rt.intervalMonths != null) {
+    chips.push(`실제 ${rt.intervalMonths}개월마다 이자`)
+  }
+  return chips
+}
 
 onMounted(() => {
   if (!store.purchasableProducts.length) store.fetchPurchasableProducts()
@@ -180,24 +197,11 @@ const profitRateClass = (rate) => {
   return 'text-[rgba(41,33,26,0.5)]'
 }
 
-// 첫 로드 또는 보고 있던 보유 상품이 사라졌을 때만 첫 슬라이드로 이동한다.
-// 가격 폴링은 카탈로그 배열을 갱신하므로, 현재 선택한 holdingId가 그대로라면
-// 캐러셀 위치를 유지해야 한다.
+// 데이터가 로드되면 첫 슬라이드로 스크롤 위치를 맞춘다.
 watch(
   heldTimeCompressedItems,
-  async (items, previousItems) => {
-    if (!items.length) {
-      activeIndex.value = 0
-      return
-    }
-
-    const activeHoldingId = previousItems?.[activeIndex.value]?.holdingId
-    const preservedIndex = items.findIndex((item) => item.holdingId === activeHoldingId)
-    if (preservedIndex >= 0) {
-      activeIndex.value = preservedIndex
-      return
-    }
-
+  async (items) => {
+    if (!items.length) return
     activeIndex.value = 0
     await nextTick()
     if (carouselEl.value) carouselEl.value.scrollTo({ left: 0 })
@@ -262,6 +266,16 @@ const goToIndex = (index) => {
                 v-for="(chip, index) in cycleSummaryChips(item)"
                 :key="index"
                 class="rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[rgba(193,127,36,0.08)] px-2 py-1 font-serif text-[11px] font-medium text-[#8a5c1e]"
+              >
+                {{ chip }}
+              </span>
+            </div>
+
+            <div v-if="realTermsChips(item).length" class="mt-1.5 flex flex-wrap gap-1.5">
+              <span
+                v-for="(chip, index) in realTermsChips(item)"
+                :key="index"
+                class="rounded-full border-[0.5px] border-[rgba(74,125,115,0.35)] bg-[rgba(74,125,115,0.08)] px-2 py-1 font-serif text-[11px] font-medium text-[#3d6a61]"
               >
                 {{ chip }}
               </span>
@@ -342,9 +356,11 @@ const goToIndex = (index) => {
     <p v-else-if="store.isLoading" class="font-serif text-sm text-[rgba(41,33,26,0.45)]">
       불러오는 중…
     </p>
-    <p v-else class="font-serif text-sm text-[rgba(41,33,26,0.45)]">
-      아직 보유한 예금·채권 상품이 없어요. 상품 구매 탭에서 가입해보세요.
-    </p>
+    <div v-else class="flex flex-1 flex-col items-center justify-center py-16 text-center">
+      <p class="font-serif text-base text-[rgba(41,33,26,0.5)]">
+        아직 보유한 예금·채권 상품이 없어요.<br />상품 구매 탭에서 가입해보세요.
+      </p>
+    </div>
   </div>
 </template>
 
