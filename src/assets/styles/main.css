@@ -1137,6 +1137,25 @@
     opacity: 0.4;
     box-shadow: none;
   }
+
+  /* 헤더 보조 액션 pill (교환 내역 / 파산 신청 / 커리큘럼 수정 등) */
+  .chalk-pill-btn {
+    @apply shrink-0 cursor-pointer rounded-full border-[0.5px] px-3 py-1.5 font-serif text-xs font-bold transition-[transform,color,background-color,border-color] duration-200 ease-out;
+    border-color: rgba(193, 127, 36, 0.35);
+    background: #fff8ec;
+    color: #c17f24;
+  }
+
+  .chalk-pill-btn:hover {
+    @apply scale-[1.02];
+    border-color: rgba(193, 127, 36, 0.55);
+    background: #fff3dd;
+    color: #a86b1a;
+  }
+
+  .chalk-pill-btn:active {
+    @apply scale-[0.99];
+  }
 }
 
 /* 버튼 공통 hover — 활성화된 버튼에만 클래스 부여 */

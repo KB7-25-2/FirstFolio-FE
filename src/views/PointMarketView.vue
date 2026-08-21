@@ -100,7 +100,7 @@ const closeRedeemToast = () => {
           </div>
           <button
             type="button"
-            class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#fff8ec] px-3 py-1.5 font-serif text-xs font-bold text-[#c17f24]"
+            class="chalk-pill-btn"
             @click="currentView = currentView === 'catalog' ? 'history' : 'catalog'"
           >
             {{ currentView === 'catalog' ? '교환 내역 ›' : '‹ 스토어로' }}

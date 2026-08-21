@@ -83,11 +83,10 @@ const handleResetConfirm = async () => {
         <button
           v-if="showBankruptcyAction"
           type="button"
-          class="chalk-header__stamp flex shrink-0 rotate-[-4deg] items-center justify-center rounded px-2.5 py-1"
-          style="background: rgba(240, 217, 160, 0.22)"
+          class="chalk-pill-btn"
           @click="openBankruptcyModal"
         >
-          <span class="font-pen text-[13px] leading-none whitespace-nowrap">파산 신청</span>
+          파산 신청
         </button>
       </div>
     </header>

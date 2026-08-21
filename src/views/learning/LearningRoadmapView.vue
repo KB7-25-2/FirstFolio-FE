@@ -364,7 +364,7 @@ onActivated(async () => {
             </div>
             <RouterLink
               :to="{ name: 'onboarding-curriculum', query: { mode: 'edit' } }"
-              class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24] underline-offset-2 hover:underline"
+              class="chalk-pill-btn"
             >
               커리큘럼 수정
             </RouterLink>
