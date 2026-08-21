@@ -86,7 +86,7 @@ const profitRateClass = computed(() => {
 
 <template>
   <li
-    class="flex flex-col gap-1 rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.18)] bg-white/55 px-3.5 py-3"
+    class="flex flex-col gap-2 rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.18)] bg-white/55 px-3.5 py-3"
   >
     <div class="flex items-center justify-between gap-2">
       <p class="truncate font-serif text-sm font-bold text-[#2c1810]">{{ holding.displayName }}</p>
@@ -108,7 +108,7 @@ const profitRateClass = computed(() => {
 
     <div
       v-if="hasPriceRow"
-      class="flex items-center gap-x-3 gap-y-0.5 rounded-[3px] bg-[rgba(193,127,36,0.06)] px-2 py-1 font-serif text-[10px]"
+      class="mt-1 flex items-center gap-x-3 gap-y-0.5 rounded-[3px] bg-[rgba(193,127,36,0.06)] px-2 py-1.5 font-serif text-[10px]"
     >
       <span v-if="formattedAverageCost" class="text-[rgba(41,33,26,0.5)]">
         매입가 <span class="font-bold text-[rgba(41,33,26,0.75)]">{{ formattedAverageCost }}</span>

@@ -1,7 +1,7 @@
 <script setup>
 defineOptions({ name: 'PortfoliosView' })
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import PortfolioTabs from '@/components/portfolio/PortfolioTabs.vue'
 import BankruptcyConfirmModal from '@/components/portfolio/BankruptcyConfirmModal.vue'
@@ -13,19 +13,10 @@ const store = usePortfolioStore()
 const title = computed(() => route.meta.title ?? '포트폴리오')
 const subtitle = computed(() => route.meta.subtitle ?? '')
 const showBankruptcyAction = computed(() => Boolean(route.meta.showBankruptcyAction))
-const marketSession = computed(() => store.marketSession)
 
 const isBankruptcyModalOpen = ref(false)
 const isResetting = ref(false)
 const resetError = ref(null)
-
-onMounted(() => {
-  store.startProductPricePolling()
-})
-
-onUnmounted(() => {
-  store.stopProductPricePolling()
-})
 
 const openBankruptcyModal = () => {
   resetError.value = null
@@ -57,37 +48,25 @@ const handleResetConfirm = async () => {
     <header class="chalk-header shrink-0 px-5 pt-5">
       <div class="flex w-full items-center justify-between gap-2">
         <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
-              {{ subtitle }}
-            </p>
-            <span
-              class="shrink-0 rounded-full px-1.5 py-0.5 font-serif text-[9px] font-bold"
-              :class="
-                marketSession.isOpen
-                  ? 'bg-[rgba(89,140,82,0.28)] text-[#d7f0cf]'
-                  : 'bg-[rgba(240,217,160,0.2)] text-[var(--chalk-text-muted)]'
-              "
-              :title="marketSession.scheduleLabel"
-            >
-              {{ marketSession.label }}
-            </span>
-          </div>
           <h1
-            class="chalk-header__title mt-1 truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
+            class="chalk-header__title truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
           >
             {{ title }}
           </h1>
+          <p class="mt-1 font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
+            {{ subtitle }}
+          </p>
         </div>
 
+        <!-- 도장(rotate) 스타일 대신 PointMarketView의 "교환 내역" 버튼과 같은
+             둥근 필(pill) 디자인으로 통일(#84). -->
         <button
           v-if="showBankruptcyAction"
           type="button"
-          class="chalk-header__stamp flex shrink-0 rotate-[-4deg] items-center justify-center rounded px-2.5 py-1"
-          style="background: rgba(240, 217, 160, 0.22)"
+          class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#fff8ec] px-3 py-1.5 font-serif text-xs font-bold text-[#c17f24]"
           @click="openBankruptcyModal"
         >
-          <span class="font-pen text-[13px] leading-none whitespace-nowrap">파산 신청</span>
+          파산 신청
         </button>
       </div>
     </header>
