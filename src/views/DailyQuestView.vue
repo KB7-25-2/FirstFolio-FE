@@ -3,9 +3,9 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import roomBg from '@/assets/learning/scenario/room-bg.jpg'
-import penguin from '@/assets/learning/scenario/penguin.png'
 import ScenarioClipboardBoard from '@/components/learning/ScenarioClipboardBoard.vue'
 import ScenarioPersonaCard from '@/components/learning/ScenarioPersonaCard.vue'
+import ScenarioPenguinMascot from '@/components/learning/ScenarioPenguinMascot.vue'
 import ScenarioMarketBar from '@/components/learning/ScenarioMarketBar.vue'
 import DailyQuestHubPanel from '@/components/dailyQuest/DailyQuestHubPanel.vue'
 import DailyQuestPlayPanel from '@/components/dailyQuest/DailyQuestPlayPanel.vue'
@@ -280,15 +280,7 @@ const onHubSubmit = async () => {
             />
           </div>
           <div class="pointer-events-none absolute right-2 bottom-0 z-[2]">
-            <div class="dq-penguin">
-              <img
-                :src="penguin"
-                alt=""
-                class="h-[112px] w-[150px] object-contain"
-                width="150"
-                height="112"
-              />
-            </div>
+            <ScenarioPenguinMascot mood="idle" />
           </div>
         </template>
       </div>
@@ -410,9 +402,8 @@ const onHubSubmit = async () => {
             <div v-else key="dashboard" class="flex min-h-0 flex-1 flex-col pt-1">
               <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
                 <div
-                  class="flex items-center justify-between border-b border-[rgba(139,100,60,0.2)] pb-2 font-serif text-[10px] text-[rgba(61,31,8,0.55)]"
+                  class="flex justify-end border-b border-[rgba(139,100,60,0.2)] pb-2 font-serif text-[10px] text-[rgba(61,31,8,0.55)]"
                 >
-                  <span>제 2024-대시-001 호</span>
                   <span>{{ docDateLabel }}</span>
                 </div>
 
@@ -559,27 +550,5 @@ const onHubSubmit = async () => {
 .dq-panel-leave-to {
   opacity: 0;
   transform: translateY(6px);
-}
-
-.dq-penguin {
-  animation: dq-penguin-breath 2.8s ease-in-out infinite;
-  transform-origin: center bottom;
-  will-change: transform;
-}
-
-@keyframes dq-penguin-breath {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dq-penguin {
-    animation: none;
-  }
 }
 </style>

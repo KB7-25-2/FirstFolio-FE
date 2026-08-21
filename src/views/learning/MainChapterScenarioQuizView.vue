@@ -1,10 +1,10 @@
 <script setup>
 import { computed } from 'vue'
 import roomBg from '@/assets/learning/scenario/room-bg.jpg'
-import penguin from '@/assets/learning/scenario/penguin.png'
 import ScenarioClipboardBoard from '@/components/learning/ScenarioClipboardBoard.vue'
 import ScenarioBriefDocument from '@/components/learning/ScenarioBriefDocument.vue'
 import ScenarioPersonaCard from '@/components/learning/ScenarioPersonaCard.vue'
+import ScenarioPenguinMascot from '@/components/learning/ScenarioPenguinMascot.vue'
 import ScenarioClipboardQuestion from '@/components/learning/ScenarioClipboardQuestion.vue'
 import ScenarioChoiceOption from '@/components/learning/ScenarioChoiceOption.vue'
 import ScenarioEvaluationBlock from '@/components/learning/ScenarioEvaluationBlock.vue'
@@ -61,6 +61,12 @@ const resultCongratsMessage = computed(() =>
       ? '포트폴리오 기초를 모두 마쳤어요. 모의투자금이 지급되고 포트폴리오가 해금됩니다.'
       : '수고하셨습니다! 실전 상담 시나리오를 모두 마쳤습니다. 앞으로도 꾸준히 학습하며 상담 역량을 키워 보세요.',
 )
+
+const penguinMood = computed(() => {
+  if (scenarioUiStatus.value === 'CORRECT') return 'correct'
+  if (scenarioUiStatus.value === 'WRONG') return 'wrong'
+  return 'idle'
+})
 </script>
 
 <template>
@@ -122,15 +128,7 @@ const resultCongratsMessage = computed(() =>
               />
             </div>
             <div class="pointer-events-none absolute right-2 bottom-0 z-[2]">
-              <div class="scenario-penguin">
-                <img
-                  :src="penguin"
-                  alt=""
-                  class="h-[112px] w-[150px] object-contain"
-                  width="150"
-                  height="112"
-                />
-              </div>
+              <ScenarioPenguinMascot :mood="penguinMood" />
             </div>
           </div>
         </Transition>
@@ -321,12 +319,6 @@ const resultCongratsMessage = computed(() =>
 </style>
 
 <style scoped>
-.scenario-penguin {
-  animation: scenario-penguin-breath 2.8s ease-in-out infinite;
-  transform-origin: center bottom;
-  will-change: transform;
-}
-
 .scenario-grade-card {
   animation: scenario-grade-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -363,16 +355,6 @@ const resultCongratsMessage = computed(() =>
   opacity: 0;
 }
 
-@keyframes scenario-penguin-breath {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
 @keyframes scenario-grade-in {
   from {
     opacity: 0;
@@ -385,10 +367,6 @@ const resultCongratsMessage = computed(() =>
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scenario-penguin {
-    animation: none;
-  }
-
   .scenario-phase-enter-active,
   .scenario-phase-leave-active,
   .scenario-client-enter-active,
