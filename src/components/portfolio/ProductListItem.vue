@@ -1,6 +1,12 @@
 <script setup>
 import { computed } from 'vue'
 import { getAssetTypeMeta } from '@/constants/assetType.js'
+import {
+  calcPriceChangeVsOpen,
+  formatPriceChangeAmount,
+  formatPriceChangeRate,
+  priceChangeToneClass,
+} from '@/utils/priceChange.js'
 
 const props = defineProps({
   product: {
@@ -11,9 +17,17 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  selected: {
+    type: Boolean,
+    default: false,
+  },
+  selectable: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-defineEmits(['buy'])
+defineEmits(['buy', 'select'])
 
 const meta = computed(() => getAssetTypeMeta(props.product.assetType))
 const dotClass = computed(() => meta.value.dotClass)
@@ -27,6 +41,26 @@ const isBlocked = computed(() => isSubscription.value && props.isHeld)
 
 // 주식·펀드는 시간압축 예외라 cycleSummary가 null로 온다(FUNC-039).
 const cycleSummaryText = computed(() => props.product.cycleSummary ?? '실시간 시세')
+
+const priceChange = computed(() =>
+  isSubscription.value
+    ? null
+    : calcPriceChangeVsOpen(props.product.unitPrice, props.product.openPrice),
+)
+
+const priceToneClass = computed(() => {
+  if (!priceChange.value) return 'text-[#c17f24]'
+  if (priceChange.value.direction === 'flat') return 'text-[#c17f24]'
+  return priceChangeToneClass(priceChange.value.direction)
+})
+
+const changeAmountLabel = computed(() =>
+  priceChange.value ? formatPriceChangeAmount(priceChange.value.amount) : null,
+)
+
+const changeRateLabel = computed(() =>
+  priceChange.value ? formatPriceChangeRate(priceChange.value.rate) : null,
+)
 
 // unit_price는 매수형(주식·펀드) 수량 환산에만 필요하다. 가입형은 금액을 자유롭게 입력하는
 // 방식이라 단가 대신 금리(realTerms.rate — 예·적금은 interest_rate, 채권은 coupon_rate를
@@ -42,8 +76,20 @@ const priceText = computed(() => {
 </script>
 
 <template>
-  <li class="flex items-center justify-between gap-3 px-4 py-3.5">
-    <div class="flex min-w-0 items-start gap-2">
+  <li
+    class="flex items-center justify-between gap-3 px-4 py-3.5 transition-colors"
+    :class="[
+      selected ? 'bg-[rgba(193,127,36,0.12)]' : '',
+      selectable && !selected ? 'hover:bg-[rgba(193,127,36,0.1)]' : '',
+    ]"
+  >
+    <button
+      type="button"
+      class="flex min-w-0 flex-1 items-start gap-2 text-left"
+      :class="selectable ? 'cursor-pointer' : 'cursor-default'"
+      :disabled="!selectable"
+      @click="selectable && $emit('select', product)"
+    >
       <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="dotClass" />
       <div class="min-w-0">
         <div class="flex items-center gap-1.5">
@@ -60,14 +106,22 @@ const priceText = computed(() => {
         <p class="truncate font-serif text-xs text-[rgba(41,33,26,0.55)]">
           {{ product.riskLevel }} · {{ cycleSummaryText }}
         </p>
-        <p class="mt-1 font-serif text-sm font-bold text-[#c17f24]">{{ priceText }}</p>
+        <p class="mt-1 font-serif text-sm font-bold" :class="priceToneClass">{{ priceText }}</p>
+        <p
+          v-if="changeAmountLabel"
+          class="mt-0.5 font-serif text-[11px] font-bold"
+          :class="priceToneClass"
+        >
+          {{ changeAmountLabel }}
+          <span class="ml-0.5 font-semibold">{{ changeRateLabel }}</span>
+        </p>
       </div>
-    </div>
+    </button>
 
     <button
       v-if="!isBlocked"
       type="button"
-      class="shrink-0 rounded-full bg-[#c17f24] px-3 py-1.5 font-serif text-xs font-bold text-[#fff8ec]"
+      class="shrink-0 rounded-full bg-[#c17f24] px-3 py-1.5 font-serif text-xs font-bold text-[#fff8ec] transition-colors hover:bg-[#a86c1d]"
       @click="$emit('buy', product)"
     >
       {{ buyActionLabel }}

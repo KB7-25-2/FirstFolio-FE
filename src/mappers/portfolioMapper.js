@@ -134,6 +134,50 @@ export const mapFinancialProductDetail = (raw) => ({
 })
 
 // ============================================================
+// GET /financial-products/{id}/candles — 확정 일봉
+// GET /financial-products/{id}/market-snapshot — 현재가·당일 OHLC
+// ============================================================
+
+const toNumberOrNull = (value) => (value != null ? Number(value) : null)
+
+const mapCandleOhlc = (raw) => ({
+  tradeDate: raw.trade_date ?? null,
+  openPrice: toNumberOrNull(raw.open_price),
+  highPrice: toNumberOrNull(raw.high_price),
+  lowPrice: toNumberOrNull(raw.low_price),
+  closePrice: toNumberOrNull(raw.close_price),
+})
+
+export const mapProductCandleItem = (raw) => ({
+  ...mapCandleOhlc(raw),
+  volume: toNumberOrNull(raw.volume),
+  currency: raw.currency ?? null,
+})
+
+export const mapProductCandlesResponse = (raw) => ({
+  productId: raw.product_id,
+  interval: raw.interval ?? '1d',
+  candles: (raw.candles ?? []).map(mapProductCandleItem),
+})
+
+export const mapMarketSnapshotCandle = (raw) => {
+  if (!raw) return null
+  return {
+    ...mapCandleOhlc(raw),
+    status: raw.status ?? null,
+    referenceAt: raw.reference_at ?? null,
+  }
+}
+
+export const mapProductMarketSnapshot = (raw) => ({
+  productId: raw.product_id,
+  currentPrice: toNumberOrNull(raw.current_price),
+  priceReferenceAt: raw.price_reference_at ?? null,
+  marketOpen: Boolean(raw.market_open),
+  currentCandle: mapMarketSnapshotCandle(raw.current_candle),
+})
+
+// ============================================================
 // FUNC-035(개정) POST /portfolios/current/trades — 거래 응답
 // ============================================================
 

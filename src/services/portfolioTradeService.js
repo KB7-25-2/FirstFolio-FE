@@ -4,12 +4,16 @@ import {
   tradePortfolio as tradePortfolioApi,
   getPurchasableProducts,
   getFinancialProductDetail,
+  getProductCandles,
+  getProductMarketSnapshot,
   resetPortfolio as resetPortfolioApi,
 } from '@/api/user/portfolioApi.js'
 import {
   mapPortfolioDetailResponse,
   mapFinancialProductsResponse,
   mapFinancialProductDetail,
+  mapProductCandlesResponse,
+  mapProductMarketSnapshot,
   mapTradeResult,
   mapTransactionsResponse,
 } from '@/mappers/portfolioMapper.js'
@@ -75,6 +79,17 @@ export const getProductDetail = async (productId) => {
   return mapFinancialProductDetail(data.data ?? data)
 }
 
+/** STOCK·FUND 확정 일봉 (차트 이력). count 기본은 서버 200. */
+export const getProductCandlesList = async (productId, params = {}) => {
+  const { data } = await getProductCandles(productId, params)
+  return mapProductCandlesResponse(data.data ?? data)
+}
+
+/** STOCK·FUND 현재가·당일 OHLC (차트 2초 폴링). */
+export const getProductMarketSnapshotData = async (productId) => {
+  const { data } = await getProductMarketSnapshot(productId)
+  return mapProductMarketSnapshot(data.data ?? data)
+}
 // ============================================================
 // 포트폴리오 상세 (FUNC-034)
 // ============================================================

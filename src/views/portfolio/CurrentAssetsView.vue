@@ -6,9 +6,12 @@ import HoldingsList from '@/components/portfolio/HoldingsList.vue'
 import AiCoachCard from '@/components/portfolio/AiCoachCard.vue'
 import SellHoldingModal from '@/components/portfolio/SellHoldingModal.vue'
 import TradeResultModal from '@/components/portfolio/TradeResultModal.vue'
+import ProductMarketModal from '@/components/portfolio/ProductMarketModal.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 import { ASSET_TYPE_META } from '@/constants/assetType.js'
+
+const CHART_ASSET_TYPES = new Set(['STOCK', 'FUND'])
 
 const store = usePortfolioStore()
 
@@ -27,6 +30,7 @@ const FILTERS = [
 ]
 
 const activeFilter = ref('ALL')
+const marketProduct = ref(null)
 const sellTargetHolding = ref(null)
 const isSelling = ref(false)
 const sellError = ref(null)
@@ -45,6 +49,24 @@ const filteredHoldings = computed(() => {
 onMounted(() => {
   if (!store.summary) store.fetchSummary()
 })
+
+const openProductMarket = (holding) => {
+  if (!CHART_ASSET_TYPES.has(holding?.assetType)) return
+  const catalog =
+    store.purchasableProducts.find((product) => product.productId === holding.productId) ?? {}
+  marketProduct.value = {
+    productId: holding.productId,
+    displayName: holding.displayName,
+    assetType: holding.assetType,
+    unitPrice: holding.unitPrice ?? catalog.unitPrice ?? null,
+    openPrice: catalog.openPrice ?? null,
+    riskLevel: catalog.riskLevel ?? null,
+  }
+}
+
+const closeProductMarket = () => {
+  marketProduct.value = null
+}
 
 const openSellModal = (holding) => {
   sellError.value = null
@@ -106,8 +128,8 @@ const closeTradeResult = () => {
             class="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
             :class="
               activeFilter === filter.value
-                ? 'border-[1.5px] border-[#c17f24] bg-[#fff8ec] text-[#2c1810]'
-                : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)]'
+                ? 'border-[1.5px] border-[#c17f24] bg-[#fff8ec] text-[#2c1810] hover:bg-[rgba(193,127,36,0.1)]'
+                : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)] hover:bg-[rgba(193,127,36,0.12)] hover:text-[#2c1810]'
             "
             @click="activeFilter = filter.value"
           >
@@ -122,7 +144,11 @@ const closeTradeResult = () => {
       </div>
 
       <ScrollReveal>
-        <HoldingsList :holdings="filteredHoldings" @request-sell="openSellModal" />
+        <HoldingsList
+          :holdings="filteredHoldings"
+          @request-sell="openSellModal"
+          @select="openProductMarket"
+        />
       </ScrollReveal>
       <ScrollReveal v-if="store.summary.aiFeedback">
         <AiCoachCard :message="store.summary.aiFeedback" />
@@ -130,6 +156,8 @@ const closeTradeResult = () => {
     </template>
 
     <BaseLoading v-else-if="store.isLoading" />
+
+    <ProductMarketModal v-if="marketProduct" :product="marketProduct" @close="closeProductMarket" />
 
     <SellHoldingModal
       v-if="sellTargetHolding"

@@ -8,7 +8,7 @@ defineProps({
   },
 })
 
-defineEmits(['request-sell'])
+defineEmits(['request-sell', 'select'])
 </script>
 
 <template>
@@ -25,6 +25,7 @@ defineEmits(['request-sell'])
         :key="holding.holdingId"
         :holding="holding"
         @request-sell="$emit('request-sell', $event)"
+        @select="$emit('select', $event)"
       />
     </ul>
     <div v-else class="flex flex-col items-center justify-center py-10 text-center">

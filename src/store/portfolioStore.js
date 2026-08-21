@@ -59,32 +59,31 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   const fetchProductDetail = (productId) => portfolioService.getProductDetail(productId)
 
   // 목록 API(FUNC-031)는 애초에 가격을 안 준다 — 매수형(주식·펀드)은 unitPrice가 항상 null로
-  // 온다. 모달을 열 때(fetchProductDetail)는 그때그때 채워지지만, 상품 구매 "목록 화면" 자체는
-  // 아무도 이걸 채워준 적이 없어서 "가격 정보 준비 중"이 영구히 떠 있었다(FUNC-032로 채울
-  // 계획이었다는 매퍼 주석만 남아있고 실제 구현이 빠져 있었음). 목록을 받아온 뒤, 아직 가격이
-  // 없는 매수형 상품들의 상세를 병렬로 조회해 채운다. isTimeCompressionExempt는 STOCK/FUND
-  // (=매수형) 판별에 그대로 재사용 — 시간압축 예외 = 실시간 시세 상품이라는 뜻이라서다.
+  // 온다. market-snapshot으로 현재가·당일 시가(open)를 함께 채워 목록에 등락을 표시한다.
   const hydrateProductPrices = async () => {
     const targets = purchasableProducts.value.filter(
-      (product) => product.isTimeCompressionExempt && product.unitPrice == null,
+      (product) =>
+        product.isTimeCompressionExempt && (product.unitPrice == null || product.openPrice == null),
     )
     if (!targets.length) return
 
     const results = await Promise.allSettled(
-      targets.map((product) => portfolioService.getProductDetail(product.productId)),
+      targets.map((product) => portfolioService.getProductMarketSnapshotData(product.productId)),
     )
 
-    const priceByProductId = new Map()
+    const quoteByProductId = new Map()
     results.forEach((result, index) => {
-      if (result.status === 'fulfilled' && result.value?.unitPrice != null) {
-        priceByProductId.set(targets[index].productId, result.value.unitPrice)
-      }
+      if (result.status !== 'fulfilled' || result.value?.currentPrice == null) return
+      quoteByProductId.set(targets[index].productId, {
+        unitPrice: result.value.currentPrice,
+        openPrice: result.value.currentCandle?.openPrice ?? null,
+      })
     })
-    if (!priceByProductId.size) return
+    if (!quoteByProductId.size) return
 
     purchasableProducts.value = purchasableProducts.value.map((product) =>
-      priceByProductId.has(product.productId)
-        ? { ...product, unitPrice: priceByProductId.get(product.productId) }
+      quoteByProductId.has(product.productId)
+        ? { ...product, ...quoteByProductId.get(product.productId) }
         : product,
     )
   }
@@ -103,20 +102,22 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     if (!targets.length) return
 
     const results = await Promise.allSettled(
-      targets.map((product) => portfolioService.getProductDetail(product.productId)),
+      targets.map((product) => portfolioService.getProductMarketSnapshotData(product.productId)),
     )
 
-    const priceByProductId = new Map()
+    const quoteByProductId = new Map()
     results.forEach((result, index) => {
-      if (result.status === 'fulfilled' && result.value?.unitPrice != null) {
-        priceByProductId.set(targets[index].productId, result.value.unitPrice)
-      }
+      if (result.status !== 'fulfilled' || result.value?.currentPrice == null) return
+      quoteByProductId.set(targets[index].productId, {
+        unitPrice: result.value.currentPrice,
+        openPrice: result.value.currentCandle?.openPrice ?? null,
+      })
     })
-    if (!priceByProductId.size) return
+    if (!quoteByProductId.size) return
 
     purchasableProducts.value = purchasableProducts.value.map((product) =>
-      priceByProductId.has(product.productId)
-        ? { ...product, unitPrice: priceByProductId.get(product.productId) }
+      quoteByProductId.has(product.productId)
+        ? { ...product, ...quoteByProductId.get(product.productId) }
         : product,
     )
   }

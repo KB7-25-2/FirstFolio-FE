@@ -56,7 +56,7 @@ const dateLabel = computed(() => {
 
 <template>
   <li
-    class="flex cursor-pointer flex-col gap-1 rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.18)] bg-white/55 px-3.5 py-3 text-left active:opacity-70"
+    class="flex cursor-pointer flex-col gap-1 rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.18)] bg-white/55 px-3.5 py-3 text-left transition-colors hover:bg-[rgba(193,127,36,0.1)] active:opacity-70"
     role="button"
     tabindex="0"
     @click="emit('select', transaction)"

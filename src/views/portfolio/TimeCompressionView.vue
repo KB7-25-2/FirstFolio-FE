@@ -345,7 +345,11 @@ const goToIndex = (index) => {
             :key="item.holdingId"
             type="button"
             class="size-1.5 rounded-full transition-colors"
-            :class="index === activeIndex ? 'bg-[#c17f24]' : 'bg-[rgba(193,127,36,0.2)]'"
+            :class="
+              index === activeIndex
+                ? 'bg-[#c17f24]'
+                : 'bg-[rgba(193,127,36,0.2)] hover:bg-[rgba(193,127,36,0.4)]'
+            "
             :aria-label="`${item.displayName} 보기`"
             @click="goToIndex(index)"
           />

@@ -38,8 +38,11 @@ defineEmits(['close'])
         </h2>
         <button
           type="button"
+          class="rounded-full px-1.5 py-0.5 transition-colors"
           :class="
-            variant === 'light' ? 'text-[rgba(41,33,26,0.5)]' : 'text-[rgba(245,237,217,0.5)]'
+            variant === 'light'
+              ? 'text-[rgba(41,33,26,0.5)] hover:bg-[rgba(193,127,36,0.12)] hover:text-[#2c1810]'
+              : 'text-[rgba(245,237,217,0.5)] hover:bg-[rgba(245,237,217,0.08)] hover:text-[#f5edd9]'
           "
           aria-label="닫기"
           @click="$emit('close')"

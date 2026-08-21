@@ -44,6 +44,18 @@ export const getPurchasableProducts = (params = {}) =>
 export const getFinancialProductDetail = (productId) =>
   apiClient.get(`/financial-products/${productId}`)
 
+// STOCK·FUND 확정 일봉. count: 1~200, 기본 200. 오래된 거래일 → 최신 순.
+export const getProductCandles = (productId, params = {}) =>
+  apiClient.get(`/financial-products/${productId}/candles`, {
+    params: {
+      count: params.count,
+    },
+  })
+
+// STOCK·FUND 현재가 + 당일 OHLC. 차트 폴링(~2초)용.
+export const getProductMarketSnapshot = (productId) =>
+  apiClient.get(`/financial-products/${productId}/market-snapshot`)
+
 // FUNC-037: 파산 신청·포트폴리오 초기화. confirmation은 고정 문구 'RESET_PORTFOLIO'.
 export const resetPortfolio = () =>
   apiClient.post('/portfolios/current/reset', {

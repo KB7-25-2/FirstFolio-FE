@@ -72,8 +72,6 @@ const handleResetConfirm = async () => {
           </div>
         </div>
 
-        <!-- 도장(rotate) 스타일 대신 PointMarketView의 "교환 내역" 버튼과 같은
-             둥근 필(pill) 디자인으로 통일(#84). -->
         <button
           v-if="showBankruptcyAction"
           type="button"
