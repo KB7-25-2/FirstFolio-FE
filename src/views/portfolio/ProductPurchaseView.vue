@@ -1,17 +1,13 @@
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import ProductListItem from '@/components/portfolio/ProductListItem.vue'
-import ProductCandleChart from '@/components/portfolio/ProductCandleChart.vue'
+import ProductMarketModal from '@/components/portfolio/ProductMarketModal.vue'
 import BuyProductModal from '@/components/portfolio/BuyProductModal.vue'
 import TradeResultModal from '@/components/portfolio/TradeResultModal.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 import { ASSET_TYPE_META } from '@/constants/assetType.js'
-import * as portfolioService from '@/services/portfolioTradeService.js'
 
-// 월봉 집계·3개월 일봉 구간에 넉넉히 쓰도록 서버 상한(200)까지 받는다.
-const CHART_CANDLE_COUNT = 200
-const SNAPSHOT_POLL_MS = 2_000
 const CHART_ASSET_TYPES = new Set(['STOCK', 'FUND'])
 
 const store = usePortfolioStore()
@@ -29,29 +25,17 @@ const FILTERS = [
 ]
 
 const activeFilter = ref('ALL')
+const marketProduct = ref(null)
 const buyTargetProduct = ref(null)
 const isBuying = ref(false)
 const buyError = ref(null)
 const tradeResult = ref(null)
-
-const selectedChartProductId = ref(null)
-const chartCandles = ref([])
-const chartSnapshot = ref(null)
-const chartLoading = ref(false)
-const chartError = ref(null)
-
-let snapshotPollTimer = null
-let chartRequestId = 0
 
 const isChartAsset = (product) => CHART_ASSET_TYPES.has(product?.assetType)
 
 onMounted(() => {
   store.fetchPurchasableProducts().then(() => store.hydrateProductPrices())
   if (!store.summary) store.fetchSummary()
-})
-
-onUnmounted(() => {
-  stopSnapshotPolling()
 })
 
 const heldProductIds = computed(
@@ -68,117 +52,18 @@ const filteredProducts = computed(() => {
   return store.purchasableProducts.filter((product) => product.assetType === activeFilter.value)
 })
 
-const chartableProducts = computed(() =>
-  store.purchasableProducts.filter((product) => isChartAsset(product)),
-)
-
-const selectedChartProduct = computed(
-  () =>
-    chartableProducts.value.find((product) => product.productId === selectedChartProductId.value) ??
-    null,
-)
-
-const stopSnapshotPolling = () => {
-  if (!snapshotPollTimer) return
-  clearInterval(snapshotPollTimer)
-  snapshotPollTimer = null
-}
-
-const applySnapshot = (snapshot) => {
-  chartSnapshot.value = snapshot
-}
-
-const pollMarketSnapshot = async (productId, requestId) => {
-  try {
-    const snapshot = await portfolioService.getProductMarketSnapshotData(productId)
-    if (requestId !== chartRequestId) return
-    applySnapshot(snapshot)
-
-    if (!snapshot.marketOpen) {
-      stopSnapshotPolling()
-    }
-  } catch {
-    // 폴링 실패는 차트를 비우지 않는다 — 확정 일봉은 그대로 두고 다음 주기에 재시도.
-  }
-}
-
-const startSnapshotPolling = (productId, requestId) => {
-  stopSnapshotPolling()
-  snapshotPollTimer = setInterval(() => {
-    pollMarketSnapshot(productId, requestId)
-  }, SNAPSHOT_POLL_MS)
-}
-
-const loadChartForProduct = async (product) => {
-  const requestId = (chartRequestId += 1)
-  stopSnapshotPolling()
-  chartCandles.value = []
-  chartSnapshot.value = null
-  chartError.value = null
-
-  if (!product || !isChartAsset(product)) {
-    chartLoading.value = false
-    return
-  }
-
-  chartLoading.value = true
-  try {
-    const [candlesResult, snapshot] = await Promise.all([
-      portfolioService.getProductCandlesList(product.productId, { count: CHART_CANDLE_COUNT }),
-      portfolioService.getProductMarketSnapshotData(product.productId),
-    ])
-    if (requestId !== chartRequestId) return
-
-    chartCandles.value = candlesResult.candles
-    applySnapshot(snapshot)
-    if (snapshot.marketOpen) {
-      startSnapshotPolling(product.productId, requestId)
-    }
-  } catch (err) {
-    if (requestId !== chartRequestId) return
-    chartError.value = err.message || '시세 차트를 불러오지 못했어요.'
-  } finally {
-    if (requestId === chartRequestId) chartLoading.value = false
-  }
-}
-
-const selectChartProduct = (product) => {
+const openProductMarket = (product) => {
   if (!isChartAsset(product)) return
-  if (selectedChartProductId.value === product.productId) return
-  selectedChartProductId.value = product.productId
+  marketProduct.value = product
 }
 
-// 카탈로그가 채워지면 첫 STOCK·FUND를 자동 선택. 필터 변경으로 선택이 목록에서
-// 사라져도 차트 대상은 유지한다(상단 차트는 필터와 독립).
-watch(
-  chartableProducts,
-  (products) => {
-    if (!products.length) {
-      selectedChartProductId.value = null
-      return
-    }
-    const stillValid = products.some(
-      (product) => product.productId === selectedChartProductId.value,
-    )
-    if (!stillValid) {
-      selectedChartProductId.value = products[0].productId
-    }
-  },
-  { immediate: true },
-)
-
-watch(selectedChartProductId, (productId) => {
-  const product = chartableProducts.value.find((item) => item.productId === productId) ?? null
-  loadChartForProduct(product)
-})
+const closeProductMarket = () => {
+  marketProduct.value = null
+}
 
 const openBuyModal = async (product) => {
   buyError.value = null
   buyTargetProduct.value = product
-
-  if (isChartAsset(product)) {
-    selectChartProduct(product)
-  }
 
   try {
     const detail = await store.fetchProductDetail(product.productId)
@@ -227,18 +112,6 @@ const closeTradeResult = () => {
     data-scroll-reveal-root
     class="nav-scroll-pad absolute inset-0 flex flex-col gap-3 overflow-y-auto overscroll-contain"
   >
-    <!-- PortfolioTabs → 차트 → 자산군 chip 순서 -->
-    <ProductCandleChart
-      v-if="selectedChartProduct"
-      :product-name="selectedChartProduct.displayName"
-      :candles="chartCandles"
-      :live-candle="chartSnapshot?.currentCandle"
-      :current-price="chartSnapshot?.currentPrice ?? selectedChartProduct.unitPrice"
-      :market-open="Boolean(chartSnapshot?.marketOpen)"
-      :loading="chartLoading"
-      :error-message="chartError"
-    />
-
     <div class="cork-board-patch sticky top-0 z-10 py-1.5">
       <div class="flex gap-2 overflow-x-auto pb-1">
         <button
@@ -248,8 +121,8 @@ const closeTradeResult = () => {
           class="shrink-0 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
           :class="
             activeFilter === filter.value
-              ? 'border-[1.5px] border-[#c17f24] bg-[#fff8ec] text-[#2c1810]'
-              : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(41,33,26,0.55)]'
+              ? 'border-[1.5px] border-[#c17f24] bg-[#fff8ec] text-[#2c1810] hover:bg-[rgba(193,127,36,0.1)]'
+              : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(41,33,26,0.55)] hover:bg-[rgba(193,127,36,0.12)] hover:text-[#2c1810]'
           "
           @click="activeFilter = filter.value"
         >
@@ -285,8 +158,8 @@ const closeTradeResult = () => {
             :product="product"
             :is-held="heldProductIds.has(product.productId)"
             :selectable="isChartAsset(product)"
-            :selected="product.productId === selectedChartProductId"
-            @select="selectChartProduct"
+            :selected="marketProduct?.productId === product.productId"
+            @select="openProductMarket"
             @buy="openBuyModal"
           />
         </ul>
@@ -299,6 +172,8 @@ const closeTradeResult = () => {
     <div v-else class="flex flex-1 flex-col items-center justify-center py-16 text-center">
       <p class="font-serif text-base text-[rgba(41,33,26,0.5)]">해당 자산군의 상품이 없어요.</p>
     </div>
+
+    <ProductMarketModal v-if="marketProduct" :product="marketProduct" @close="closeProductMarket" />
 
     <BuyProductModal
       v-if="buyTargetProduct && store.summary"

@@ -42,7 +42,7 @@ defineEmits(['close', 'confirm'])
     <div class="mt-5 flex gap-2">
       <button
         type="button"
-        class="flex-1 rounded-xl border-[0.5px] border-[rgba(245,237,217,0.18)] py-2.5 font-serif text-sm text-[rgba(245,237,217,0.85)] disabled:opacity-40"
+        class="flex-1 rounded-xl border-[0.5px] border-[rgba(245,237,217,0.18)] py-2.5 font-serif text-sm text-[rgba(245,237,217,0.85)] transition-colors hover:enabled:bg-[rgba(245,237,217,0.08)] disabled:opacity-40"
         :disabled="isSubmitting"
         @click="$emit('close')"
       >
@@ -50,7 +50,7 @@ defineEmits(['close', 'confirm'])
       </button>
       <button
         type="button"
-        class="flex-1 rounded-xl border-[0.5px] border-[rgba(220,80,80,0.45)] bg-[rgba(220,80,80,0.18)] py-2.5 font-serif text-sm font-bold text-[#f0b4b4] disabled:opacity-40"
+        class="flex-1 rounded-xl border-[0.5px] border-[rgba(220,80,80,0.45)] bg-[rgba(220,80,80,0.18)] py-2.5 font-serif text-sm font-bold text-[#f0b4b4] transition-colors hover:enabled:bg-[rgba(220,80,80,0.28)] disabled:opacity-40"
         :disabled="isSubmitting"
         @click="$emit('confirm')"
       >

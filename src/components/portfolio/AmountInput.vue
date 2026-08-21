@@ -55,7 +55,7 @@ const setMax = () => {
     </div>
     <button
       type="button"
-      class="shrink-0 rounded-lg bg-[#c17f24] px-2.5 py-2 font-serif text-xs font-bold text-[#1a1208] disabled:opacity-40"
+      class="shrink-0 rounded-lg bg-[#c17f24] px-2.5 py-2 font-serif text-xs font-bold text-[#1a1208] transition-colors hover:enabled:bg-[#a86c1d] disabled:opacity-40"
       :disabled="disabled"
       @click="setMax"
     >

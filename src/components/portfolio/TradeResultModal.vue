@@ -92,7 +92,7 @@ const hasRoundingLeftover = computed(
 
     <button
       type="button"
-      class="mt-5 w-full rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208]"
+      class="mt-5 w-full rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208] transition-colors hover:bg-[#c17f24]"
       @click="emit('close')"
     >
       확인

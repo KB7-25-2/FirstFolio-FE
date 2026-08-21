@@ -102,7 +102,7 @@ const handleClose = () => {
     <div class="mt-5 flex gap-2">
       <button
         type="button"
-        class="flex-1 rounded-xl border-[0.5px] border-[rgba(245,237,217,0.18)] py-2.5 font-serif text-sm text-[rgba(245,237,217,0.85)] disabled:opacity-40"
+        class="flex-1 rounded-xl border-[0.5px] border-[rgba(245,237,217,0.18)] py-2.5 font-serif text-sm text-[rgba(245,237,217,0.85)] transition-colors hover:enabled:bg-[rgba(245,237,217,0.08)] disabled:opacity-40"
         :disabled="isSubmitting"
         @click="handleClose"
       >
@@ -110,7 +110,7 @@ const handleClose = () => {
       </button>
       <button
         type="button"
-        class="flex-1 rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208] disabled:opacity-40"
+        class="flex-1 rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208] transition-colors hover:enabled:bg-[#c17f24] disabled:opacity-40"
         :disabled="!canConfirm || isSubmitting"
         @click="handleConfirm"
       >

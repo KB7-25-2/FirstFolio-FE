@@ -249,8 +249,8 @@ const groupedTransactions = computed(() => {
             class="shrink-0 rounded-full px-3 py-1.5 font-serif text-xs font-bold transition-colors"
             :class="
               activeFilter.value === filter.value
-                ? 'bg-[#c17f24] text-[#fff8ec]'
-                : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)]'
+                ? 'bg-[#c17f24] text-[#fff8ec] hover:bg-[#a86c1d]'
+                : 'border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] text-[rgba(44,24,16,0.55)] hover:bg-[rgba(193,127,36,0.12)] hover:text-[#2c1810]'
             "
             @click="selectFilter(filter)"
           >
@@ -264,7 +264,7 @@ const groupedTransactions = computed(() => {
           <div class="flex items-center justify-between">
             <button
               type="button"
-              class="rounded-full px-2 py-1 font-serif text-sm text-[#c17f24]"
+              class="rounded-full px-2 py-1 font-serif text-sm text-[#c17f24] transition-colors hover:bg-[rgba(193,127,36,0.12)]"
               aria-label="이전 주"
               @click="goToPeriod(-1)"
             >
@@ -281,7 +281,7 @@ const groupedTransactions = computed(() => {
             </p>
             <button
               type="button"
-              class="rounded-full px-2 py-1 font-serif text-sm text-[#c17f24]"
+              class="rounded-full px-2 py-1 font-serif text-sm text-[#c17f24] transition-colors hover:bg-[rgba(193,127,36,0.12)]"
               aria-label="다음 주"
               @click="goToPeriod(1)"
             >
@@ -370,7 +370,7 @@ const groupedTransactions = computed(() => {
       <button
         v-if="canLoadMore"
         type="button"
-        class="rounded-xl border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] py-2.5 font-serif text-xs font-bold text-[#c17f24] disabled:opacity-40"
+        class="rounded-xl border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] py-2.5 font-serif text-xs font-bold text-[#c17f24] transition-colors hover:enabled:bg-[rgba(193,127,36,0.12)] disabled:opacity-40"
         :disabled="isLoadingMore"
         @click="loadMore"
       >
@@ -387,7 +387,7 @@ const groupedTransactions = computed(() => {
       <button
         v-if="showScrollTopButton"
         type="button"
-        class="absolute right-4 z-20 flex size-11 items-center justify-center rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#c17f24] text-[#fff8ec] shadow-[0_4px_12px_rgba(44,24,16,0.25)]"
+        class="absolute right-4 z-20 flex size-11 items-center justify-center rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#c17f24] text-[#fff8ec] shadow-[0_4px_12px_rgba(44,24,16,0.25)] transition-colors hover:bg-[#a86c1d]"
         style="bottom: calc(clamp(52px, 8dvh, 72px) + 16px)"
         aria-label="맨 위로"
         @click="scrollToTop"

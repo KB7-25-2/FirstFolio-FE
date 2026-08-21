@@ -7,6 +7,12 @@ import {
   buildChartCandlesForPeriod,
   formatChartCategoryLabel,
 } from '@/utils/productChartCandles.js'
+import {
+  calcPriceChangeVsOpen,
+  formatPriceChangeAmount,
+  formatPriceChangeRate,
+  priceChangeToneClass,
+} from '@/utils/priceChange.js'
 
 const props = defineProps({
   productName: {
@@ -37,7 +43,16 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  /** card: 목록용 작은 카드 / detail: 시세 탭용 큰 차트 */
+  variant: {
+    type: String,
+    default: 'card',
+    validator: (value) => ['card', 'detail'].includes(value),
+  },
 })
+
+const isDetail = computed(() => props.variant === 'detail')
+const chartHeight = computed(() => (isDetail.value ? 280 : 150))
 
 const selectedPeriod = ref(DEFAULT_CHART_PERIOD)
 
@@ -64,12 +79,32 @@ const priceLabel = computed(() => {
   return `${props.currentPrice.toLocaleString('ko-KR')}원`
 })
 
+const priceChange = computed(() =>
+  calcPriceChangeVsOpen(props.currentPrice, props.liveCandle?.openPrice),
+)
+
+const priceToneClass = computed(() => {
+  if (!priceChange.value) return 'text-[#c17f24]'
+  if (priceChange.value.direction === 'flat') return 'text-[#c17f24]'
+  return priceChangeToneClass(priceChange.value.direction)
+})
+
+const changeAmountLabel = computed(() =>
+  priceChange.value ? formatPriceChangeAmount(priceChange.value.amount) : null,
+)
+
+const changeRateLabel = computed(() =>
+  priceChange.value ? formatPriceChangeRate(priceChange.value.rate) : null,
+)
+
+const formatPrice = (value) => Number(value).toLocaleString('ko-KR', { maximumFractionDigits: 0 })
+
 const chartOptions = computed(() => {
   const period = selectedPeriod.value
   return {
     chart: {
       type: 'candlestick',
-      background: 'transparent',
+      background: '#ffffff',
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: 'inherit',
@@ -77,7 +112,7 @@ const chartOptions = computed(() => {
       parentHeightOffset: 0,
     },
     grid: {
-      borderColor: 'rgba(193,127,36,0.2)',
+      borderColor: 'rgba(193,127,36,0.18)',
       strokeDashArray: 3,
       padding: { left: 4, right: 4, top: 0, bottom: 0 },
     },
@@ -107,22 +142,28 @@ const chartOptions = computed(() => {
       tooltip: { enabled: true },
       labels: {
         style: { colors: 'rgba(41,33,26,0.55)', fontSize: '9px' },
-        minWidth: 40,
-        maxWidth: 56,
-        formatter: (value) =>
-          Number(value).toLocaleString('ko-KR', {
-            maximumFractionDigits: 0,
-            notation: 'compact',
-          }),
+        minWidth: 48,
+        maxWidth: 72,
+        formatter: (value) => formatPrice(value),
       },
     },
     tooltip: {
       theme: 'light',
-      x: {
-        formatter: (_value, { dataPointIndex, w }) => {
-          const label = w?.globals?.categoryLabels?.[dataPointIndex]
-          return label ? formatChartCategoryLabel(label, period) : ''
-        },
+      custom: ({ dataPointIndex, w }) => {
+        const point = w?.globals?.initialSeries?.[0]?.data?.[dataPointIndex]
+        const ohlc = point?.y
+        if (!Array.isArray(ohlc) || ohlc.length < 4) return ''
+        const [open, high, low, close] = ohlc
+        const dateLabel = formatChartCategoryLabel(point.x, period)
+        return `
+          <div style="padding:8px 10px;font-size:11px;line-height:1.5;color:#2c1810">
+            <p style="margin:0 0 4px;font-weight:700">${dateLabel}</p>
+            <p style="margin:0">시가 ${formatPrice(open)}</p>
+            <p style="margin:0">고가 ${formatPrice(high)}</p>
+            <p style="margin:0">저가 ${formatPrice(low)}</p>
+            <p style="margin:0">종가 ${formatPrice(close)}</p>
+          </div>
+        `
       },
     },
   }
@@ -131,9 +172,13 @@ const chartOptions = computed(() => {
 
 <template>
   <section
-    class="rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] px-2.5 py-2 shadow-[0_4px_12px_rgba(44,24,16,0.1)]"
+    :class="
+      isDetail
+        ? 'w-full'
+        : 'rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] px-2.5 py-2 shadow-[0_4px_12px_rgba(44,24,16,0.1)]'
+    "
   >
-    <div class="mb-1 flex items-end justify-between gap-2">
+    <div v-if="!isDetail" class="mb-1 flex items-end justify-between gap-2">
       <div class="min-w-0">
         <p class="truncate font-serif text-xs font-bold text-[#2c1810]">
           {{ productName || '상품 시세' }}
@@ -142,21 +187,29 @@ const chartOptions = computed(() => {
           {{ marketOpen ? '장중 · 실시간 갱신' : '장외 · 확정 시세' }}
         </p>
       </div>
-      <p v-if="priceLabel" class="shrink-0 font-serif text-xs font-bold text-[#c17f24]">
-        {{ priceLabel }}
-      </p>
+      <div v-if="priceLabel" class="shrink-0 text-right">
+        <p class="font-serif text-xs font-bold" :class="priceToneClass">{{ priceLabel }}</p>
+        <p
+          v-if="changeAmountLabel"
+          class="mt-0.5 font-serif text-[10px] font-bold"
+          :class="priceToneClass"
+        >
+          {{ changeAmountLabel }}
+          <span class="ml-0.5 font-semibold">{{ changeRateLabel }}</span>
+        </p>
+      </div>
     </div>
 
-    <div class="mb-1.5 flex gap-1 overflow-x-auto">
+    <div class="mb-2 flex gap-1 overflow-x-auto" :class="isDetail ? 'justify-start' : ''">
       <button
         v-for="period in CHART_PERIODS"
         :key="period.value"
         type="button"
-        class="shrink-0 rounded-full px-2 py-0.5 font-serif text-[10px] font-bold transition-colors"
+        class="shrink-0 rounded-full px-2.5 py-1 font-serif text-[10px] font-bold transition-colors"
         :class="
           selectedPeriod === period.value
-            ? 'bg-[#c17f24] text-[#fff8ec]'
-            : 'bg-[rgba(193,127,36,0.12)] text-[rgba(41,33,26,0.55)]'
+            ? 'bg-[#c17f24] text-[#fff8ec] hover:bg-[#a86c1d]'
+            : 'bg-[rgba(193,127,36,0.12)] text-[rgba(41,33,26,0.55)] hover:bg-[rgba(193,127,36,0.22)] hover:text-[#2c1810]'
         "
         @click="selectedPeriod = period.value"
       >
@@ -164,22 +217,26 @@ const chartOptions = computed(() => {
       </button>
     </div>
 
-    <p v-if="loading" class="py-6 text-center font-serif text-xs text-[rgba(41,33,26,0.45)]">
+    <p v-if="loading" class="py-16 text-center font-serif text-xs text-[rgba(41,33,26,0.45)]">
       차트 불러오는 중…
     </p>
-    <p v-else-if="errorMessage" class="py-6 text-center font-serif text-xs text-[#c0433f]">
+    <p v-else-if="errorMessage" class="py-16 text-center font-serif text-xs text-[#c0433f]">
       {{ errorMessage }}
     </p>
-    <p v-else-if="!hasData" class="py-6 text-center font-serif text-xs text-[rgba(41,33,26,0.45)]">
+    <p v-else-if="!hasData" class="py-16 text-center font-serif text-xs text-[rgba(41,33,26,0.45)]">
       아직 표시할 시세가 없어요.
     </p>
-    <VueApexCharts
+    <div
       v-else
-      :key="selectedPeriod"
-      type="candlestick"
-      height="150"
-      :options="chartOptions"
-      :series="chartSeries"
-    />
+      class="overflow-hidden rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.2)] bg-white"
+    >
+      <VueApexCharts
+        :key="`${selectedPeriod}-${variant}`"
+        type="candlestick"
+        :height="chartHeight"
+        :options="chartOptions"
+        :series="chartSeries"
+      />
+    </div>
   </section>
 </template>
