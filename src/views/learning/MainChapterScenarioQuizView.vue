@@ -5,7 +5,6 @@ import penguin from '@/assets/learning/scenario/penguin.png'
 import ScenarioClipboardBoard from '@/components/learning/ScenarioClipboardBoard.vue'
 import ScenarioBriefDocument from '@/components/learning/ScenarioBriefDocument.vue'
 import ScenarioPersonaCard from '@/components/learning/ScenarioPersonaCard.vue'
-import ScenarioRequirementsCard from '@/components/learning/ScenarioRequirementsCard.vue'
 import ScenarioClipboardQuestion from '@/components/learning/ScenarioClipboardQuestion.vue'
 import ScenarioChoiceOption from '@/components/learning/ScenarioChoiceOption.vue'
 import ScenarioEvaluationBlock from '@/components/learning/ScenarioEvaluationBlock.vue'
@@ -122,23 +121,16 @@ const resultCongratsMessage = computed(() =>
                 :monthly-saving="conditions.persona.monthlySaving"
               />
             </div>
-            <div class="pointer-events-none absolute inset-x-0 bottom-1 z-[2] flex justify-center">
+            <div class="pointer-events-none absolute right-2 bottom-0 z-[2]">
               <div class="scenario-penguin">
                 <img
                   :src="penguin"
                   alt=""
-                  class="h-[82px] w-[110px] object-contain"
-                  width="110"
-                  height="82"
+                  class="h-[112px] w-[150px] object-contain"
+                  width="150"
+                  height="112"
                 />
               </div>
-            </div>
-            <div class="absolute right-1.5 bottom-2 z-[1]">
-              <ScenarioRequirementsCard
-                :assets="conditions.requirements.assets"
-                :risk="conditions.requirements.risk"
-                :goal="conditions.requirements.goal"
-              />
             </div>
           </div>
         </Transition>
@@ -170,7 +162,12 @@ const resultCongratsMessage = computed(() =>
             key="play"
             :paper-title="scenarioCurrentStep.paperTitle || '포트폴리오 추천서'"
           >
-            <ScenarioClipboardQuestion :prompt="scenarioCurrentStep.prompt">
+            <ScenarioClipboardQuestion
+              :prompt="scenarioCurrentStep.prompt"
+              :requirements="
+                scenarioCurrentStep.scenarioJson?.requirements ?? conditions?.requirements
+              "
+            >
               <template v-if="scenarioUiStatus === 'CORRECT' && stepCorrectOption">
                 <div
                   class="scenario-grade-card relative rounded-[10px] border-[0.5px] border-[#c17f24] bg-[rgba(193,127,36,0.15)] px-3 py-2.5 shadow-[0_2px_8px_rgba(139,80,20,0.2)]"

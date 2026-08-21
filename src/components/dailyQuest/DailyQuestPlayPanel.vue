@@ -38,6 +38,9 @@ watch(
 )
 
 const scenarioNarrative = computed(() => currentSnapshot.value?.scenarioJson?.narrative || '')
+const scenarioRequirements = computed(
+  () => currentSnapshot.value?.scenarioJson?.requirements ?? null,
+)
 
 const isCurrentTrueFalse = computed(() => currentQuestionType.value === 'TRUE_FALSE')
 
@@ -155,7 +158,8 @@ const onSave = async () => {
       <ScenarioClipboardQuestion
         v-else-if="isCurrentScenario"
         :prompt="scenarioNarrative || currentSnapshot.prompt"
-        scenario-label=""
+        scenario-label="고객 시나리오"
+        :requirements="scenarioRequirements"
       >
         <ScenarioChoiceOption
           v-for="opt in scenarioOptions"

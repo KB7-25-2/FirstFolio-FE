@@ -6,7 +6,6 @@ import roomBg from '@/assets/learning/scenario/room-bg.jpg'
 import penguin from '@/assets/learning/scenario/penguin.png'
 import ScenarioClipboardBoard from '@/components/learning/ScenarioClipboardBoard.vue'
 import ScenarioPersonaCard from '@/components/learning/ScenarioPersonaCard.vue'
-import ScenarioRequirementsCard from '@/components/learning/ScenarioRequirementsCard.vue'
 import ScenarioMarketBar from '@/components/learning/ScenarioMarketBar.vue'
 import DailyQuestHubPanel from '@/components/dailyQuest/DailyQuestHubPanel.vue'
 import DailyQuestPlayPanel from '@/components/dailyQuest/DailyQuestPlayPanel.vue'
@@ -87,7 +86,6 @@ const clipboardTitle = computed(() => {
 
 const scenarioJson = computed(() => currentSnapshot.value?.scenarioJson ?? null)
 const scenarioPersona = computed(() => scenarioJson.value?.persona ?? null)
-const scenarioRequirements = computed(() => scenarioJson.value?.requirements ?? null)
 
 const showClientScene = computed(
   () => shell.value === 'quest' && isPlay.value && isCurrentScenario.value && scenarioPersona.value,
@@ -281,23 +279,16 @@ const onHubSubmit = async () => {
               :monthly-saving="scenarioPersona.monthlySaving || ''"
             />
           </div>
-          <div class="pointer-events-none absolute inset-x-0 bottom-1 z-[2] flex justify-center">
+          <div class="pointer-events-none absolute right-2 bottom-0 z-[2]">
             <div class="dq-penguin">
               <img
                 :src="penguin"
                 alt=""
-                class="h-[82px] w-[110px] object-contain"
-                width="110"
-                height="82"
+                class="h-[112px] w-[150px] object-contain"
+                width="150"
+                height="112"
               />
             </div>
-          </div>
-          <div v-if="scenarioRequirements" class="absolute right-1.5 bottom-2 z-[1]">
-            <ScenarioRequirementsCard
-              :assets="scenarioRequirements.assets || ''"
-              :risk="scenarioRequirements.risk || ''"
-              :goal="scenarioRequirements.goal || ''"
-            />
           </div>
         </template>
       </div>
