@@ -52,13 +52,23 @@ const earnedScore = computed(() => props.correctCount * props.scorePerQuestion)
         <Transition name="quiz-result-pop" appear>
           <div
             v-if="open"
-            class="relative z-10 w-full max-w-[320px] overflow-hidden rounded-lg border-[0.5px] border-[rgba(212,184,150,0.55)] bg-[#faf5eb] shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            class="relative z-10 w-full max-w-[320px] rounded-lg border-[0.5px] border-[rgba(212,184,150,0.55)] bg-[#faf5eb] shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
           >
+            <!-- 상단 경계에 걸친 테이프 -->
             <div
-              class="pointer-events-none absolute top-3 left-1/2 h-3.5 w-[72px] -translate-x-1/2 rotate-[3deg] bg-[rgba(217,209,184,0.7)]"
+              class="pointer-events-none absolute top-0 left-1/2 z-20 h-4 w-[78px] -translate-x-1/2 -translate-y-1/2 rotate-[4deg]"
               aria-hidden="true"
-            />
-            <div class="relative px-5 pt-8 pb-5 text-center">
+            >
+              <div
+                class="h-full w-full rounded-[1px] bg-[rgba(232,220,185,0.88)] shadow-[0_1px_2px_rgba(0,0,0,0.12)]"
+                style="
+                  box-shadow:
+                    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+                    0 1px 2px rgba(0, 0, 0, 0.12);
+                "
+              />
+            </div>
+            <div class="relative overflow-hidden rounded-lg px-5 pt-8 pb-5 text-center">
               <p class="font-serif text-[11px] tracking-wide text-[rgba(139,100,60,0.65)]">
                 QUIZ RESULT
               </p>

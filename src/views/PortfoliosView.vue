@@ -1,7 +1,7 @@
 <script setup>
 defineOptions({ name: 'PortfoliosView' })
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import PortfolioTabs from '@/components/portfolio/PortfolioTabs.vue'
 import BankruptcyConfirmModal from '@/components/portfolio/BankruptcyConfirmModal.vue'
@@ -13,19 +13,11 @@ const store = usePortfolioStore()
 const title = computed(() => route.meta.title ?? '포트폴리오')
 const subtitle = computed(() => route.meta.subtitle ?? '')
 const showBankruptcyAction = computed(() => Boolean(route.meta.showBankruptcyAction))
-const marketSession = computed(() => store.marketSession)
 
 const isBankruptcyModalOpen = ref(false)
 const isResetting = ref(false)
 const resetError = ref(null)
-
-onMounted(() => {
-  store.startProductPricePolling()
-})
-
-onUnmounted(() => {
-  store.stopProductPricePolling()
-})
+const marketSession = computed(() => store.getKoreanMarketSession())
 
 const openBankruptcyModal = () => {
   resetError.value = null
@@ -54,13 +46,18 @@ const handleResetConfirm = async () => {
 
 <template>
   <div class="cork-board flex h-full flex-col overflow-hidden">
-    <header class="chalk-header shrink-0 px-5 pt-5">
+    <header class="chalk-header shrink-0 px-5 pt-4">
       <div class="flex w-full items-center justify-between gap-2">
         <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
-              {{ subtitle }}
-            </p>
+          <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
+            {{ subtitle }}
+          </p>
+          <div class="mt-1 flex min-w-0 items-center gap-2">
+            <h1
+              class="chalk-header__title truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
+            >
+              {{ title }}
+            </h1>
             <span
               class="shrink-0 rounded-full px-1.5 py-0.5 font-serif text-[9px] font-bold"
               :class="
@@ -73,21 +70,15 @@ const handleResetConfirm = async () => {
               {{ marketSession.label }}
             </span>
           </div>
-          <h1
-            class="chalk-header__title mt-1 truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
-          >
-            {{ title }}
-          </h1>
         </div>
 
         <button
           v-if="showBankruptcyAction"
           type="button"
-          class="chalk-header__stamp flex shrink-0 rotate-[-4deg] items-center justify-center rounded px-2.5 py-1"
-          style="background: rgba(240, 217, 160, 0.22)"
+          class="chalk-pill-btn"
           @click="openBankruptcyModal"
         >
-          <span class="font-pen text-[13px] leading-none whitespace-nowrap">파산 신청</span>
+          파산 신청
         </button>
       </div>
     </header>

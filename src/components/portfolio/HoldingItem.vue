@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { getAssetTypeMeta } from '@/constants/assetType.js'
 
+const CHART_ASSET_TYPES = new Set(['STOCK', 'FUND'])
+
 // holding: {
 //   holdingId, displayName, assetType,
 //   cycleSummary,      // 백엔드가 완성 문자열로 내려줌 ("서비스 6일 만기 · 실제 6개월")
@@ -14,13 +16,19 @@ const props = defineProps({
   },
 })
 
-defineEmits(['request-sell'])
+const emit = defineEmits(['request-sell', 'select'])
 
 const sellActionLabel = computed(() => getAssetTypeMeta(props.holding.assetType).sellActionLabel)
 const quantityUnit = computed(() => getAssetTypeMeta(props.holding.assetType).quantityUnit)
 const isSubscription = computed(
   () => getAssetTypeMeta(props.holding.assetType).tradeType === 'SUBSCRIPTION',
 )
+const isSelectable = computed(() => CHART_ASSET_TYPES.has(props.holding.assetType))
+
+const handleSelect = () => {
+  if (!isSelectable.value) return
+  emit('select', props.holding)
+}
 
 // 원금이 아니라 "지금 이 상품이 얼마짜리인지"(평가액)를 보여준다.
 const displayAmount = computed(() => props.holding.valuationAmount ?? props.holding.principalAmount)
@@ -86,7 +94,13 @@ const profitRateClass = computed(() => {
 
 <template>
   <li
-    class="flex flex-col gap-1 rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.18)] bg-white/55 px-3.5 py-3"
+    class="flex flex-col gap-2 rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.18)] bg-white/55 px-3.5 py-3 transition-colors"
+    :class="isSelectable ? 'cursor-pointer hover:bg-[rgba(193,127,36,0.1)]' : ''"
+    :role="isSelectable ? 'button' : undefined"
+    :tabindex="isSelectable ? 0 : undefined"
+    @click="handleSelect"
+    @keydown.enter.prevent="handleSelect"
+    @keydown.space.prevent="handleSelect"
   >
     <div class="flex items-center justify-between gap-2">
       <p class="truncate font-serif text-sm font-bold text-[#2c1810]">{{ holding.displayName }}</p>
@@ -99,8 +113,8 @@ const profitRateClass = computed(() => {
       </p>
       <button
         type="button"
-        class="shrink-0 rounded-full bg-[#2c1810] px-2.5 py-1 font-serif text-[10px] font-bold text-[#fff8ec]"
-        @click="$emit('request-sell', holding)"
+        class="shrink-0 rounded-full bg-[#2c1810] px-2.5 py-1 font-serif text-[10px] font-bold text-[#fff8ec] transition-colors hover:bg-[#4a2e1c]"
+        @click.stop="emit('request-sell', holding)"
       >
         {{ sellActionLabel }}
       </button>
@@ -108,7 +122,7 @@ const profitRateClass = computed(() => {
 
     <div
       v-if="hasPriceRow"
-      class="flex items-center gap-x-3 gap-y-0.5 rounded-[3px] bg-[rgba(193,127,36,0.06)] px-2 py-1 font-serif text-[10px]"
+      class="mt-1 flex items-center gap-x-3 gap-y-0.5 rounded-[3px] bg-[rgba(193,127,36,0.06)] px-2 py-1.5 font-serif text-[10px]"
     >
       <span v-if="formattedAverageCost" class="text-[rgba(41,33,26,0.5)]">
         매입가 <span class="font-bold text-[rgba(41,33,26,0.75)]">{{ formattedAverageCost }}</span>

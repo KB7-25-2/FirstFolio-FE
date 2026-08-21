@@ -1,5 +1,13 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+const props = defineProps({
+  /** true면 흐림/페이드 없이 항상 선명 (sticky 차트 등으로 viewport가 줄어든 경우) */
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 const root = ref(null)
 
@@ -27,12 +35,25 @@ const findScrollParent = (el) => {
   return null
 }
 
+const clearRevealStyles = (el) => {
+  el.style.opacity = ''
+  el.style.filter = ''
+  el.style.transform = ''
+  el.style.willChange = ''
+  el.classList.remove('scroll-reveal--active')
+}
+
 /**
  * 가장자리에서만 살짝 흐려짐 — 본문은 거의 항상 선명
  * @param {HTMLElement} el
  * @param {HTMLElement} parent
  */
 const updateReveal = (el, parent) => {
+  if (props.disabled) {
+    clearRevealStyles(el)
+    return
+  }
+
   const parentRect = parent.getBoundingClientRect()
   const elRect = el.getBoundingClientRect()
   if (parentRect.height <= 0) return
@@ -42,14 +63,12 @@ const updateReveal = (el, parent) => {
   const visibleHeight = Math.max(0, visibleBottom - visibleTop)
   const visibility = visibleHeight / Math.max(1, Math.min(elRect.height, parentRect.height))
 
-  // 70% 이상 보이면 완전 선명, 그 아래로만 살짝 페이드
   let t = 1
   if (visibility < 0.7) {
     t = Math.max(0, visibility / 0.7)
   }
 
   const eased = t * t * (3 - 2 * t)
-  // 최소 가독성 유지
   const opacity = 0.72 + eased * 0.28
   const blur = (1 - eased) * 5
   const scale = 0.97 + eased * 0.03
@@ -85,6 +104,21 @@ onMounted(() => {
   scheduleUpdate(el, scrollParent)
   window.setTimeout(() => scheduleUpdate(el, scrollParent), 400)
 })
+
+watch(
+  () => props.disabled,
+  () => {
+    const el = root.value
+    if (!el || !scrollParent) return
+    if (props.disabled) {
+      clearRevealStyles(el)
+      return
+    }
+    el.classList.add('scroll-reveal--active')
+    el.style.willChange = 'opacity, filter, transform'
+    scheduleUpdate(el, scrollParent)
+  },
+)
 
 onBeforeUnmount(() => {
   if (rafId) cancelAnimationFrame(rafId)

@@ -16,12 +16,5 @@ export {
   startSubChapterQuizAttempt,
   startMainChapterQuizAttempt,
   gradeQuizAttemptAnswer,
-  getQuizQuestions,
-  submitQuizAttempt,
-  getChapterGame,
-  getScenario,
-  submitScenarioAttempt,
   getContinuePosition,
-  __setMockLearningProfile,
-  __getMockLearningProfile,
 } from './study/index.js'

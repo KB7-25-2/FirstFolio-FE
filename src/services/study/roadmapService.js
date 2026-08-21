@@ -1,13 +1,12 @@
 import { getRoadmap as getRoadmapApi } from '@/api/user/studyApi.js'
 import { parseApiError } from '@/api/user/errorHandler.js'
 import { StudyApiError } from './studyApiError.js'
-import { delay, shouldFallbackStudyMock, unwrap } from './studyResponseUtils.js'
+import { unwrap } from './studyResponseUtils.js'
 import {
   buildRoadmapStage,
   mapRoadmapChapterItem,
   mapRoadmapSubChapter,
 } from './mappers/roadmapMapper.js'
-import { buildMockLearningRoadmap } from './mock/studyMockEngine.js'
 
 /**
  * @typedef {import('@/types/study.js').CurriculumItem} CurriculumItem
@@ -27,26 +26,24 @@ export const getLearningRoadmap = async () => {
       throw new StudyApiError('CURRICULUM_NOT_FOUND', '확정된 커리큘럼이 없다.', 404)
     }
 
-    const curriculumItems = rawItems.map(mapRoadmapChapterItem)
-    const stages = rawItems.map((item) => {
-      const chapter = mapRoadmapChapterItem(item)
-      const subChapters = (item.sub_chapters ?? item.subChapters ?? []).map((row) =>
-        mapRoadmapSubChapter(row, chapter.mainChapterId),
-      )
-      const mainChapterQuiz = item.main_chapter_quiz ?? item.mainChapterQuiz ?? null
-      return buildRoadmapStage(chapter, subChapters, mainChapterQuiz)
-    })
+    const curriculumItems = rawItems
+      .map(mapRoadmapChapterItem)
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+    const stages = rawItems
+      .map((item) => {
+        const chapter = mapRoadmapChapterItem(item)
+        const subChapters = (item.sub_chapters ?? item.subChapters ?? []).map((row) =>
+          mapRoadmapSubChapter(row, chapter.mainChapterId),
+        )
+        const mainChapterQuiz = item.main_chapter_quiz ?? item.mainChapterQuiz ?? null
+        return buildRoadmapStage(chapter, subChapters, mainChapterQuiz)
+      })
+      .sort((a, b) => a.displayOrder - b.displayOrder)
 
     return { data: { curriculumItems, stages } }
   } catch (error) {
-    if (error instanceof StudyApiError) {
-      if (error.code !== 'CURRICULUM_NOT_FOUND' && shouldFallbackStudyMock(error)) {
-        console.warn('[studyService] GET roadmap 실패 — mock으로 대체합니다.', error)
-        await delay()
-        return { data: buildMockLearningRoadmap() }
-      }
-      throw error
-    }
+    if (error instanceof StudyApiError) throw error
+
     const parsed = parseApiError(error)
     const mapped = new StudyApiError(
       parsed?.code || 'ROADMAP_FETCH_FAILED',
@@ -60,10 +57,7 @@ export const getLearningRoadmap = async () => {
         404,
       )
     }
-    if (!shouldFallbackStudyMock(mapped)) throw mapped
-    console.warn('[studyService] GET roadmap 실패 — mock으로 대체합니다.', mapped)
-    await delay()
-    return { data: buildMockLearningRoadmap() }
+    throw mapped
   }
 }
 

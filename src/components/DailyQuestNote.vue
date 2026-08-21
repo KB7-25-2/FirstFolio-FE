@@ -1,13 +1,11 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useDailyQuestStore } from '@/store/dailyQuestStore.js'
 import { useLeaderboardStore } from '@/store/leaderboardStore.js'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
-
-const STREAK_STORAGE_KEY = 'ff.dailyQuest.streakDays'
 
 const router = useRouter()
 const questStore = useDailyQuestStore()
@@ -23,9 +21,6 @@ const {
   progressLabel,
 } = storeToRefs(questStore)
 const { myRank, isLoading: rankLoading } = storeToRefs(leaderboardStore)
-
-/** 목업 스트릭 — API 연동 전 로컬 값 */
-const streakDays = ref(3)
 
 const isLoading = computed(() => (questLoading.value || rankLoading.value) && !status.value)
 
@@ -65,18 +60,7 @@ const rankDisplay = computed(() => {
   return `${myRank.value.rank}위`
 })
 
-const loadStreak = () => {
-  try {
-    const raw = localStorage.getItem(STREAK_STORAGE_KEY)
-    const parsed = raw != null ? Number(raw) : NaN
-    streakDays.value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 3
-  } catch {
-    streakDays.value = 3
-  }
-}
-
 onMounted(async () => {
-  loadStreak()
   await Promise.all([questStore.fetchToday(), leaderboardStore.fetchLeaderboard({ size: 5 })])
 })
 
@@ -109,19 +93,6 @@ const goDailyQuest = () => {
             </p>
           </div>
           <div class="flex shrink-0 flex-col items-end gap-1">
-            <span
-              class="inline-flex items-center gap-1 rounded-full border-[0.5px] border-[rgba(196,92,42,0.35)] bg-[#fff6ef] px-2 py-0.5"
-              :aria-label="`${streakDays}일 연속`"
-            >
-              <span
-                class="font-serif text-[9px] font-bold tracking-wide text-[var(--study-quest-continue)]"
-              >
-                연속
-              </span>
-              <span class="font-serif text-[13px] leading-none text-[var(--study-quest-continue)]">
-                {{ streakDays }}일
-              </span>
-            </span>
             <button
               type="button"
               class="rounded px-1.5 py-0.5 font-serif text-[13px] font-bold whitespace-nowrap text-[var(--study-quest-continue)]"
@@ -194,7 +165,7 @@ const goDailyQuest = () => {
           </div>
 
           <p class="font-serif text-[8px] text-[var(--study-score-label)]">
-            매일 5문제 · 정답 수만큼 포인트 · 연속 출석 {{ streakDays }}일
+            매일 5문제 · 정답 수만큼 포인트
           </p>
         </template>
       </div>

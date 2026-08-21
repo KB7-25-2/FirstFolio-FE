@@ -121,10 +121,10 @@ const handleClose = () => {
     </div>
     <p
       v-if="!isSubscription"
-      class="mt-1 text-right font-serif text-[11px] text-[rgba(245,237,217,0.4)]"
+      class="mt-1 flex flex-col gap-0.5 text-right font-serif text-[11px] text-[rgba(245,237,217,0.4)]"
     >
-      매수 수수료 0.015%가 별도로 나가 최대 {{ maxBuyAmount.toLocaleString('ko-KR') }}원까지 입력할
-      수 있어요.
+      <span>매수 수수료 0.015%가 별도로 나가요.</span>
+      <span>최대 {{ maxBuyAmount.toLocaleString('ko-KR') }}원까지 입력할 수 있어요.</span>
     </p>
 
     <p v-if="isInsufficient" class="mt-2 font-serif text-xs text-[#f0b4b4]">
@@ -143,7 +143,7 @@ const handleClose = () => {
     <div class="mt-5 flex gap-2">
       <button
         type="button"
-        class="flex-1 rounded-xl border-[0.5px] border-[rgba(245,237,217,0.18)] py-2.5 font-serif text-sm text-[rgba(245,237,217,0.85)] disabled:opacity-40"
+        class="flex-1 rounded-xl border-[0.5px] border-[rgba(245,237,217,0.18)] py-2.5 font-serif text-sm text-[rgba(245,237,217,0.85)] transition-colors hover:enabled:bg-[rgba(245,237,217,0.08)] disabled:opacity-40"
         :disabled="isSubmitting"
         @click="handleClose"
       >
@@ -151,7 +151,7 @@ const handleClose = () => {
       </button>
       <button
         type="button"
-        class="flex-1 rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208] disabled:opacity-40"
+        class="flex-1 rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208] transition-colors hover:enabled:bg-[#c17f24] disabled:opacity-40"
         :disabled="!canConfirm || isSubmitting"
         @click="handleConfirm"
       >

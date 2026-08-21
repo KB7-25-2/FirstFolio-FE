@@ -234,7 +234,7 @@ export const seedOnboardingSession = async (page, onboardingStep, options = {}) 
 
 /**
  * 홈 StudyNote·학습 플로우용 stub.
- * roadmap/continue는 abort하여 studyService in-memory mock(DEV 폴백)을 사용한다.
+ * roadmap / continue / curriculum / 퀴즈를 in-memory fixture로 응답한다.
  * @param {import('@playwright/test').Page} page
  */
 export const mockHomeStudyApis = async (page) => {

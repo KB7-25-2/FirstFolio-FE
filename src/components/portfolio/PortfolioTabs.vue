@@ -21,7 +21,11 @@ const isActive = (name) => route.name === name
       :key="tab.name"
       :to="{ name: tab.name }"
       class="flex-1 rounded-full py-2 text-center font-serif text-[11px] font-bold transition-colors"
-      :class="isActive(tab.name) ? 'bg-[#c17f24] text-[#fff8ec]' : 'text-[rgba(44,24,16,0.55)]'"
+      :class="
+        isActive(tab.name)
+          ? 'bg-[#c17f24] text-[#fff8ec] hover:bg-[#a86c1d]'
+          : 'text-[rgba(44,24,16,0.55)] hover:bg-[rgba(193,127,36,0.12)] hover:text-[#2c1810]'
+      "
     >
       {{ tab.label }}
     </RouterLink>

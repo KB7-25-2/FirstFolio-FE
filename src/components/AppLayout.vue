@@ -23,15 +23,30 @@ const KEEP_ALIVE_TABS = [
   'PointMarketView',
 ]
 
+/** AppBar/Nav fade (대단원 퀴즈 · 일일퀘스트) */
+const IMMERSIVE_ROUTES = new Set(['learning-scenario-quiz', 'daily-quest'])
+
+const SCENARIO_ROOM_CLASS = 'scenario-room'
+const SCENARIO_ROOM_BG = '#1a1a2e'
+const CORK_THEME_COLOR = '#f7f1e4'
 const CROSSFADE_MS = 300
 
 const route = useRoute()
 const hideNavbar = computed(() => route.matched.some((record) => record.meta.hideNavbar === true))
-const fromScenarioQuiz = ref(false)
+const fromImmersive = ref(false)
+/** 일일퀘스트 leave 직후 — AppLayout 콘텐츠에 scenario-route 적용 */
+const fromDailyQuest = ref(false)
 const chromeShown = ref(!hideNavbar.value)
 const isDrawerOpen = ref(false)
 const isProfileOpen = ref(false)
+/** 일일퀘스트 진입 시 상담실 veil (대단원 퀴즈는 LearningShellView가 담당) */
+const isDailyQuestRoom = ref(route.name === 'daily-quest')
 let chromeTimer
+let roomTimer
+
+function isImmersiveRoute(name) {
+  return IMMERSIVE_ROUTES.has(name)
+}
 
 function crossfadeMs() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : CROSSFADE_MS
@@ -44,14 +59,28 @@ function clearChromeTimer() {
   }
 }
 
+function clearRoomTimer() {
+  if (roomTimer) {
+    window.clearTimeout(roomTimer)
+    roomTimer = undefined
+  }
+}
+
+function syncDocumentRoom(on) {
+  document.documentElement.classList.toggle(SCENARIO_ROOM_CLASS, on)
+  const themeColor = document.querySelector('meta[name="theme-color"]')
+  if (themeColor) themeColor.setAttribute('content', on ? SCENARIO_ROOM_BG : CORK_THEME_COLOR)
+}
+
 watch(
   () => route.name,
   (name, prev) => {
-    fromScenarioQuiz.value = prev === 'learning-scenario-quiz'
-    const scenarioFlow = name === 'learning-scenario-quiz' || fromScenarioQuiz.value
+    fromImmersive.value = isImmersiveRoute(prev)
+    fromDailyQuest.value = prev === 'daily-quest'
+    const immersiveFlow = isImmersiveRoute(name) || fromImmersive.value
     clearChromeTimer()
 
-    if (!scenarioFlow) {
+    if (!immersiveFlow) {
       chromeShown.value = !hideNavbar.value
       return
     }
@@ -68,13 +97,19 @@ watch(
   },
 )
 
-onUnmounted(clearChromeTimer)
+if (isDailyQuestRoom.value) syncDocumentRoom(true)
+
+onUnmounted(() => {
+  clearChromeTimer()
+  clearRoomTimer()
+  if (isDailyQuestRoom.value) syncDocumentRoom(false)
+})
 
 const { activeTab } = useNavTabs()
 const showTopBar = computed(() => chromeShown.value && TOP_BAR_TABS.includes(activeTab.value))
 const showNavDock = computed(() => chromeShown.value)
 const chromeTransition = computed(() =>
-  route.name === 'learning-scenario-quiz' || fromScenarioQuiz.value ? 'scenario-chrome' : '',
+  isImmersiveRoute(route.name) || fromImmersive.value ? 'scenario-chrome' : '',
 )
 
 /**
@@ -116,23 +151,51 @@ watch(activeTab, (next, prev) => {
   tabDir.value = nextIdx > prevIdx ? 'next' : 'prev'
 })
 
-const tabTransition = computed(() => (tabDir.value === 'next' ? 'nav-tab-next' : 'nav-tab-prev'))
+const pageTransition = computed(() => {
+  if (route.name === 'daily-quest' || fromDailyQuest.value) return 'scenario-route'
+  return tabDir.value === 'next' ? 'nav-tab-next' : 'nav-tab-prev'
+})
+
+const onAfterLeave = () => {
+  const on = route.name === 'daily-quest'
+  isDailyQuestRoom.value = on
+  clearRoomTimer()
+  if (on) {
+    roomTimer = window.setTimeout(() => syncDocumentRoom(true), crossfadeMs())
+    return
+  }
+  syncDocumentRoom(false)
+}
 </script>
 
 <template>
   <div class="relative mx-auto flex mobile-frame flex-col overflow-hidden">
+    <div
+      class="scenario-room-veil pointer-events-none absolute inset-0 z-0"
+      :class="{ 'is-on': isDailyQuestRoom }"
+      aria-hidden="true"
+    />
+    <Teleport to="body">
+      <div
+        class="scenario-room-veil pointer-events-none fixed inset-0 z-0"
+        :class="{ 'is-on': isDailyQuestRoom }"
+        aria-hidden="true"
+      />
+    </Teleport>
+
     <Transition :name="chromeTransition">
       <AppTopBar
         v-if="showTopBar"
         title="firstfolio"
+        class="relative z-30"
         @menu-click="isDrawerOpen = true"
         @profile-click="openProfile"
       />
     </Transition>
-    <main class="relative z-0 min-h-0 flex-1 overflow-hidden">
+    <main class="relative z-10 min-h-0 flex-1 overflow-hidden">
       <RouterView v-slot="{ Component }">
         <KeepAlive :include="KEEP_ALIVE_TABS" :max="KEEP_ALIVE_TABS.length">
-          <Transition :name="tabTransition" mode="out-in">
+          <Transition :name="pageTransition" mode="out-in" @after-leave="onAfterLeave">
             <component :is="Component" :key="tabCacheKey" class="h-full min-h-0" />
           </Transition>
         </KeepAlive>

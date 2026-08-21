@@ -39,6 +39,13 @@ watch(currentView, (view) => {
   selectedGifticonId.value = null
 })
 
+watch(currentView, (view) => {
+  if (view === 'history' && !gifticonStore.redemptionHistory.length) {
+    gifticonStore.fetchRedemptionHistory()
+  }
+  selectedGifticonId.value = null
+})
+
 const filteredGifticons = computed(() => {
   if (activeFilter.value === 'ALL') return gifticonStore.gifticons
   return gifticonStore.gifticons.filter((item) => item.category === activeFilter.value)
@@ -85,22 +92,19 @@ const closeRedeemToast = () => {
 <template>
   <div class="cork-board flex h-full flex-col overflow-hidden">
     <!-- 고정: 헤더 + 잔액 + 칩 -->
-    <div class="shrink-0 space-y-4 px-5 pt-5">
+    <div class="shrink-0 space-y-4 px-5 pt-4">
       <header class="chalk-header">
         <div class="flex w-full items-center justify-between gap-2">
           <div class="min-w-0">
-            <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
-              FIRSTFOLIO REWARDS
-            </p>
             <h1
-              class="chalk-header__title mt-1 truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
+              class="chalk-header__title truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
             >
               {{ currentView === 'catalog' ? '포인트 스토어' : '교환 내역' }}
             </h1>
           </div>
           <button
             type="button"
-            class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#fff8ec] px-3 py-1.5 font-serif text-xs font-bold text-[#c17f24]"
+            class="chalk-pill-btn"
             @click="currentView = currentView === 'catalog' ? 'history' : 'catalog'"
           >
             {{ currentView === 'catalog' ? '교환 내역 ›' : '‹ 스토어로' }}
@@ -170,7 +174,10 @@ const closeRedeemToast = () => {
         >
           불러오는 중…
         </p>
-        <p v-else class="font-serif text-sm text-[rgba(41,33,26,0.45)]">
+        <p
+          v-else
+          class="flex min-h-[50vh] flex-col items-center justify-center text-center font-serif text-base text-[rgba(41,33,26,0.5)]"
+        >
           해당 카테고리 상품이 없어요.
         </p>
 
@@ -205,7 +212,12 @@ const closeRedeemToast = () => {
         >
           불러오는 중…
         </p>
-        <p v-else class="font-serif text-sm text-[rgba(41,33,26,0.45)]">아직 교환 내역이 없어요.</p>
+        <p
+          v-else
+          class="flex min-h-[50vh] flex-col items-center justify-center text-center font-serif text-base text-[rgba(41,33,26,0.5)]"
+        >
+          아직 교환 내역이 없어요.
+        </p>
       </template>
     </div>
 

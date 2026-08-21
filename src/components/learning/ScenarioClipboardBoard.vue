@@ -15,7 +15,7 @@ defineProps({
 <template>
   <div
     class="relative w-full rounded-[14px] border-[0.5px] border-[#5a3820] shadow-[0_6px_28px_rgba(0,0,0,0.45)]"
-    :class="fill ? 'flex h-full min-h-0 flex-col' : ''"
+    :class="fill ? 'flex h-full min-h-0 flex-1 flex-col' : ''"
     style="background-image: linear-gradient(150deg, #4a2e1a 8%, #3a2010 58%, #2e1a0c 92%)"
   >
     <!-- metal clip -->

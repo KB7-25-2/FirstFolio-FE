@@ -80,150 +80,157 @@ const evalSummary = computed(
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col pt-1" :class="ready ? 'dq-result--ready' : ''">
-    <div class="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain pb-1">
-      <!-- 타이틀 -->
-      <div
-        class="relative flex items-center justify-center border-b border-[rgba(139,100,60,0.2)] pb-2"
-      >
-        <span
-          class="absolute top-0.5 left-0.5 size-1.5 rounded-sm bg-[rgba(0,0,0,0.12)] shadow-[inset_0_1px_1px_rgba(0,0,0,0.2)]"
-        />
-        <span
-          class="absolute top-0.5 right-0.5 size-1.5 rounded-sm bg-[rgba(0,0,0,0.12)] shadow-[inset_0_1px_1px_rgba(0,0,0,0.2)]"
-        />
-        <h2 class="font-serif text-[15px] font-black tracking-wide text-[#3d1f08]">
-          최종 결과 보고서
-        </h2>
-      </div>
-
-      <!-- 지표 카드 -->
-      <div class="flex flex-col gap-2">
+  <div
+    class="flex h-full min-h-0 flex-1 flex-col overflow-hidden pt-1"
+    :class="ready ? 'dq-result--ready' : ''"
+  >
+    <div class="hide-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pb-1">
+      <div class="flex flex-col gap-2.5">
+        <!-- 타이틀 -->
         <div
-          class="dq-result__card relative flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[rgba(193,127,36,0.12)] px-3 py-2.5"
+          class="relative flex items-center justify-center border-b border-[rgba(139,100,60,0.2)] pb-2"
         >
           <span
-            class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#c17f24] text-[11px] font-bold text-white"
-            aria-hidden="true"
-          >
-            ✓
-          </span>
-          <div class="min-w-0 flex-1 pr-14">
-            <p class="font-serif text-[13px] font-black text-[#3d1f08]">
-              최종 점수 {{ scoreLabel }}
-            </p>
-            <p class="mt-0.5 font-serif text-[10px] leading-[14px] text-[rgba(61,31,8,0.65)]">
-              오늘의 퀘스트 점수가 확정되었습니다.
-            </p>
-          </div>
-          <span
-            class="absolute top-2 right-2 rounded bg-[#8b5014] px-1.5 py-0.5 font-serif text-[9px] font-bold text-[#fff8ec]"
-          >
-            ★ 완료
-          </span>
-        </div>
-
-        <div
-          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
-          style="animation-delay: 0.06s"
-        >
-          <span
-            class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
-            aria-hidden="true"
+            class="absolute top-0.5 left-0.5 size-1.5 rounded-sm bg-[rgba(0,0,0,0.12)] shadow-[inset_0_1px_1px_rgba(0,0,0,0.2)]"
           />
-          <div class="min-w-0 flex-1">
-            <p class="font-serif text-[13px] font-black text-[#3d1f08]">{{ rankLabel }}</p>
-            <p class="mt-0.5 font-serif text-[10px] leading-[14px] text-[rgba(61,31,8,0.65)]">
-              {{ rankSub }}
-            </p>
-          </div>
-        </div>
-
-        <div
-          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
-          style="animation-delay: 0.12s"
-        >
           <span
-            class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
-            aria-hidden="true"
+            class="absolute top-0.5 right-0.5 size-1.5 rounded-sm bg-[rgba(0,0,0,0.12)] shadow-[inset_0_1px_1px_rgba(0,0,0,0.2)]"
           />
-          <div class="min-w-0 flex-1">
-            <p class="font-serif text-[13px] font-black text-[#3d1f08]">{{ accuracyLabel }}</p>
-            <p class="mt-0.5 font-serif text-[10px] leading-[14px] text-[rgba(61,31,8,0.65)]">
-              정답 {{ correctCount }}개 기준 포인트 산정
-            </p>
-          </div>
+          <h2 class="font-serif text-[15px] font-black tracking-wide text-[#3d1f08]">
+            최종 결과 보고서
+          </h2>
         </div>
 
-        <div
-          class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
-          style="animation-delay: 0.18s"
-        >
-          <span
-            class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
-            aria-hidden="true"
-          />
-          <div class="min-w-0 flex-1">
-            <p class="font-serif text-[13px] font-black text-[#3d1f08]">{{ pointsLabel }}</p>
-            <p class="mt-0.5 font-serif text-[10px] leading-[14px] text-[rgba(61,31,8,0.65)]">
-              {{ pointsSub }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 종합 평가 -->
-      <div
-        class="dq-result__eval overflow-hidden rounded-[10px] border-[0.5px] border-dashed border-[rgba(139,100,60,0.35)] px-3 py-2"
-      >
-        <div class="flex items-center gap-2 py-1">
-          <div class="h-px flex-1 bg-[rgba(139,100,60,0.25)]" />
-          <p class="font-serif text-[10px] font-bold tracking-[1.2px] text-[#7a5230]">종합 평가</p>
-          <div class="h-px flex-1 bg-[rgba(139,100,60,0.25)]" />
-        </div>
-
-        <div class="relative mt-1 flex items-center justify-center gap-1 py-2">
-          <span
-            v-for="n in 5"
-            :key="n"
-            class="dq-result__star text-[18px]"
-            :class="n <= filledStars ? 'text-[#c17f24]' : 'text-[rgba(139,100,60,0.25)]'"
-            :style="{ animationDelay: `${0.12 + n * 0.07}s` }"
+        <!-- 지표 카드 -->
+        <div class="flex flex-col gap-2">
+          <div
+            class="dq-result__card relative flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[rgba(193,127,36,0.12)] px-3 py-2.5"
           >
-            ★
-          </span>
-          <span
-            class="dq-result__stamp absolute -right-0.5 top-0 rounded border-[0.5px] border-[rgba(139,69,19,0.6)] bg-[rgba(245,237,217,0.35)] px-2.5 py-1 font-serif text-[13px] font-black tracking-wide text-[rgba(139,69,19,0.75)]"
-            aria-hidden="true"
-          >
-            {{ stampLabel }}
-          </span>
-        </div>
-
-        <div class="mt-1 flex flex-col gap-2 px-0.5">
-          <div v-for="(meter, index) in meters" :key="meter.label">
-            <div class="mb-1 flex items-center justify-between text-[11px]">
-              <span class="font-serif text-[#3d1f08]">{{ meter.label }}</span>
-              <span class="font-bold text-[#3d1f08]">{{ meter.value }}%</span>
+            <span
+              class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#c17f24] text-[11px] font-bold text-white"
+              aria-hidden="true"
+            >
+              ✓
+            </span>
+            <div class="min-w-0 flex-1 pr-14">
+              <p class="font-serif text-[13px] font-black text-[#3d1f08]">
+                최종 점수 {{ scoreLabel }}
+              </p>
+              <p class="mt-0.5 font-serif text-[10px] leading-[14px] text-[rgba(61,31,8,0.65)]">
+                오늘의 퀘스트 점수가 확정되었습니다.
+              </p>
             </div>
-            <div class="h-1.5 overflow-hidden rounded-full bg-[rgba(139,100,60,0.15)]">
-              <div
-                class="dq-result__bar h-full rounded-full"
-                :class="meter.bar"
-                :style="{
-                  '--bar-width': `${meter.value}%`,
-                  animationDelay: `${0.35 + index * 0.12}s`,
-                }"
-              />
+            <span
+              class="absolute top-2 right-2 rounded bg-[#8b5014] px-1.5 py-0.5 font-serif text-[9px] font-bold text-[#fff8ec]"
+            >
+              ★ 완료
+            </span>
+          </div>
+
+          <div
+            class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
+            style="animation-delay: 0.06s"
+          >
+            <span
+              class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
+              aria-hidden="true"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="font-serif text-[13px] font-black text-[#3d1f08]">{{ rankLabel }}</p>
+              <p class="mt-0.5 font-serif text-[10px] leading-[14px] text-[rgba(61,31,8,0.65)]">
+                {{ rankSub }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
+            style="animation-delay: 0.12s"
+          >
+            <span
+              class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
+              aria-hidden="true"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="font-serif text-[13px] font-black text-[#3d1f08]">{{ accuracyLabel }}</p>
+              <p class="mt-0.5 font-serif text-[10px] leading-[14px] text-[rgba(61,31,8,0.65)]">
+                정답 {{ correctCount }}개 기준 포인트 산정
+              </p>
+            </div>
+          </div>
+
+          <div
+            class="dq-result__card flex items-start gap-2.5 rounded-[10px] border-[0.5px] border-[rgba(139,100,60,0.22)] bg-[rgba(255,255,255,0.35)] px-3 py-2.5"
+            style="animation-delay: 0.18s"
+          >
+            <span
+              class="mt-0.5 size-6 shrink-0 rounded-full border-[0.5px] border-[rgba(139,100,60,0.4)]"
+              aria-hidden="true"
+            />
+            <div class="min-w-0 flex-1">
+              <p class="font-serif text-[13px] font-black text-[#3d1f08]">{{ pointsLabel }}</p>
+              <p class="mt-0.5 font-serif text-[10px] leading-[14px] text-[rgba(61,31,8,0.65)]">
+                {{ pointsSub }}
+              </p>
             </div>
           </div>
         </div>
 
-        <p
-          class="dq-result__summary mt-3 text-center font-serif text-[11px] leading-[17px] text-[#7a5230]"
+        <!-- 종합 평가 -->
+        <div
+          class="dq-result__eval overflow-hidden rounded-[10px] border-[0.5px] border-dashed border-[rgba(139,100,60,0.35)] px-3 py-2"
         >
-          {{ evalSummary }}
-        </p>
+          <div class="flex items-center gap-2 py-1">
+            <div class="h-px flex-1 bg-[rgba(139,100,60,0.25)]" />
+            <p class="font-serif text-[10px] font-bold tracking-[1.2px] text-[#7a5230]">
+              종합 평가
+            </p>
+            <div class="h-px flex-1 bg-[rgba(139,100,60,0.25)]" />
+          </div>
+
+          <div class="relative mt-1 flex items-center justify-center gap-1 py-2">
+            <span
+              v-for="n in 5"
+              :key="n"
+              class="dq-result__star text-[18px]"
+              :class="n <= filledStars ? 'text-[#c17f24]' : 'text-[rgba(139,100,60,0.25)]'"
+              :style="{ animationDelay: `${0.12 + n * 0.07}s` }"
+            >
+              ★
+            </span>
+            <span
+              class="dq-result__stamp absolute -right-0.5 top-0 rounded border-[0.5px] border-[rgba(139,69,19,0.6)] bg-[rgba(245,237,217,0.35)] px-2.5 py-1 font-serif text-[13px] font-black tracking-wide text-[rgba(139,69,19,0.75)]"
+              aria-hidden="true"
+            >
+              {{ stampLabel }}
+            </span>
+          </div>
+
+          <div class="mt-1 flex flex-col gap-2 px-0.5">
+            <div v-for="(meter, index) in meters" :key="meter.label">
+              <div class="mb-1 flex items-center justify-between text-[11px]">
+                <span class="font-serif text-[#3d1f08]">{{ meter.label }}</span>
+                <span class="font-bold text-[#3d1f08]">{{ meter.value }}%</span>
+              </div>
+              <div class="h-1.5 overflow-hidden rounded-full bg-[rgba(139,100,60,0.15)]">
+                <div
+                  class="dq-result__bar h-full rounded-full"
+                  :class="meter.bar"
+                  :style="{
+                    '--bar-width': `${meter.value}%`,
+                    animationDelay: `${0.35 + index * 0.12}s`,
+                  }"
+                />
+              </div>
+            </div>
+          </div>
+
+          <p
+            class="dq-result__summary mt-3 text-center font-serif text-[11px] leading-[17px] text-[#7a5230]"
+          >
+            {{ evalSummary }}
+          </p>
+        </div>
       </div>
     </div>
 

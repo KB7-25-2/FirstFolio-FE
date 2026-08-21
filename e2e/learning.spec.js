@@ -126,52 +126,37 @@ async function finishLessonToQuiz(page) {
   await expect(page.getByText('불러오는 중…')).toHaveCount(0, { timeout: 15_000 })
   await expect(page.getByText('선행 학습이 필요합니다.')).toHaveCount(0)
 
-  const quizCta = page.getByRole('button', { name: /퀴즈 풀기 →|퀴즈 이어하기 →/ })
+  const quizHeading = page.getByRole('heading', { name: '시험지' })
+  const completedCopy = page.getByText('강좌를 모두 읽었어요')
   const nextCut = page.getByRole('button', { name: '다음 컷 →' })
-  await expect(
-    page.getByRole('button', { name: /다음 컷 →|퀴즈 풀기 →|퀴즈 이어하기 →/ }),
-  ).toBeEnabled({
-    timeout: 15_000,
-  })
+  // 마지막 컷 footer와 완료 화면 CTA가 같은 라벨이라 단계별로 분리한다
+  const quizCta = page.getByRole('button', { name: /퀴즈 풀기 →|퀴즈 이어하기 →/ })
+
+  await expect(nextCut.or(quizCta).or(quizHeading)).toBeVisible({ timeout: 15_000 })
 
   for (let i = 0; i < 12; i += 1) {
-    const completedCopy = page.getByText('강좌를 모두 읽었어요')
-    const quizHeading = page.getByRole('heading', { name: '시험지' })
-    if (await quizHeading.isVisible()) return
+    if (/\/quiz(?:\/|\?|$)/.test(page.url()) || (await quizHeading.isVisible())) return
+
     if (await completedCopy.isVisible()) {
       await quizCta.click()
-      await expect(page).toHaveURL(/\/quiz/)
+      await expect(page).toHaveURL(/\/quiz/, { timeout: 15_000 })
       return
     }
-    if (await quizCta.isVisible()) {
-      await expect(quizCta).toBeEnabled()
-      await quizCta.click()
-      if (await quizHeading.isVisible()) {
-        await expect(page).toHaveURL(/\/quiz/)
-        return
-      }
-      if (await completedCopy.isVisible()) {
-        await quizCta.click()
-        await expect(page).toHaveURL(/\/quiz/)
-        return
-      }
-      break
+
+    if (await nextCut.isVisible()) {
+      await expect(nextCut).toBeEnabled()
+      await nextCut.click()
+      continue
     }
-    await expect(nextCut).toBeEnabled()
-    await nextCut.click()
+
+    // 마지막 컷 footer 「퀴즈 풀기 →」→ 완료 안내(needsQuiz)
+    await expect(quizCta).toBeEnabled()
+    await quizCta.click()
+    await expect(completedCopy.or(quizHeading)).toBeVisible({ timeout: 15_000 })
     if (i === 11) throw new Error('퀴즈 진입에 실패했다')
   }
 
-  const completedCopy = page.getByText('강좌를 모두 읽었어요')
-  const quizHeading = page.getByRole('heading', { name: '시험지' })
-  await expect(completedCopy.or(quizHeading)).toBeVisible({ timeout: 15_000 })
-
-  if (await completedCopy.isVisible()) {
-    await expect(quizCta).toBeEnabled()
-    await quizCta.click()
-  }
-
-  await expect(page).toHaveURL(/\/quiz/)
+  await expect(page).toHaveURL(/\/quiz/, { timeout: 15_000 })
 }
 
 /** 소단원 퀴즈 전 문항 응시·결과 모달 → 시간표 */

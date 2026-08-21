@@ -142,7 +142,7 @@ test.describe('인증 · 로그인/회원가입 (UI)', () => {
   })
 
   test('회원가입 탭에서 Google·이메일 등록 방식을 선택할 수 있다', async ({ page }) => {
-    await page.getByRole('button', { name: '회원가입', exact: true }).click()
+    await page.getByRole('tab', { name: '회원가입' }).click()
 
     await expect(page.getByRole('heading', { name: '등록 방식 선택' })).toBeVisible()
     await expect(page.getByRole('button', { name: /외부 계정 연동 \(Google\)/ })).toBeVisible()
@@ -151,7 +151,7 @@ test.describe('인증 · 로그인/회원가입 (UI)', () => {
   })
 
   test('이메일 방식 선택 후 회원 등록 신청서 폼이 보인다', async ({ page }) => {
-    await page.getByRole('button', { name: '회원가입', exact: true }).click()
+    await page.getByRole('tab', { name: '회원가입' }).click()
     await page.getByRole('button', { name: /이메일로 계속하기/ }).click()
     await page.getByRole('button', { name: /다음 장으로/ }).click()
 
@@ -282,7 +282,7 @@ test.describe('이메일 회원가입', () => {
   })
 
   const openEmailSignupForm = async (page) => {
-    await page.getByRole('button', { name: '회원가입', exact: true }).click()
+    await page.getByRole('tab', { name: '회원가입' }).click()
     await page.getByRole('button', { name: /이메일로 계속하기/ }).click()
     await page.getByRole('button', { name: /다음 장으로/ }).click()
     await expect(page.getByRole('heading', { name: '회원 등록 신청서' })).toBeVisible()

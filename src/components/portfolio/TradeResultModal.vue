@@ -75,10 +75,15 @@ const hasRoundingLeftover = computed(
       </div>
     </div>
 
-    <p v-if="hasRoundingLeftover" class="mt-2 font-serif text-xs text-[rgba(245,237,217,0.5)]">
-      요청하신 {{ fmt(result.requestedAmount) }}원 중 {{ fmt(result.amount) }}원만 체결됐어요.
-      나머지는 현금으로 남았어요.
-    </p>
+    <div
+      v-if="hasRoundingLeftover"
+      class="mt-2 flex flex-col gap-0.5 font-serif text-xs text-[rgba(245,237,217,0.5)]"
+    >
+      <p>
+        요청하신 {{ fmt(result.requestedAmount) }}원 중 {{ fmt(result.amount) }}원만 체결됐어요.
+      </p>
+      <p>나머지는 현금으로 남았어요.</p>
+    </div>
 
     <div class="mt-3 flex items-center justify-between font-serif text-xs">
       <span class="text-[rgba(245,237,217,0.5)]">거래 후 보유 현금</span>
@@ -87,7 +92,7 @@ const hasRoundingLeftover = computed(
 
     <button
       type="button"
-      class="mt-5 w-full rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208]"
+      class="mt-5 w-full rounded-xl bg-[rgba(193,127,36,0.92)] py-2.5 font-serif text-sm font-bold text-[#1a1208] transition-colors hover:bg-[#c17f24]"
       @click="emit('close')"
     >
       확인

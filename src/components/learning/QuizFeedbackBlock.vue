@@ -34,19 +34,10 @@ const boxClass = computed(() =>
     ? 'border-[rgba(71,133,82,0.35)] bg-[#edf5e5]'
     : 'border-[rgba(209,46,41,0.35)] bg-[#faebe5]',
 )
-
-const defaultHint = computed(() =>
-  props.result === 'correct'
-    ? '잘했어요 · 빨간 펜으로 동그라미'
-    : '틀린 답에 찍! · 정답을 확인하세요',
-)
 </script>
 
 <template>
   <div class="mt-6">
-    <p class="font-serif text-[15px] text-[rgba(33,43,92,0.75)]">
-      {{ hint || defaultHint }}
-    </p>
     <div class="mt-3 overflow-hidden rounded border-[0.5px] px-3 py-3" :class="boxClass">
       <p class="font-serif text-[12px] font-black" :class="titleClass">{{ title }}</p>
       <p

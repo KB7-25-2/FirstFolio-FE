@@ -2,11 +2,13 @@ import { computed, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 import { useCurriculumStore } from '@/store/curriculumStore.js'
+import { useStudyStore } from '@/store/studyStore.js'
 
 export const useCurriculumRecommend = () => {
   const router = useRouter()
   const route = useRoute()
   const curriculumStore = useCurriculumStore()
+  const studyStore = useStudyStore()
   const {
     selectedCourseCount,
     orderedItems,
@@ -84,6 +86,8 @@ export const useCurriculumRecommend = () => {
       await syncChain
       if (isEditMode.value || confirmed.value) {
         await curriculumStore.updateConfirmed()
+        // 학습 로드맵 캐시 무효화 — 확정 직후 학습 진입 시 최신 순서 반영
+        studyStore.invalidateRoadmap()
         await router.push({
           name: 'onboarding-curriculum-confirm',
           query: route.query.mode === 'edit' ? { mode: 'edit' } : undefined,
@@ -91,6 +95,7 @@ export const useCurriculumRecommend = () => {
         return
       }
       await curriculumStore.confirm()
+      studyStore.invalidateRoadmap()
       await router.push({ name: 'onboarding-curriculum-confirm' })
     } catch (err) {
       actionError.value = err?.message || '커리큘럼을 확정하지 못했습니다.'

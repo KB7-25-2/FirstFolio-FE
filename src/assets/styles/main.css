@@ -196,7 +196,7 @@
     }
   }
 
-  /* 로드맵 → 대단원(시나리오) 퀴즈: fade-out → 상담실 배경 → fade-in (동일 박자) */
+  /* 로드맵 ↔ 대단원(시나리오) 퀴즈 / 일일퀘스트: fade-out → 상담실 배경 → fade-in */
   .scenario-room-veil {
     background-color: #1a1a2e;
     opacity: 0;
@@ -207,7 +207,7 @@
     opacity: 1;
   }
 
-  /* AppBar / NavBar — 시나리오 퀴즈와 같은 박자 */
+  /* AppBar / NavBar도 시나리오 퀴즈와 같은 박자 */
   .scenario-chrome-leave-active {
     transition:
       opacity var(--scenario-crossfade) ease,
@@ -291,32 +291,10 @@
     padding-bottom: calc(clamp(52px, 8dvh, 72px) + 12px);
   }
 
-  /* Content → Navbar blur (색 없이 blur만) */
+  /* Content → Navbar blur (색 없이 blur만) — 사용자 요청으로 비활성화. main.css 검색해서
+     .nav-content-blur만 찾으면 되니 나머지 규칙은 그대로 남겨뒀다(되돌리기 쉽게). */
   .nav-content-blur {
-    pointer-events: none;
-    position: absolute;
-    right: 0;
-    bottom: 100%;
-    left: 0;
-    z-index: 1;
-    height: clamp(36px, 5.5dvh, 52px);
-    background: transparent;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(0, 0, 0, 0.4) 40%,
-      rgba(0, 0, 0, 0.85) 75%,
-      black 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(0, 0, 0, 0.4) 40%,
-      rgba(0, 0, 0, 0.85) 75%,
-      black 100%
-    );
+    display: none;
   }
 
   /* 상단 앱바 — 아이보리 대시보드 화면(홈/데일리/학습) 공용 */
@@ -470,21 +448,43 @@
   /* 로그인 스플래시 → 폼 스태거 진입 */
   .auth-splash {
     background-color: var(--cork-base);
+    background-image:
+      radial-gradient(ellipse 90% 60% at 50% 35%, rgba(255, 253, 246, 0.7), transparent 62%),
+      radial-gradient(ellipse 50% 40% at 80% 90%, rgba(193, 127, 36, 0.12), transparent 55%);
   }
 
-  .auth-splash__media,
-  .auth-splash__logo {
-    pointer-events: none;
+  .auth-splash__glow {
+    position: absolute;
+    inset: 18% 12% auto;
+    height: 42%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(193, 127, 36, 0.14), transparent 70%);
+    filter: blur(8px);
+    animation: auth-splash-glow 2.2s ease-in-out infinite alternate;
   }
 
-  .auth-splash-cross-enter-active,
-  .auth-splash-cross-leave-active {
-    transition: opacity 0.48s ease;
-  }
-
-  .auth-splash-cross-enter-from,
-  .auth-splash-cross-leave-to {
+  .auth-splash__eyebrow {
     opacity: 0;
+    letter-spacing: 0.22em;
+    animation: auth-splash-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+  }
+
+  .auth-splash__brand {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+    animation: auth-splash-brand 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.28s forwards;
+  }
+
+  .auth-splash__tagline {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: auth-splash-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.55s forwards;
+  }
+
+  .auth-splash__stamp {
+    opacity: 0;
+    transform: scale(0.85) rotate(-12deg);
+    animation: auth-splash-stamp 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) 0.9s forwards;
   }
 
   .auth-splash-leave-active {
@@ -508,11 +508,93 @@
     animation-delay: calc(var(--auth-i, 0) * 120ms);
   }
 
+  @keyframes auth-splash-rise {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes auth-splash-brand {
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes auth-splash-stamp {
+    to {
+      opacity: 1;
+      transform: scale(1) rotate(-8deg);
+    }
+  }
+
+  @keyframes auth-splash-glow {
+    from {
+      opacity: 0.55;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1.04);
+    }
+  }
+
   @keyframes auth-login-enter {
     to {
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  /* 로그인 성공 도장 */
+  .auth-seal--pending {
+    opacity: 0;
+    transform: rotate(-28deg) scale(1.55) translateY(-10px);
+  }
+
+  .auth-seal--stamped {
+    animation: auth-seal-stamp 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15) forwards;
+  }
+
+  .auth-login-stamp {
+    opacity: 0;
+    transform: rotate(-28deg) scale(1.65) translateY(-22px);
+    animation: auth-seal-stamp 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15) 0.08s forwards;
+  }
+
+  .auth-login-stamp span {
+    background-color: rgba(245, 237, 217, 0.28);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  @keyframes auth-seal-stamp {
+    0% {
+      opacity: 0;
+      transform: rotate(-28deg) scale(1.55) translateY(-18px);
+    }
+    55% {
+      opacity: 1;
+      transform: rotate(-10deg) scale(0.94) translateY(1px);
+    }
+    100% {
+      opacity: 0.92;
+      transform: rotate(-12deg) scale(1) translateY(0);
+    }
+  }
+
+  /* 로그인 ↔ 앱 fade-out-in */
+  .auth-page-enter-active,
+  .auth-page-leave-active {
+    transition:
+      opacity 0.42s ease,
+      transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .auth-page-enter-from,
+  .auth-page-leave-to {
+    opacity: 0;
+    transform: scale(0.985);
   }
 
   /* 클립보드 고정 · 종이만 페이드 교체 */
@@ -540,18 +622,40 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .auth-splash__eyebrow,
+    .auth-splash__brand,
+    .auth-splash__tagline,
+    .auth-splash__stamp,
+    .auth-splash__glow,
     .auth-stage--ready .auth-enter {
       animation: none !important;
       opacity: 1 !important;
       transform: none !important;
     }
 
-    .auth-splash-leave-active {
+    .auth-seal--pending {
+      opacity: 0;
+      transform: none;
+    }
+
+    .auth-seal--stamped,
+    .auth-login-stamp {
+      animation: none !important;
+      opacity: 0.92 !important;
+      transform: rotate(-12deg) !important;
+    }
+
+    .auth-page-enter-active,
+    .auth-page-leave-active {
       transition: opacity 0.2s ease;
     }
 
-    .auth-splash-cross-enter-active,
-    .auth-splash-cross-leave-active {
+    .auth-page-enter-from,
+    .auth-page-leave-to {
+      transform: none;
+    }
+
+    .auth-splash-leave-active {
       transition: opacity 0.2s ease;
     }
 
@@ -1064,6 +1168,25 @@
   .cork-btn--ghost:disabled {
     opacity: 0.4;
     box-shadow: none;
+  }
+
+  /* 헤더 보조 액션 pill (교환 내역 / 파산 신청 / 커리큘럼 수정 등) */
+  .chalk-pill-btn {
+    @apply shrink-0 cursor-pointer rounded-full border-[0.5px] px-3 py-1.5 font-serif text-xs font-bold transition-[transform,color,background-color,border-color] duration-200 ease-out;
+    border-color: rgba(193, 127, 36, 0.35);
+    background: #fff8ec;
+    color: #c17f24;
+  }
+
+  .chalk-pill-btn:hover {
+    @apply scale-[1.02];
+    border-color: rgba(193, 127, 36, 0.55);
+    background: #fff3dd;
+    color: #a86b1a;
+  }
+
+  .chalk-pill-btn:active {
+    @apply scale-[0.99];
   }
 }
 
