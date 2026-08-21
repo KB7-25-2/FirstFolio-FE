@@ -105,6 +105,16 @@ export const useStudyStore = defineStore('study', () => {
   /** 기초 수료 여부 — 미수료 시 포트폴리오 탭 잠금 */
   const isFoundationCompletedFlag = computed(() => isFoundationCompleted(curriculumItems.value))
 
+  /** 확정 커리큘럼의 모든 대단원이 COMPLETED인지 */
+  const isCurriculumFullyCompleted = computed(() => {
+    const items = curriculumItems.value.filter((item) => item.status !== 'REMOVED')
+    if (!items.length) {
+      const stages = roadmapStages.value
+      return stages.length > 0 && stages.every((stage) => stage.status === 'COMPLETED')
+    }
+    return items.every((item) => item.status === 'COMPLETED')
+  })
+
   /** 포트폴리오 기능 잠금 (기초 미수료) */
   const isPortfolioLocked = computed(() => !isFoundationCompletedFlag.value)
 
@@ -237,6 +247,13 @@ export const useStudyStore = defineStore('study', () => {
 
   /** store에 로드맵이 없을 때만 API 호출 (기본 진입 경로) */
   const ensureRoadmap = async (options = {}) => fetchRoadmap({ force: false, ...options })
+
+  /** 커리큘럼 수정 후 캐시를 비워 다음 진입에서 서버 순서를 다시 받는다 */
+  const invalidateRoadmap = () => {
+    curriculumItems.value = []
+    roadmapStages.value = []
+    learningItems.value = []
+  }
 
   /**
    * 서버 재조회 없이 store 로드맵의 소단원 진행만 반영
@@ -979,6 +996,7 @@ export const useStudyStore = defineStore('study', () => {
     activeCurriculumItem,
     focusedMainChapterId,
     isFocusedMainChapterCompleted,
+    isCurriculumFullyCompleted,
     foundationItem,
     needsFoundationGuide,
     isFoundationCompleted: isFoundationCompletedFlag,
@@ -1011,6 +1029,7 @@ export const useStudyStore = defineStore('study', () => {
     fetchCurriculum,
     fetchRoadmap,
     ensureRoadmap,
+    invalidateRoadmap,
     patchRoadmapPeriod,
     refreshLearningItems,
     applyLearningItemsFromStage,

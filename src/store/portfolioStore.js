@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as portfolioService from '@/services/portfolioTradeService.js'
 import { getKoreanMarketSession } from '@/utils/koreanMarketSession.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 
 export const usePortfolioStore = defineStore('portfolio', () => {
   const PRODUCT_PRICE_POLLING_INTERVAL_MS = 2_000
@@ -221,10 +222,13 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     await fetchSummary()
   }
 
-  /** 기초 수료 직후 모의투자금 지급 + 요약 갱신 */
+  /** 기초 수료 직후 모의투자금 지급 + 요약·대시보드 갱신 */
   const grantFoundationCash = async () => {
     summary.value = await portfolioService.grantInitialSimulationCash()
     error.value = null
+    const dashboardStore = useDashboardStore()
+    dashboardStore.invalidate()
+    await dashboardStore.fetchDashboard({ force: true })
     return summary.value
   }
 

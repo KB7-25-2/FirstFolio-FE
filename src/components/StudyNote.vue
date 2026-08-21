@@ -1,15 +1,17 @@
 <script setup>
-import { computed, onActivated, onMounted } from 'vue'
+import { computed, onActivated, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/store/dashboardStore.js'
 import { useStudyStore } from '@/store/studyStore.js'
+import { getCurriculumDraft } from '@/services/curriculumService.js'
 import {
   isQuizInProgress,
   isSubChapterFullyCompleted,
   needsQuizAttempt,
 } from '@/utils/subChapterProgress.js'
 import { findStudyNoteFocusIndex } from '@/utils/studyNoteFocus.js'
+import { findRecommendableOutsideCurriculum } from '@/utils/studyNoteRecommend.js'
 import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
@@ -26,7 +28,9 @@ const {
   scenarioQuizReady,
   scenarioQuizItem,
   isFocusedMainChapterCompleted,
+  isCurriculumFullyCompleted,
   focusedMainChapterId,
+  curriculumItems,
 } = storeToRefs(studyStore)
 const {
   learning,
@@ -34,6 +38,35 @@ const {
   isLoading: dashboardLoading,
   error: dashboardError,
 } = storeToRefs(dashboardStore)
+
+/** @type {import('vue').Ref<Array<{ mainChapterId: number, title: string }>>} */
+const recommendableChapters = ref([])
+
+const hasRecommendableChapters = computed(() => recommendableChapters.value.length > 0)
+
+const recommendTitlePreview = computed(() =>
+  recommendableChapters.value
+    .slice(0, 3)
+    .map((item) => item.title)
+    .join(' · '),
+)
+
+const refreshRecommendableChapters = async () => {
+  if (!isCurriculumFullyCompleted.value) {
+    recommendableChapters.value = []
+    return
+  }
+  try {
+    const { data } = await getCurriculumDraft()
+    recommendableChapters.value = findRecommendableOutsideCurriculum({
+      curriculumItems: curriculumItems.value,
+      recommendationCandidates: data.recommendationCandidates,
+      cartCandidates: data.cartCandidates,
+    })
+  } catch {
+    recommendableChapters.value = []
+  }
+}
 
 const loadStudyNote = async () => {
   try {
@@ -46,11 +79,13 @@ const loadStudyNote = async () => {
   if (studyStore.hasRoadmap) {
     if (learningItems.value.length && (continueRoute.value || learningContinueRoute.value)) {
       await studyStore.refreshLearningItems(undefined, { syncProgress: true })
+      await refreshRecommendableChapters()
       return
     }
   }
 
   await studyStore.fetchStudyNote()
+  await refreshRecommendableChapters()
 }
 
 let hasMounted = false
@@ -176,6 +211,11 @@ const goLearning = () => {
   router.push({ name: 'learning' })
 }
 
+const goCurriculumEdit = (event) => {
+  event.stopPropagation()
+  router.push({ name: 'onboarding-curriculum', query: { mode: 'edit' } })
+}
+
 const goScenarioQuiz = (event) => {
   event.stopPropagation()
   const mainChapterId = scenarioQuizItem.value?.mainChapterId ?? focusedMainChapterId.value
@@ -231,11 +271,80 @@ const goScenarioQuiz = (event) => {
             message="학습 현황을 불러오는 중…"
           />
           <div
-            v-else-if="noteError"
+            v-else-if="noteError && !isCurriculumFullyCompleted"
             class="py-10 text-center font-serif text-xs text-[var(--study-total)]"
           >
             {{ noteError }}
           </div>
+
+          <template v-else-if="isCurriculumFullyCompleted">
+            <p
+              class="font-serif text-[10px] font-bold tracking-wide"
+              :class="
+                hasRecommendableChapters
+                  ? 'text-[rgba(193,127,36,0.9)]'
+                  : 'text-[rgba(89,140,82,0.85)]'
+              "
+            >
+              {{ hasRecommendableChapters ? '다음 학습 추천' : '학습 완료' }}
+            </p>
+            <div
+              class="mt-2 flex flex-1 flex-col items-center justify-center rounded-[6px] border-[0.5px] border-dashed px-4 py-8 text-center"
+              :class="
+                hasRecommendableChapters
+                  ? 'border-[rgba(193,127,36,0.45)] bg-[rgba(250,232,168,0.55)]'
+                  : 'border-[rgba(89,140,82,0.45)] bg-[rgba(238,248,234,0.85)]'
+              "
+            >
+              <span
+                class="flex size-11 items-center justify-center rounded-full font-sans text-[22px] text-white"
+                :class="
+                  hasRecommendableChapters
+                    ? 'bg-[#c17f24] shadow-[0_2px_6px_rgba(193,127,36,0.35)]'
+                    : 'bg-[#598c52] shadow-[0_2px_6px_rgba(89,140,82,0.35)]'
+                "
+                aria-hidden="true"
+              >
+                {{ hasRecommendableChapters ? '＋' : '✓' }}
+              </span>
+              <p
+                class="mt-3 font-serif text-[17px] leading-snug font-black"
+                :class="hasRecommendableChapters ? 'text-[#7a4e12]' : 'text-[#2f5a2c]'"
+              >
+                현재 설정하신 모든 커리큘럼을<br />수료하셨습니다!
+              </p>
+              <template v-if="hasRecommendableChapters">
+                <p class="mt-2 font-serif text-[12px] leading-relaxed text-[rgba(122,78,18,0.85)]">
+                  아직 담지 않은 대단원이 있어요.<br />커리큘럼에 추가해 볼까요?
+                </p>
+                <p
+                  v-if="recommendTitlePreview"
+                  class="mt-2 max-w-full truncate font-serif text-[11px] font-bold text-[#c17f24]"
+                >
+                  {{ recommendTitlePreview }}{{ recommendableChapters.length > 3 ? ' …' : '' }}
+                </p>
+                <button
+                  type="button"
+                  class="mt-5 rounded bg-[#c17f24] px-3 py-1.5 font-serif text-[11px] font-bold text-white transition-transform duration-150 hover:scale-[1.02] active:scale-[0.97]"
+                  @click.stop="goCurriculumEdit"
+                >
+                  커리큘럼에 담기 →
+                </button>
+              </template>
+              <template v-else>
+                <p class="mt-2 font-serif text-[12px] leading-relaxed text-[rgba(61,107,56,0.8)]">
+                  다음 업데이트를 기다려주세요!
+                </p>
+                <button
+                  type="button"
+                  class="mt-5 rounded bg-[rgba(89,140,82,0.92)] px-3 py-1.5 font-serif text-[11px] font-bold text-white transition-transform duration-150 hover:scale-[1.02] active:scale-[0.97]"
+                  @click.stop="goLearning"
+                >
+                  로드맵 다시 보기 →
+                </button>
+              </template>
+            </div>
+          </template>
 
           <template v-else>
             <p class="font-serif text-[10px] font-bold tracking-wide text-[var(--study-muted)]">

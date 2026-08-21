@@ -26,15 +26,19 @@ export const getLearningRoadmap = async () => {
       throw new StudyApiError('CURRICULUM_NOT_FOUND', '확정된 커리큘럼이 없다.', 404)
     }
 
-    const curriculumItems = rawItems.map(mapRoadmapChapterItem)
-    const stages = rawItems.map((item) => {
-      const chapter = mapRoadmapChapterItem(item)
-      const subChapters = (item.sub_chapters ?? item.subChapters ?? []).map((row) =>
-        mapRoadmapSubChapter(row, chapter.mainChapterId),
-      )
-      const mainChapterQuiz = item.main_chapter_quiz ?? item.mainChapterQuiz ?? null
-      return buildRoadmapStage(chapter, subChapters, mainChapterQuiz)
-    })
+    const curriculumItems = rawItems
+      .map(mapRoadmapChapterItem)
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+    const stages = rawItems
+      .map((item) => {
+        const chapter = mapRoadmapChapterItem(item)
+        const subChapters = (item.sub_chapters ?? item.subChapters ?? []).map((row) =>
+          mapRoadmapSubChapter(row, chapter.mainChapterId),
+        )
+        const mainChapterQuiz = item.main_chapter_quiz ?? item.mainChapterQuiz ?? null
+        return buildRoadmapStage(chapter, subChapters, mainChapterQuiz)
+      })
+      .sort((a, b) => a.displayOrder - b.displayOrder)
 
     return { data: { curriculumItems, stages } }
   } catch (error) {
