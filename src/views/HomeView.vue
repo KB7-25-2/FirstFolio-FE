@@ -83,7 +83,7 @@ onActivated(() => {
   <div class="cork-board flex h-full flex-col overflow-hidden">
     <div
       data-scroll-reveal-root
-      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-5"
+      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-4"
     >
       <div class="flex shrink-0 items-center justify-between gap-3">
         <div class="min-w-0">

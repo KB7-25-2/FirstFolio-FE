@@ -54,13 +54,18 @@ const handleResetConfirm = async () => {
 
 <template>
   <div class="cork-board flex h-full flex-col overflow-hidden">
-    <header class="chalk-header shrink-0 px-5 pt-5">
+    <header class="chalk-header shrink-0 px-5 pt-4">
       <div class="flex w-full items-center justify-between gap-2">
         <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
-              {{ subtitle }}
-            </p>
+          <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
+            {{ subtitle }}
+          </p>
+          <div class="mt-1 flex min-w-0 items-center gap-2">
+            <h1
+              class="chalk-header__title truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
+            >
+              {{ title }}
+            </h1>
             <span
               class="shrink-0 rounded-full px-1.5 py-0.5 font-serif text-[9px] font-bold"
               :class="
@@ -73,11 +78,6 @@ const handleResetConfirm = async () => {
               {{ marketSession.label }}
             </span>
           </div>
-          <h1
-            class="chalk-header__title mt-1 truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
-          >
-            {{ title }}
-          </h1>
         </div>
 
         <button

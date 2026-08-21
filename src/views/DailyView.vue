@@ -14,16 +14,21 @@ const todayLabel = computed(() => formatKoreanDate())
   <div class="cork-board flex h-full flex-col overflow-hidden">
     <div
       data-scroll-reveal-root
-      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-5"
+      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-5 pt-4"
     >
-      <div class="shrink-0">
-        <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
+      <header class="chalk-header shrink-0">
+        <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
           {{ todayLabel }}
         </p>
-        <p class="mt-0.5 font-serif text-[12px] text-[var(--cork-ink-muted)]">
+        <h1
+          class="chalk-header__title mt-1 truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
+        >
+          데일리
+        </h1>
+        <p class="mt-1.5 font-serif text-xs text-[rgba(41,33,26,0.55)]">
           오늘의 퀘스트와 금융 뉴스
         </p>
-      </div>
+      </header>
 
       <ScrollReveal class="flex justify-center">
         <DailyQuestNote />

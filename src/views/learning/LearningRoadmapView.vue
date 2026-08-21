@@ -350,22 +350,29 @@ onActivated(async () => {
     <div v-else-if="hasRoadmap" class="flex min-h-0 flex-1 flex-col gap-3">
       <!-- 고정: 소개 + 전체 진행 -->
       <div class="shrink-0 space-y-3">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <p class="font-serif text-[10px] tracking-wide text-[var(--cork-ink-faint)]">
-              나만의 금융 커리큘럼
-            </p>
-            <p class="mt-0.5 font-serif text-[11px] text-[var(--cork-ink-muted)]">
-              대단원마다 소단원 진행을 확인하고 이어서 학습해요
-            </p>
+        <header class="chalk-header">
+          <div class="flex w-full items-center justify-between gap-2">
+            <div class="min-w-0">
+              <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
+                나만의 금융 커리큘럼
+              </p>
+              <h1
+                class="chalk-header__title mt-1 truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
+              >
+                학습
+              </h1>
+            </div>
+            <RouterLink
+              :to="{ name: 'onboarding-curriculum', query: { mode: 'edit' } }"
+              class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24] underline-offset-2 hover:underline"
+            >
+              커리큘럼 수정
+            </RouterLink>
           </div>
-          <RouterLink
-            :to="{ name: 'onboarding-curriculum', query: { mode: 'edit' } }"
-            class="shrink-0 font-serif text-[11px] font-bold text-[#c17f24] underline-offset-2 hover:underline"
-          >
-            커리큘럼 수정
-          </RouterLink>
-        </div>
+          <p class="mt-1.5 font-serif text-xs text-[rgba(41,33,26,0.55)]">
+            대단원마다 소단원 진행을 확인하고 이어서 학습해요
+          </p>
+        </header>
 
         <p v-if="actionError" class="font-serif text-sm text-red-700">{{ actionError }}</p>
 
