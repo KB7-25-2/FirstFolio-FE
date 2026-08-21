@@ -3,12 +3,20 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/authStore.js'
 import { ONBOARDING_PATHS, resolveAuthEntryPath } from '@/router/onboardingRedirect.js'
 
+/** 도장 애니메이션 후 라우팅까지 대기 (ms) */
+const LOGIN_STAMP_HOLD_MS = 720
+
 /**
  * @param {string | undefined} onboardingStep POST /auth/login 응답
  * @param {string} fallbackHome
  */
 const resolveLoginRedirect = (onboardingStep, fallbackHome) =>
   resolveAuthEntryPath({ onboardingStep, fallbackHome })
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const useLoginView = () => {
   const route = useRoute()
@@ -28,6 +36,8 @@ export const useLoginView = () => {
   const rememberMe = ref(Boolean(authStore.rememberedEmail))
   const error = ref('')
   const isLoading = ref(false)
+  /** 로그인 성공 도장 연출 */
+  const loginSuccess = ref(false)
 
   const todayLabel = computed(() => {
     const now = new Date()
@@ -46,7 +56,7 @@ export const useLoginView = () => {
   )
 
   const switchTab = (tab) => {
-    if (isLoading.value) return
+    if (isLoading.value || loginSuccess.value) return
     activeTab.value = tab
     error.value = ''
     isSignupRequiredFlow.value = false
@@ -60,8 +70,15 @@ export const useLoginView = () => {
     signupMethod.value = method
   }
 
+  const finishLoginWithCeremony = async (path) => {
+    loginSuccess.value = true
+    isLoading.value = false
+    await wait(prefersReducedMotion() ? 0 : LOGIN_STAMP_HOLD_MS)
+    await router.push(path)
+  }
+
   const handleLogin = async () => {
-    if (isLoading.value) return
+    if (isLoading.value || loginSuccess.value) return
     isLoading.value = true
     error.value = ''
 
@@ -75,7 +92,7 @@ export const useLoginView = () => {
       )
 
       const path = resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
-      await router.push(path)
+      await finishLoginWithCeremony(path)
     } catch (err) {
       if (err?.code === 'SIGNUP_REQUIRED') {
         isSignupRequiredFlow.value = true
@@ -97,14 +114,14 @@ export const useLoginView = () => {
   }
 
   const handleGoogleLogin = async () => {
-    if (isLoading.value) return
+    if (isLoading.value || loginSuccess.value) return
     isLoading.value = true
     error.value = ''
 
     try {
       const data = await authStore.loginWithGoogle({ onDismissed: unlockIfPopupDismissed })
       const path = resolveLoginRedirect(data.onboardingStep, fallbackHome.value)
-      await router.push(path)
+      await finishLoginWithCeremony(path)
     } catch (err) {
       if (err?.code === 'SIGNUP_REQUIRED') {
         isSignupRequiredFlow.value = true
@@ -219,6 +236,7 @@ export const useLoginView = () => {
     rememberMe,
     error,
     isLoading,
+    loginSuccess,
     todayLabel,
     isLogin,
     clipboardHeader,

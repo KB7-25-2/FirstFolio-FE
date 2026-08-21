@@ -32,6 +32,7 @@ const {
   rememberMe,
   error,
   isLoading,
+  loginSuccess,
   isLogin,
   clipboardHeader,
   signatureName,
@@ -42,7 +43,12 @@ const {
   setSignupMethod,
 } = useLoginView()
 
-const stageClass = computed(() => (loginReady.value ? 'auth-stage--ready' : ''))
+const stageClass = computed(() => {
+  const classes = []
+  if (loginReady.value) classes.push('auth-stage--ready')
+  if (loginSuccess.value) classes.push('auth-stage--success')
+  return classes.join(' ')
+})
 
 /** 서류 교체 방향: next = 앞으로(로그인→가입), prev = 뒤로(가입→로그인) */
 const docDir = ref('next')
@@ -54,7 +60,7 @@ const docTransition = computed(() =>
 )
 
 const handleDocTab = (tab) => {
-  if (tab === activeTab.value || isLoading.value || showSplash.value) return
+  if (tab === activeTab.value || isLoading.value || showSplash.value || loginSuccess.value) return
   docDir.value = tab === 'signup' ? 'next' : 'prev'
   switchTab(tab)
 }
@@ -76,7 +82,7 @@ watch(signupStep, (step, prev) => {
     >
       <!-- 구글 팝업 등 인증 진행 중: 화면 전체 입력 차단 -->
       <div
-        v-if="isLoading"
+        v-if="isLoading && !loginSuccess"
         class="absolute inset-0 z-30 cursor-wait bg-[rgba(44,24,16,0.06)]"
         aria-hidden="true"
       />
@@ -86,7 +92,7 @@ watch(signupStep, (step, prev) => {
       <div class="auth-enter mt-3 shrink-0" style="--auth-i: 1">
         <AuthDocTabs
           :model-value="activeTab"
-          :disabled="isLoading || showSplash"
+          :disabled="isLoading || showSplash || loginSuccess"
           @update:model-value="handleDocTab"
         />
       </div>
@@ -94,7 +100,7 @@ watch(signupStep, (step, prev) => {
       <div class="auth-enter mt-5 min-h-0 w-full flex-1 overflow-y-auto" style="--auth-i: 2">
         <form
           class="flex flex-col items-center"
-          :aria-disabled="isLoading || showSplash"
+          :aria-disabled="isLoading || showSplash || loginSuccess"
           @submit.prevent="handleSubmit"
         >
           <AuthClipboardBoard
@@ -104,7 +110,7 @@ watch(signupStep, (step, prev) => {
           >
             <!-- 로그인 -->
             <template v-if="isLogin">
-              <div class="flex flex-col gap-1.5">
+              <div class="relative flex flex-col gap-1.5">
                 <AuthDocDivider />
 
                 <h2
@@ -121,7 +127,7 @@ watch(signupStep, (step, prev) => {
                   type="email"
                   placeholder="email@example.com"
                   autocomplete="email"
-                  :disabled="isLoading || showSplash"
+                  :disabled="isLoading || showSplash || loginSuccess"
                 />
 
                 <AuthDocField
@@ -132,15 +138,18 @@ watch(signupStep, (step, prev) => {
                   placeholder="※ ※ ※ ※ ※ ※ ※ ※"
                   autocomplete="current-password"
                   mask-password
-                  :disabled="isLoading || showSplash"
+                  :disabled="isLoading || showSplash || loginSuccess"
                 />
 
                 <div class="flex items-center justify-between pb-2">
-                  <AuthRememberCheck v-model="rememberMe" :disabled="isLoading || showSplash" />
+                  <AuthRememberCheck
+                    v-model="rememberMe"
+                    :disabled="isLoading || showSplash || loginSuccess"
+                  />
                   <button
                     type="button"
                     class="cursor-pointer font-serif text-[9px] text-[var(--auth-doc-link)] underline hover:bg-white/70 focus:bg-white/70 disabled:cursor-not-allowed disabled:opacity-50"
-                    :disabled="isLoading || showSplash"
+                    :disabled="isLoading || showSplash || loginSuccess"
                     @click="handleForgotPassword"
                   >
                     비밀번호를 잊으셨습니까?
@@ -152,19 +161,31 @@ watch(signupStep, (step, prev) => {
                 <AuthMethodCard
                   title="Google로 로그인하기"
                   description="Google 계정으로 간편하게 입장합니다."
-                  :disabled="isLoading || showSplash"
+                  :disabled="isLoading || showSplash || loginSuccess"
                   @select="handleGoogleContinue"
                 />
 
                 <AuthEnterCta
                   type="submit"
                   label="입장하기  →"
-                  :disabled="isLoading || showSplash"
+                  :disabled="isLoading || showSplash || loginSuccess"
                 />
 
                 <p class="text-center font-serif text-[8px] text-[var(--auth-doc-faint)]">
                   본 문서는 Firstfolio 입장 절차에 따라 발급되었습니다.
                 </p>
+
+                <div
+                  v-if="loginSuccess"
+                  class="auth-login-stamp pointer-events-none absolute top-[38%] right-[6%] z-10"
+                  aria-hidden="true"
+                >
+                  <span
+                    class="block rounded border-[2.5px] border-[var(--cork-stamp-border)] px-3.5 py-1.5 font-serif text-[22px] font-black tracking-[4px] text-[var(--cork-stamp)]"
+                  >
+                    승인
+                  </span>
+                </div>
               </div>
             </template>
 

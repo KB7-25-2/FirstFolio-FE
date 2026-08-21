@@ -515,6 +515,56 @@
     }
   }
 
+  /* 로그인 성공 도장 */
+  .auth-seal--pending {
+    opacity: 0;
+    transform: rotate(-28deg) scale(1.55) translateY(-10px);
+  }
+
+  .auth-seal--stamped {
+    animation: auth-seal-stamp 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15) forwards;
+  }
+
+  .auth-login-stamp {
+    opacity: 0;
+    transform: rotate(-28deg) scale(1.65) translateY(-22px);
+    animation: auth-seal-stamp 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15) 0.08s forwards;
+  }
+
+  .auth-login-stamp span {
+    background-color: rgba(245, 237, 217, 0.28);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  @keyframes auth-seal-stamp {
+    0% {
+      opacity: 0;
+      transform: rotate(-28deg) scale(1.55) translateY(-18px);
+    }
+    55% {
+      opacity: 1;
+      transform: rotate(-10deg) scale(0.94) translateY(1px);
+    }
+    100% {
+      opacity: 0.92;
+      transform: rotate(-12deg) scale(1) translateY(0);
+    }
+  }
+
+  /* 로그인 ↔ 앱 fade-out-in */
+  .auth-page-enter-active,
+  .auth-page-leave-active {
+    transition:
+      opacity 0.42s ease,
+      transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .auth-page-enter-from,
+  .auth-page-leave-to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
   /* 클립보드 고정 · 종이만 페이드 교체 */
   .auth-paper-stage {
     transform-origin: 50% 0%;
@@ -544,6 +594,28 @@
       animation: none !important;
       opacity: 1 !important;
       transform: none !important;
+    }
+
+    .auth-seal--pending {
+      opacity: 0;
+      transform: none;
+    }
+
+    .auth-seal--stamped,
+    .auth-login-stamp {
+      animation: none !important;
+      opacity: 0.92 !important;
+      transform: rotate(-12deg) !important;
+    }
+
+    .auth-page-enter-active,
+    .auth-page-leave-active {
+      transition: opacity 0.2s ease;
+    }
+
+    .auth-page-enter-from,
+    .auth-page-leave-to {
+      transform: none;
     }
 
     .auth-splash-leave-active {
