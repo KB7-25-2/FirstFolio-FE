@@ -28,7 +28,7 @@ const buyError = ref(null)
 const tradeResult = ref(null) // 거래 완료 모달에 넘길 값(상품명·자산군 포함)
 
 onMounted(() => {
-  if (!store.purchasableProducts.length) store.refreshProductPrices()
+  store.fetchPurchasableProducts().then(() => store.hydrateProductPrices())
   if (!store.summary) store.fetchSummary()
 })
 
@@ -159,7 +159,9 @@ const closeTradeResult = () => {
     <p v-else-if="store.isLoading" class="font-serif text-sm text-[rgba(41,33,26,0.45)]">
       불러오는 중…
     </p>
-    <p v-else class="font-serif text-sm text-[rgba(41,33,26,0.45)]">해당 자산군의 상품이 없어요.</p>
+    <div v-else class="flex flex-1 flex-col items-center justify-center py-16 text-center">
+      <p class="font-serif text-base text-[rgba(41,33,26,0.5)]">해당 자산군의 상품이 없어요.</p>
+    </div>
 
     <BuyProductModal
       v-if="buyTargetProduct && store.summary"

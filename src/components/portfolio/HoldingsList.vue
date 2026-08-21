@@ -19,7 +19,7 @@ defineEmits(['request-sell'])
       보유 목록
     </p>
 
-    <ul class="mt-3 flex flex-col gap-2.5">
+    <ul v-if="holdings.length" class="mt-3 flex flex-col gap-2.5">
       <HoldingItem
         v-for="holding in holdings"
         :key="holding.holdingId"
@@ -27,5 +27,8 @@ defineEmits(['request-sell'])
         @request-sell="$emit('request-sell', $event)"
       />
     </ul>
+    <div v-else class="flex flex-col items-center justify-center py-10 text-center">
+      <p class="font-serif text-base text-[rgba(41,33,26,0.5)]">보유 중인 상품이 없어요.</p>
+    </div>
   </section>
 </template>

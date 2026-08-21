@@ -16,6 +16,9 @@ import penguin from '@/assets/study/penguin.png'
 import BaseLoading from '@/components/BaseLoading.vue'
 import MemoPin from '@/components/MemoPin.vue'
 
+/** public/ 자산 — 정적 src="/…" 는 Vitest에서 file:///… 로 깨짐 */
+const celebrationGif = `${import.meta.env.BASE_URL}dance.gif`
+
 const dashboardStore = useDashboardStore()
 const studyStore = useStudyStore()
 const router = useRouter()
@@ -297,8 +300,8 @@ const goScenarioQuiz = (event) => {
               "
             >
               <img
-                src="/dance.gif"
-                alt="dance"
+                :src="celebrationGif"
+                alt=""
                 class="max-h-[100px] w-[100px] select-none object-contain"
                 width="100"
                 height="100"

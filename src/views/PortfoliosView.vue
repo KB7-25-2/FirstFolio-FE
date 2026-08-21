@@ -1,7 +1,7 @@
 <script setup>
 defineOptions({ name: 'PortfoliosView' })
 
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import PortfolioTabs from '@/components/portfolio/PortfolioTabs.vue'
 import BankruptcyConfirmModal from '@/components/portfolio/BankruptcyConfirmModal.vue'
@@ -13,19 +13,11 @@ const store = usePortfolioStore()
 const title = computed(() => route.meta.title ?? '포트폴리오')
 const subtitle = computed(() => route.meta.subtitle ?? '')
 const showBankruptcyAction = computed(() => Boolean(route.meta.showBankruptcyAction))
-const marketSession = computed(() => store.marketSession)
 
 const isBankruptcyModalOpen = ref(false)
 const isResetting = ref(false)
 const resetError = ref(null)
-
-onMounted(() => {
-  store.startProductPricePolling()
-})
-
-onUnmounted(() => {
-  store.stopProductPricePolling()
-})
+const marketSession = computed(() => store.getKoreanMarketSession())
 
 const openBankruptcyModal = () => {
   resetError.value = null
@@ -80,6 +72,8 @@ const handleResetConfirm = async () => {
           </div>
         </div>
 
+        <!-- 도장(rotate) 스타일 대신 PointMarketView의 "교환 내역" 버튼과 같은
+             둥근 필(pill) 디자인으로 통일(#84). -->
         <button
           v-if="showBankruptcyAction"
           type="button"

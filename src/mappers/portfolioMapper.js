@@ -15,7 +15,9 @@ const RISK_LEVEL_LABEL = {
 // real_terms.interest_interval enum → 한글 표현. 문서 예시엔 MONTHLY만 나와있어 나머지는 추정치.
 // 백엔드 DepositSavingCollector에서 실제로 확인된 값은 MATURITY뿐이다(예금은 만기 시 일괄 지급만
 // 구현돼 있음). DAILY/QUARTERLY/YEARLY는 다른 상품에서 쓰일 수 있어 추정치로 남겨둔다.
-const INTEREST_INTERVAL_LABEL = {
+// formatCycleSummary는 더 이상 이걸 안 쓰지만(실제 기간 정보 제거 — #82), 시간 압축 탭은
+// 실제 조건을 별도로 보여줘야 해서(#83) export해서 그쪽에서 재사용한다.
+export const INTEREST_INTERVAL_LABEL = {
   MATURITY: '만기 시 일괄',
   DAILY: '매일',
   MONTHLY: '월 1회',
@@ -29,7 +31,10 @@ const formatHours = (hours) => {
   return `${hours}시간`
 }
 
-// simulation_terms/real_terms를 "서비스 6일 만기 · 실제 6개월 만기" 같은 한 줄 문구로 조합한다.
+// simulation_terms(서비스 내 압축 기간)만 "1일 만기 · 1일마다 이자" 같은 한 줄 문구로 조합한다.
+// 실제(real_terms) 만기·이자 정보는 화면에서 빼기로 함(사용자 요청) — 서비스 안에서 체감하는
+// 기간만 보여주고, "서비스"라는 접두어도 군더더기라 뺐다. real_terms 파라미터는 함수 시그니처만
+// 유지한다(다른 곳에서 realTerms를 직접 쓰는 mapFinancialProduct 등은 별도로 노출 중).
 // 시간압축 예외는 STOCK·FUND 둘 다다 — 백엔드 AssetType.isTimeCompressed()가 진짜 기준이며
 // DEPOSIT_SAVINGS/BOND만 true를 반환한다. API_DOCS.md 텍스트가 "STOCK인 경우만"이라고 된 건
 // 문서가 아직 최신화 안 된 상태(펀드를 ETF로 대체하기로 한 뒤 만기가 없어져 압축 대상에서
@@ -40,23 +45,21 @@ export const formatCycleSummary = (simulationTerms, realTerms) => {
 
   const parts = []
   if (simulationTerms.service_maturity_hours != null) {
-    parts.push(`서비스 ${formatHours(simulationTerms.service_maturity_hours)} 만기`)
+    parts.push(`${formatHours(simulationTerms.service_maturity_hours)} 만기`)
   }
-  if (simulationTerms.service_interest_interval_hours != null) {
+
+  // 이자 지급 간격이 만기 시간과 똑같으면(=중간 지급 없이 만기 때 한 번에 준다) "N일마다 이자"라고
+  // 쓰면 마치 주기적으로 지급되는 것처럼 오해를 준다. 예·적금(interest_interval: MATURITY)이
+  // 여기 해당 — service_interest_interval_hours가 항상 service_maturity_hours와 같게 온다.
+  // 진짜 주기 지급인 이표채만 "N일마다 이자"로 남긴다.
+  const isMaturityLumpSum =
+    simulationTerms.service_interest_interval_hours != null &&
+    simulationTerms.service_interest_interval_hours === simulationTerms.service_maturity_hours
+
+  if (isMaturityLumpSum) {
+    parts.push('만기 이자')
+  } else if (simulationTerms.service_interest_interval_hours != null) {
     parts.push(`${formatHours(simulationTerms.service_interest_interval_hours)}마다 이자`)
-  }
-  if (realTerms.maturity_months != null) {
-    parts.push(`실제 ${realTerms.maturity_months}개월 만기`)
-  }
-  // 예·적금: interest_interval이 문자열 enum("MATURITY" 등). 채권: BondRealTerms 기준
-  // interest_interval_months가 숫자(개월)로 온다 — 필드명 자체가 다르다. 복리채는 중간 지급이
-  // 없어 이 필드가 아예 null이라(백엔드 주석 확인), 그 경우는 문구를 안 붙인다.
-  if (realTerms.interest_interval != null) {
-    const label =
-      INTEREST_INTERVAL_LABEL[realTerms.interest_interval] ?? realTerms.interest_interval
-    parts.push(`실제 ${label} 이자`)
-  } else if (realTerms.interest_interval_months != null) {
-    parts.push(`실제 ${realTerms.interest_interval_months}개월마다 이자`)
   }
 
   return parts.length ? parts.join(' · ') : null
