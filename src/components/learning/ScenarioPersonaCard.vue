@@ -24,7 +24,7 @@ defineProps({
         class="min-h-[34px] flex-1 overflow-hidden rounded-md bg-[rgba(255,255,255,0.12)] px-2 py-1"
       >
         <p class="text-[8px] text-[#bfb8a8]">나이</p>
-        <p class="text-[11px] font-bold text-[#f5edd9]">{{ age }}세</p>
+        <p class="text-[11px] font-bold text-[#f5edd9]">{{ age }}</p>
       </div>
       <div
         class="min-h-[34px] flex-1 overflow-hidden rounded-md bg-[rgba(255,255,255,0.12)] px-2 py-1"
