@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as portfolioService from '@/services/portfolioTradeService.js'
+import { getKoreanMarketSession } from '@/utils/koreanMarketSession.js'
+import { useDashboardStore } from '@/store/dashboardStore.js'
 
 export const usePortfolioStore = defineStore('portfolio', () => {
   const summary = ref(null)
@@ -164,6 +166,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     })
     summary.value = updatedSummary
     lastTradeResult.value = tradeResult
+    await syncDashboardAfterPortfolioChange()
     return tradeResult
   }
 
@@ -176,6 +179,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     })
     summary.value = updatedSummary
     lastTradeResult.value = tradeResult
+    await syncDashboardAfterPortfolioChange()
     return tradeResult
   }
 
@@ -185,10 +189,22 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     await fetchSummary()
   }
 
-  /** 기초 수료 직후 모의투자금 지급 + 요약 갱신 */
+  /** 홈 PortfolioSummary가 최신 배분·총자산을 쓰도록 대시보드 캐시 갱신 */
+  const syncDashboardAfterPortfolioChange = async () => {
+    const dashboardStore = useDashboardStore()
+    dashboardStore.invalidate()
+    try {
+      await dashboardStore.fetchDashboard({ force: true })
+    } catch {
+      // 거래는 이미 성공 — 대시보드 재조회 실패는 홈 재진입 시 ensure로 복구
+    }
+  }
+
+  /** 기초 수료 직후 모의투자금 지급 + 요약·대시보드 갱신 */
   const grantFoundationCash = async () => {
     summary.value = await portfolioService.grantInitialSimulationCash()
     error.value = null
+    await syncDashboardAfterPortfolioChange()
     return summary.value
   }
 
@@ -288,5 +304,6 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     allocationView,
     totalAssetsDisplay,
     fetchPortfolioSummary,
+    getKoreanMarketSession,
   }
 })

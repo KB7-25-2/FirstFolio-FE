@@ -17,6 +17,7 @@ const showBankruptcyAction = computed(() => Boolean(route.meta.showBankruptcyAct
 const isBankruptcyModalOpen = ref(false)
 const isResetting = ref(false)
 const resetError = ref(null)
+const marketSession = computed(() => store.getKoreanMarketSession())
 
 const openBankruptcyModal = () => {
   resetError.value = null
@@ -45,17 +46,30 @@ const handleResetConfirm = async () => {
 
 <template>
   <div class="cork-board flex h-full flex-col overflow-hidden">
-    <header class="chalk-header shrink-0 px-5 pt-5">
+    <header class="chalk-header shrink-0 px-5 pt-4">
       <div class="flex w-full items-center justify-between gap-2">
         <div class="min-w-0">
-          <h1
-            class="chalk-header__title truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
-          >
-            {{ title }}
-          </h1>
-          <p class="mt-1 font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
+          <p class="font-serif text-[10px] tracking-wide text-[var(--chalk-text-muted)]">
             {{ subtitle }}
           </p>
+          <div class="mt-1 flex min-w-0 items-center gap-2">
+            <h1
+              class="chalk-header__title truncate font-pen text-[26px] leading-none font-normal text-[var(--chalk-text)]"
+            >
+              {{ title }}
+            </h1>
+            <span
+              class="shrink-0 rounded-full px-1.5 py-0.5 font-serif text-[9px] font-bold"
+              :class="
+                marketSession.isOpen
+                  ? 'bg-[rgba(89,140,82,0.28)] text-[#d7f0cf]'
+                  : 'bg-[rgba(240,217,160,0.2)] text-[var(--chalk-text-muted)]'
+              "
+              :title="marketSession.scheduleLabel"
+            >
+              {{ marketSession.label }}
+            </span>
+          </div>
         </div>
 
         <!-- 도장(rotate) 스타일 대신 PointMarketView의 "교환 내역" 버튼과 같은
@@ -63,7 +77,7 @@ const handleResetConfirm = async () => {
         <button
           v-if="showBankruptcyAction"
           type="button"
-          class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.35)] bg-[#fff8ec] px-3 py-1.5 font-serif text-xs font-bold text-[#c17f24]"
+          class="chalk-pill-btn"
           @click="openBankruptcyModal"
         >
           파산 신청

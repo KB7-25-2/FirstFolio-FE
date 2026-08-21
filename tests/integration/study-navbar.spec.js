@@ -27,7 +27,7 @@ vi.mock('@/api/user/studyApi.js', async (importOriginal) => {
 })
 
 import { useStudyStore } from '@/store/studyStore.js'
-import { __setMockLearningProfile, getCurriculum } from '@/services/studyService.js'
+import { getCurriculum } from '@/services/studyService.js'
 import AppNavbar from '@/components/AppNavbar.vue'
 
 const roadmapFixture = {
@@ -91,7 +91,17 @@ describe('studyService + studyStore (integration)', () => {
     getRoadmap.mockResolvedValue({
       data: { data: roadmapFixture },
     })
-    getContinuePositionApi.mockRejectedValue(new Error('network'))
+    getContinuePositionApi.mockResolvedValue({
+      data: {
+        data: {
+          main_chapter_id: 2,
+          sub_chapter_id: 103,
+          last_page_id: 'page-2',
+          progress_percent: 50,
+          route: '/learning/sub-chapters/103?page=page-2',
+        },
+      },
+    })
   })
 
   it('getCurriculum이 ACTIVE 대단원을 포함한다', async () => {
@@ -116,7 +126,6 @@ describe('studyService + studyStore (integration)', () => {
 describe('AppNavbar (integration)', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    __setMockLearningProfile('mid-curriculum')
   })
 
   it('5개 탭 라벨을 렌더링한다', async () => {

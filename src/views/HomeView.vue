@@ -16,7 +16,6 @@ import FoundationGuideOverlay from '@/components/FoundationGuideOverlay.vue'
 import FoundationUnlockCeremony from '@/components/FoundationUnlockCeremony.vue'
 import BaseToast from '@/components/BaseToast.vue'
 import { useFoundationGuide } from '@/composables/useFoundationGuide.js'
-import { __setMockLearningProfile } from '@/services/studyService.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -57,8 +56,6 @@ const closePortfolioLockedToast = () => {
 }
 
 const confirmUnlockPreview = async () => {
-  // 미리보기: 기초 수료 상태로 맞춘 뒤 지급·포트폴리오 진입
-  __setMockLearningProfile('mid-curriculum')
   await studyStore.fetchCurriculum()
   await portfolioStore.grantFoundationCash()
   studyStore.clearFoundationUnlock()
@@ -83,7 +80,7 @@ onActivated(() => {
   <div class="cork-board flex h-full flex-col overflow-hidden">
     <div
       data-scroll-reveal-root
-      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-5"
+      class="nav-scroll-pad flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-4"
     >
       <div class="flex shrink-0 items-center justify-between gap-3">
         <div class="min-w-0">
@@ -94,11 +91,6 @@ onActivated(() => {
             {{ greeting }}
           </p>
         </div>
-        <span
-          class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.4)] bg-[rgba(193,127,36,0.08)] px-2.5 py-1 font-serif text-[12px] whitespace-nowrap text-[var(--nav-active-primary)]"
-        >
-          오늘 출석 완료
-        </span>
       </div>
 
       <ScrollReveal class="flex justify-center">

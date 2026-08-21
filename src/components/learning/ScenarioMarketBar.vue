@@ -26,10 +26,6 @@ const expanded = ref(false)
         />
         <span class="font-serif text-[13px] font-medium text-[#f9fafb]">{{ title }}</span>
       </span>
-      <span class="flex items-center gap-2 text-[12px] text-[#6b7380]">
-        <span v-if="date">{{ date }}</span>
-        <span>{{ expanded ? '⌃' : '⌄' }}</span>
-      </span>
     </button>
     <div v-show="expanded" class="border-t border-[rgba(255,255,255,0.08)] px-[18px] pt-2 pb-4">
       <ul v-if="bullets.length" class="flex flex-col gap-1">

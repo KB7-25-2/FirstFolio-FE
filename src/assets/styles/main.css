@@ -2,8 +2,29 @@
 @import './tokens.css';
 
 @layer base {
+  html {
+    --scenario-crossfade: 300ms;
+    background-color: var(--cork-base);
+  }
+
   body {
     @apply h-dvh overflow-hidden bg-[var(--cork-base)] font-sans text-[var(--cork-ink)];
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+  }
+
+  html.scenario-room,
+  html.scenario-room body {
+    background-color: #1a1a2e;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      --scenario-crossfade: 0ms;
+    }
   }
 
   * {
@@ -171,6 +192,83 @@
     .nav-tab-next-enter-from,
     .nav-tab-prev-leave-to,
     .nav-tab-prev-enter-from {
+      transform: none;
+    }
+  }
+
+  /* 로드맵 ↔ 대단원(시나리오) 퀴즈 / 일일퀘스트: fade-out → 상담실 배경 → fade-in */
+  .scenario-room-veil {
+    background-color: #1a1a2e;
+    opacity: 0;
+    transition: opacity var(--scenario-crossfade) ease-out;
+  }
+
+  .scenario-room-veil.is-on {
+    opacity: 1;
+  }
+
+  /* AppBar / NavBar도 시나리오 퀴즈와 같은 박자 */
+  .scenario-chrome-leave-active {
+    transition:
+      opacity var(--scenario-crossfade) ease,
+      transform var(--scenario-crossfade) ease;
+  }
+
+  .scenario-chrome-enter-active {
+    transition:
+      opacity var(--scenario-crossfade) ease var(--scenario-crossfade),
+      transform var(--scenario-crossfade) ease var(--scenario-crossfade);
+  }
+
+  .scenario-chrome-enter-from,
+  .scenario-chrome-leave-to {
+    opacity: 0;
+  }
+
+  .app-topbar.scenario-chrome-enter-from,
+  .app-topbar.scenario-chrome-leave-to {
+    transform: translateY(-10px);
+  }
+
+  .nav-dock.scenario-chrome-enter-from,
+  .nav-dock.scenario-chrome-leave-to {
+    transform: translateY(16px);
+  }
+
+  .scenario-chrome-leave-active.app-topbar,
+  .scenario-chrome-enter-active.app-topbar {
+    z-index: 30;
+  }
+
+  .scenario-route-enter-active {
+    transition:
+      opacity var(--scenario-crossfade) cubic-bezier(0.22, 1, 0.36, 1) var(--scenario-crossfade),
+      transform var(--scenario-crossfade) cubic-bezier(0.22, 1, 0.36, 1) var(--scenario-crossfade);
+  }
+
+  .scenario-route-leave-active {
+    transition:
+      opacity var(--scenario-crossfade) ease,
+      transform var(--scenario-crossfade) ease;
+  }
+
+  .scenario-route-enter-from {
+    opacity: 0;
+    transform: scale(1.03) translateY(10px);
+  }
+
+  .scenario-route-leave-to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scenario-route-enter-from,
+    .scenario-route-leave-to,
+    .app-topbar.scenario-chrome-enter-from,
+    .app-topbar.scenario-chrome-leave-to,
+    .nav-dock.scenario-chrome-enter-from,
+    .nav-dock.scenario-chrome-leave-to {
       transform: none;
     }
   }
@@ -449,6 +547,56 @@
     }
   }
 
+  /* 로그인 성공 도장 */
+  .auth-seal--pending {
+    opacity: 0;
+    transform: rotate(-28deg) scale(1.55) translateY(-10px);
+  }
+
+  .auth-seal--stamped {
+    animation: auth-seal-stamp 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15) forwards;
+  }
+
+  .auth-login-stamp {
+    opacity: 0;
+    transform: rotate(-28deg) scale(1.65) translateY(-22px);
+    animation: auth-seal-stamp 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15) 0.08s forwards;
+  }
+
+  .auth-login-stamp span {
+    background-color: rgba(245, 237, 217, 0.28);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  @keyframes auth-seal-stamp {
+    0% {
+      opacity: 0;
+      transform: rotate(-28deg) scale(1.55) translateY(-18px);
+    }
+    55% {
+      opacity: 1;
+      transform: rotate(-10deg) scale(0.94) translateY(1px);
+    }
+    100% {
+      opacity: 0.92;
+      transform: rotate(-12deg) scale(1) translateY(0);
+    }
+  }
+
+  /* 로그인 ↔ 앱 fade-out-in */
+  .auth-page-enter-active,
+  .auth-page-leave-active {
+    transition:
+      opacity 0.42s ease,
+      transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .auth-page-enter-from,
+  .auth-page-leave-to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
   /* 클립보드 고정 · 종이만 페이드 교체 */
   .auth-paper-stage {
     transform-origin: 50% 0%;
@@ -483,6 +631,28 @@
       animation: none !important;
       opacity: 1 !important;
       transform: none !important;
+    }
+
+    .auth-seal--pending {
+      opacity: 0;
+      transform: none;
+    }
+
+    .auth-seal--stamped,
+    .auth-login-stamp {
+      animation: none !important;
+      opacity: 0.92 !important;
+      transform: rotate(-12deg) !important;
+    }
+
+    .auth-page-enter-active,
+    .auth-page-leave-active {
+      transition: opacity 0.2s ease;
+    }
+
+    .auth-page-enter-from,
+    .auth-page-leave-to {
+      transform: none;
     }
 
     .auth-splash-leave-active {
@@ -998,6 +1168,25 @@
   .cork-btn--ghost:disabled {
     opacity: 0.4;
     box-shadow: none;
+  }
+
+  /* 헤더 보조 액션 pill (교환 내역 / 파산 신청 / 커리큘럼 수정 등) */
+  .chalk-pill-btn {
+    @apply shrink-0 cursor-pointer rounded-full border-[0.5px] px-3 py-1.5 font-serif text-xs font-bold transition-[transform,color,background-color,border-color] duration-200 ease-out;
+    border-color: rgba(193, 127, 36, 0.35);
+    background: #fff8ec;
+    color: #c17f24;
+  }
+
+  .chalk-pill-btn:hover {
+    @apply scale-[1.02];
+    border-color: rgba(193, 127, 36, 0.55);
+    background: #fff3dd;
+    color: #a86b1a;
+  }
+
+  .chalk-pill-btn:active {
+    @apply scale-[0.99];
   }
 }
 

@@ -106,8 +106,12 @@ export const useCurriculumConfirm = () => {
       editMode.value = false
 
       if (route.query.mode === 'edit') {
+        studyStore.invalidateRoadmap()
         try {
-          await studyStore.fetchCurriculum()
+          await Promise.all([
+            studyStore.fetchCurriculum(),
+            studyStore.fetchRoadmap({ force: true }),
+          ])
         } catch {
           /* 학습 화면에서 재시도 */
         }

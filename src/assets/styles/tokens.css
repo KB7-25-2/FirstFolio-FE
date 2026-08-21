@@ -137,6 +137,7 @@
 
   --color-pf-asset-deposit: #4a54a3;
   --color-pf-asset-stock: #c28c38;
+  --color-pf-asset-fund: #9c5f7a;
   --color-pf-asset-bond: #4a7d73;
   --color-pf-asset-cash: #a89980;
 
@@ -282,6 +283,7 @@
 
   --pf-asset-deposit: var(--color-pf-asset-deposit);
   --pf-asset-stock: var(--color-pf-asset-stock);
+  --pf-asset-fund: var(--color-pf-asset-fund);
   --pf-asset-bond: var(--color-pf-asset-bond);
   --pf-asset-cash: var(--color-pf-asset-cash);
 
