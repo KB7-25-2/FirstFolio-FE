@@ -87,6 +87,50 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     )
   }
 
+  // 상품 구매 화면이 열려있는 동안 실시간 시세(주식·펀드)를 2초마다 갱신한다. hydrateProductPrices와
+  // 다르게 이미 가격이 있는 상품도 매번 다시 조회한다(진짜 "폴링" — 계속 갱신하는 게 목적이라
+  // null-필터를 안 건다). purchasableProducts가 비어있으면(최초 진입) 카탈로그부터 받아온다.
+  let productPricePollTimer = null
+
+  const pollProductPrices = async () => {
+    if (!purchasableProducts.value.length) {
+      await fetchPurchasableProducts()
+    }
+
+    const targets = purchasableProducts.value.filter((product) => product.isTimeCompressionExempt)
+    if (!targets.length) return
+
+    const results = await Promise.allSettled(
+      targets.map((product) => portfolioService.getProductDetail(product.productId)),
+    )
+
+    const priceByProductId = new Map()
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value?.unitPrice != null) {
+        priceByProductId.set(targets[index].productId, result.value.unitPrice)
+      }
+    })
+    if (!priceByProductId.size) return
+
+    purchasableProducts.value = purchasableProducts.value.map((product) =>
+      priceByProductId.has(product.productId)
+        ? { ...product, unitPrice: priceByProductId.get(product.productId) }
+        : product,
+    )
+  }
+
+  const startProductPricePolling = () => {
+    if (productPricePollTimer) return // 이미 돌고 있으면 중복 시작 방지
+    pollProductPrices()
+    productPricePollTimer = setInterval(pollProductPrices, 2_000)
+  }
+
+  const stopProductPricePolling = () => {
+    if (!productPricePollTimer) return
+    clearInterval(productPricePollTimer)
+    productPricePollTimer = null
+  }
+
   const fetchSummary = async () => {
     isLoading.value = true
     error.value = null
@@ -201,6 +245,19 @@ export const usePortfolioStore = defineStore('portfolio', () => {
 
   const fetchPortfolioSummary = fetchSummary
 
+  /** 로그아웃 등 세션 종료 시 이전 사용자의 잔여 상태를 전부 비운다 (userSessionCleanup.js). */
+  const clear = () => {
+    stopProductPricePolling()
+    summary.value = null
+    purchasableProducts.value = []
+    productsNextCursor.value = null
+    lastTradeResult.value = null
+    transactions.value = []
+    transactionsNextCursor.value = null
+    isLoading.value = false
+    error.value = null
+  }
+
   return {
     summary,
     purchasableProducts,
@@ -211,6 +268,8 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     fetchPurchasableProducts,
     fetchProductDetail,
     hydrateProductPrices,
+    startProductPricePolling,
+    stopProductPricePolling,
     sellHolding,
     buyProduct,
     lastTradeResult,
@@ -219,6 +278,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
     transactions,
     transactionsNextCursor,
     fetchTransactions,
+    clear,
     // 홈 위젯 호환용 별칭
     portfolioSummary,
     allocationView,
