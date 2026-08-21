@@ -170,11 +170,6 @@ watch(signupStep, (step, prev) => {
                   label="입장하기  →"
                   :disabled="isLoading || showSplash || loginSuccess"
                 />
-
-                <p class="text-center font-serif text-[8px] text-[var(--auth-doc-faint)]">
-                  본 문서는 Firstfolio 입장 절차에 따라 발급되었습니다.
-                </p>
-
                 <div
                   v-if="loginSuccess"
                   class="auth-login-stamp pointer-events-none absolute top-[38%] right-[6%] z-10"
