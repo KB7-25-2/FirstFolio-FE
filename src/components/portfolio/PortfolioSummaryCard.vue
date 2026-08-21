@@ -56,15 +56,10 @@ const investedRatio = computed(() => {
   const invested = total - props.summary.cashBalance
   return Math.round((invested / total) * 100)
 })
-
-// 매도/만기 완료(SOLD, MATURED)는 세지 않고, 현재 보유 중(ACTIVE)인 상품 개수만 센다.
-const activeHoldingCount = computed(
-  () => props.summary.holdings.filter((holding) => holding.status === 'ACTIVE').length,
-)
 </script>
 
 <template>
-  <div class="relative w-full">
+  <div class="relative mt-2 w-full">
     <MemoPin side="left" tone="portfolio" />
 
     <section
@@ -113,11 +108,7 @@ const activeHoldingCount = computed(
         </AllocationDonutChart>
       </div>
 
-      <p class="mt-3 font-serif text-[10px] font-bold tracking-wide text-[rgba(41,33,26,0.4)]">
-        보유 {{ activeHoldingCount }}개 상품
-      </p>
-
-      <ul class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5">
+      <ul class="mt-4 grid grid-cols-2 gap-x-4 gap-y-1.5">
         <li
           v-for="item in summary.allocations"
           :key="item.label"
