@@ -94,11 +94,6 @@ onActivated(() => {
             {{ greeting }}
           </p>
         </div>
-        <span
-          class="shrink-0 rounded-full border-[0.5px] border-[rgba(193,127,36,0.4)] bg-[rgba(193,127,36,0.08)] px-2.5 py-1 font-serif text-[12px] whitespace-nowrap text-[var(--nav-active-primary)]"
-        >
-          오늘 출석 완료
-        </span>
       </div>
 
       <ScrollReveal class="flex justify-center">

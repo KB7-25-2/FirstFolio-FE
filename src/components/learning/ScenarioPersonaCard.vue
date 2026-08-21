@@ -18,21 +18,19 @@ defineProps({
     >
       <span class="size-2.5 shrink-0 rounded-full bg-[#5b8def]" aria-hidden="true" />
       <p class="truncate font-serif text-[12px] font-bold text-[#f5edd9]">{{ name }}</p>
-      <p class="ml-auto shrink-0 text-[10px] text-[#f5edd9]">{{ age }}</p>
-      <p class="shrink-0 text-[10px] text-[#f5edd9]">{{ job }}</p>
     </div>
     <div class="mt-2 flex gap-1.5">
       <div
         class="min-h-[34px] flex-1 overflow-hidden rounded-md bg-[rgba(255,255,255,0.12)] px-2 py-1"
       >
-        <p class="text-[8px] text-[#bfb8a8]">월 소득</p>
-        <p class="text-[11px] font-bold text-[#f5edd9]">{{ monthlyIncome }}</p>
+        <p class="text-[8px] text-[#bfb8a8]">나이</p>
+        <p class="text-[11px] font-bold text-[#f5edd9]">{{ age }}세</p>
       </div>
       <div
         class="min-h-[34px] flex-1 overflow-hidden rounded-md bg-[rgba(255,255,255,0.12)] px-2 py-1"
       >
-        <p class="text-[8px] text-[#bfb8a8]">월 저축</p>
-        <p class="text-[11px] font-bold text-[#f5edd9]">{{ monthlySaving }}</p>
+        <p class="text-[8px] text-[#bfb8a8]">직업</p>
+        <p class="text-[11px] font-bold text-[#f5edd9]">{{ job }}</p>
       </div>
     </div>
   </div>
