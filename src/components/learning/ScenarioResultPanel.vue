@@ -73,13 +73,14 @@ defineEmits(['confirm'])
       <div class="h-px flex-1 bg-[rgba(139,100,60,0.28)]" />
     </div>
 
-    <p class="mt-4 font-serif text-[11px] font-bold text-[#3d1f08]">투자 상담 교육원장</p>
-    <span
-      class="mt-2 -rotate-8 rounded border-[0.5px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
-    >
-      {{ completed ? '수료' : '재도전' }}
-    </span>
-
+    <div class="flex items-center justify-center gap-2">
+      <p class="mt-4 font-serif text-[11px] font-bold text-[#3d1f08]">퍼스트폴리오 학습원장</p>
+      <span
+        class="mt-2 -rotate-8 rounded border-[0.5px] border-[rgba(139,69,19,0.5)] px-2 py-1 font-serif text-[9px] font-black tracking-[1px] text-[rgba(139,69,19,0.55)]"
+      >
+        {{ completed ? '수료' : '재도전' }}
+      </span>
+    </div>
     <button
       type="button"
       class="mt-8 flex h-11 w-full items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec] shadow-[0_3px_6px_rgba(139,80,20,0.35)]"

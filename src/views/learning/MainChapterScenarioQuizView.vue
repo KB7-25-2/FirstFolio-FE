@@ -63,6 +63,9 @@ const resultCongratsMessage = computed(() =>
 )
 
 const penguinMood = computed(() => {
+  if (scenarioPhase.value === 'RESULT') {
+    return retryMainChapterQuiz.value ? 'wrong' : 'correct'
+  }
   if (scenarioUiStatus.value === 'CORRECT') return 'correct'
   if (scenarioUiStatus.value === 'WRONG') return 'wrong'
   return 'idle'
