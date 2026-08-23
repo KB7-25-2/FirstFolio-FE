@@ -248,112 +248,115 @@ const closeTradeResult = () => {
 </script>
 
 <template>
-  <div
-    class="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
-    role="dialog"
-    aria-modal="true"
-  >
-    <button
-      type="button"
-      class="absolute inset-0 bg-black/50"
-      aria-label="시세 모달 닫기"
-      @click="handleClose"
-    />
-
+  <!-- main(z-10) 안에서 열리면 nav-dock(z-20)에 매도/매수 버튼이 가려지므로 body로 올림 -->
+  <Teleport to="body">
     <div
-      class="relative z-10 flex max-h-[min(92dvh,760px)] w-full max-w-[var(--mobile-width)] flex-col overflow-hidden rounded-t-2xl border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] shadow-[0_-12px_40px_rgba(44,24,16,0.28)] sm:rounded-2xl"
+      class="fixed inset-0 z-[100] flex items-end justify-center sm:items-center"
+      role="dialog"
+      aria-modal="true"
     >
-      <div class="flex shrink-0 items-center justify-between gap-2 px-4 pt-3 pb-1">
-        <p class="font-serif text-[11px] font-bold tracking-wide text-[rgba(41,33,26,0.45)]">
-          상품 시세
-        </p>
-        <button
-          type="button"
-          class="flex size-8 items-center justify-center rounded-full bg-[rgba(193,127,36,0.12)] font-serif text-sm text-[#c17f24] transition-colors hover:bg-[rgba(193,127,36,0.24)]"
-          aria-label="닫기"
-          @click="handleClose"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3">
-        <div class="mb-4">
-          <h2 class="font-serif text-xl font-bold text-[#2c1810]">
-            {{ productState.displayName || '상품 시세' }}
-          </h2>
-          <p class="mt-2 font-serif text-2xl font-bold leading-none" :class="priceToneClass">
-            {{ priceLabel }}
-          </p>
-          <p
-            v-if="changeAmountLabel"
-            class="mt-1.5 font-serif text-sm font-bold"
-            :class="priceToneClass"
-          >
-            {{ changeAmountLabel }}
-            <span class="ml-1">{{ changeRateLabel }}</span>
-          </p>
-          <p class="mt-1 font-serif text-[11px] text-[rgba(41,33,26,0.5)]">
-            {{ productState.riskLevel || '' }}
-            <span v-if="productState.riskLevel"> · </span>
-            {{ marketStatusLabel }}
-          </p>
-        </div>
-
-        <ProductCandleChart
-          variant="detail"
-          :product-name="productState.displayName || ''"
-          :candles="chartCandles"
-          :live-candle="chartSnapshot?.currentCandle"
-          :current-price="currentPrice"
-          :market-open="Boolean(chartSnapshot?.marketOpen)"
-          :loading="chartLoading"
-          :error-message="chartError"
-        />
-      </div>
+      <button
+        type="button"
+        class="absolute inset-0 bg-black/50"
+        aria-label="시세 모달 닫기"
+        @click="handleClose"
+      />
 
       <div
-        class="shrink-0 border-t-[0.5px] border-[rgba(193,127,36,0.25)] bg-[#fff8ec] px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        class="relative z-10 flex max-h-[min(92dvh,760px)] w-full max-w-[var(--mobile-width)] flex-col overflow-hidden rounded-t-2xl border-[0.5px] border-[rgba(193,127,36,0.3)] bg-[#fff8ec] shadow-[0_-12px_40px_rgba(44,24,16,0.28)] sm:rounded-2xl"
       >
-        <div class="flex gap-2">
+        <div class="flex shrink-0 items-center justify-between gap-2 px-4 pt-3 pb-1">
+          <p class="font-serif text-[11px] font-bold tracking-wide text-[rgba(41,33,26,0.45)]">
+            상품 시세
+          </p>
           <button
             type="button"
-            class="flex h-11 flex-1 items-center justify-center rounded-[10px] border-[0.5px] border-[#c17f24] bg-[#fff8ec] font-serif text-[14px] font-bold text-[#c17f24] shadow-[0_3px_6px_rgba(139,80,20,0.18)] transition-colors hover:enabled:bg-[rgba(193,127,36,0.12)] disabled:opacity-40"
-            :disabled="!canSell"
-            @click="openSellModal"
+            class="flex size-8 items-center justify-center rounded-full bg-[rgba(193,127,36,0.12)] font-serif text-sm text-[#c17f24] transition-colors hover:bg-[rgba(193,127,36,0.24)]"
+            aria-label="닫기"
+            @click="handleClose"
           >
-            {{ sellLabel }}
-          </button>
-          <button
-            type="button"
-            class="flex h-11 flex-1 items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec] shadow-[0_3px_6px_rgba(139,80,20,0.35)] transition-colors hover:bg-[#a86c1d]"
-            @click="openBuyModal"
-          >
-            {{ buyLabel }}
+            ✕
           </button>
         </div>
+
+        <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-3">
+          <div class="mb-4">
+            <h2 class="font-serif text-xl font-bold text-[#2c1810]">
+              {{ productState.displayName || '상품 시세' }}
+            </h2>
+            <p class="mt-2 font-serif text-2xl font-bold leading-none" :class="priceToneClass">
+              {{ priceLabel }}
+            </p>
+            <p
+              v-if="changeAmountLabel"
+              class="mt-1.5 font-serif text-sm font-bold"
+              :class="priceToneClass"
+            >
+              {{ changeAmountLabel }}
+              <span class="ml-1">{{ changeRateLabel }}</span>
+            </p>
+            <p class="mt-1 font-serif text-[11px] text-[rgba(41,33,26,0.5)]">
+              {{ productState.riskLevel || '' }}
+              <span v-if="productState.riskLevel"> · </span>
+              {{ marketStatusLabel }}
+            </p>
+          </div>
+
+          <ProductCandleChart
+            variant="detail"
+            :product-name="productState.displayName || ''"
+            :candles="chartCandles"
+            :live-candle="chartSnapshot?.currentCandle"
+            :current-price="currentPrice"
+            :market-open="Boolean(chartSnapshot?.marketOpen)"
+            :loading="chartLoading"
+            :error-message="chartError"
+          />
+        </div>
+
+        <div
+          class="shrink-0 border-t-[0.5px] border-[rgba(193,127,36,0.25)] bg-[#fff8ec] px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+        >
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="flex h-11 flex-1 items-center justify-center rounded-[10px] border-[0.5px] border-[#c17f24] bg-[#fff8ec] font-serif text-[14px] font-bold text-[#c17f24] shadow-[0_3px_6px_rgba(139,80,20,0.18)] transition-colors hover:enabled:bg-[rgba(193,127,36,0.12)] disabled:opacity-40"
+              :disabled="!canSell"
+              @click="openSellModal"
+            >
+              {{ sellLabel }}
+            </button>
+            <button
+              type="button"
+              class="flex h-11 flex-1 items-center justify-center rounded-[10px] bg-[#c17f24] font-serif text-[14px] font-bold text-[#fff8ec] shadow-[0_3px_6px_rgba(139,80,20,0.35)] transition-colors hover:bg-[#a86c1d]"
+              @click="openBuyModal"
+            >
+              {{ buyLabel }}
+            </button>
+          </div>
+        </div>
       </div>
+
+      <BuyProductModal
+        v-if="buyTargetProduct && store.summary"
+        :product="buyTargetProduct"
+        :cash-balance="store.summary.cashBalance"
+        :is-submitting="isBuying"
+        :error-message="buyError"
+        @close="closeBuyModal"
+        @confirm="handleBuyConfirm"
+      />
+
+      <SellHoldingModal
+        v-if="sellTargetHolding"
+        :holding="sellTargetHolding"
+        :is-submitting="isSelling"
+        :error-message="sellError"
+        @close="closeSellModal"
+        @confirm="handleSellConfirm"
+      />
+
+      <TradeResultModal v-if="tradeResult" :result="tradeResult" @close="closeTradeResult" />
     </div>
-
-    <BuyProductModal
-      v-if="buyTargetProduct && store.summary"
-      :product="buyTargetProduct"
-      :cash-balance="store.summary.cashBalance"
-      :is-submitting="isBuying"
-      :error-message="buyError"
-      @close="closeBuyModal"
-      @confirm="handleBuyConfirm"
-    />
-
-    <SellHoldingModal
-      v-if="sellTargetHolding"
-      :holding="sellTargetHolding"
-      :is-submitting="isSelling"
-      :error-message="sellError"
-      @close="closeSellModal"
-      @confirm="handleSellConfirm"
-    />
-
-    <TradeResultModal v-if="tradeResult" :result="tradeResult" @close="closeTradeResult" />
-  </div>
+  </Teleport>
 </template>
