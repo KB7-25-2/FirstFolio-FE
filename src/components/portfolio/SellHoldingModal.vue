@@ -3,6 +3,14 @@ import { ref, computed } from 'vue'
 import PortfolioModal from '@/components/portfolio/PortfolioModal.vue'
 import AmountInput from '@/components/portfolio/AmountInput.vue'
 import { getAssetTypeMeta } from '@/constants/assetType.js'
+import {
+  calcSellProfit,
+  formatSignedKrw,
+  formatSignedRate,
+  getEstimatedSellProceeds,
+  getSellCostBasis,
+  sellProfitToneClass,
+} from '@/utils/sellProfit.js'
 
 const props = defineProps({
   holding: {
@@ -31,10 +39,15 @@ const processingLabel = computed(() => `${actionLabel.value} 처리 중…`)
 
 const holdingValue = computed(() => props.holding.valuationAmount ?? props.holding.principalAmount)
 
-// 매수형만 쓰는 개수 입력 — 실제 거래 API에 quantity 그대로 보낸다(금액 환산 안 함).
 const quantity = ref(1)
-const estimatedAmount = computed(() =>
-  props.holding.unitPrice ? quantity.value * props.holding.unitPrice : 0,
+const sellQuantity = computed(() => (isSubscription.value ? undefined : quantity.value))
+const costBasisAmount = computed(() => getSellCostBasis(props.holding, sellQuantity.value))
+const estimatedAmount = computed(() => getEstimatedSellProceeds(props.holding, sellQuantity.value))
+const estimatedProfit = computed(() =>
+  calcSellProfit({
+    proceeds: estimatedAmount.value,
+    costBasis: costBasisAmount.value,
+  }),
 )
 
 const canConfirm = computed(() => {
@@ -48,7 +61,6 @@ const canConfirm = computed(() => {
 
 const handleConfirm = () => {
   if (!canConfirm.value || props.isSubmitting) return
-  // 가입형은 quantity 없이 확인만(서버가 전액 처리). 매수형은 quantity 그대로 전달.
   emit('confirm', isSubscription.value ? undefined : quantity.value)
 }
 
@@ -63,7 +75,6 @@ const handleClose = () => {
     <p class="font-serif text-sm font-bold text-[#f5edd9]">{{ holding.displayName }}</p>
     <p class="font-serif text-xs text-[rgba(245,237,217,0.6)]">{{ holding.cycleSummary }}</p>
 
-    <!-- 예·적금·채권: 입력 없이 금액 읽기 전용 -->
     <div
       v-if="isSubscription"
       class="mt-4 rounded-lg bg-[rgba(245,237,217,0.06)] px-3 py-2.5 font-serif text-sm text-[#f5edd9]"
@@ -71,7 +82,6 @@ const handleClose = () => {
       {{ holdingValue.toLocaleString('ko-KR') }}원 전액 {{ actionLabel }}
     </div>
 
-    <!-- 주식·펀드: 정수 개수 입력 -->
     <div v-else class="mt-4">
       <div
         class="mb-1.5 flex items-center justify-between font-serif text-xs text-[rgba(245,237,217,0.6)]"
@@ -93,6 +103,25 @@ const handleClose = () => {
       <p class="mt-1.5 font-serif text-xs text-[rgba(245,237,217,0.6)]">
         예상 {{ actionLabel }} 금액 {{ estimatedAmount.toLocaleString('ko-KR') }}원
       </p>
+    </div>
+
+    <div
+      v-if="estimatedProfit && costBasisAmount != null"
+      class="mt-3 rounded-lg bg-[rgba(245,237,217,0.06)] px-3 py-2.5 font-serif text-sm"
+    >
+      <div class="flex items-center justify-between text-xs text-[rgba(245,237,217,0.6)]">
+        <span>매입 금액</span>
+        <span>{{ Math.round(costBasisAmount).toLocaleString('ko-KR') }}원</span>
+      </div>
+      <div class="mt-1.5 flex items-center justify-between font-bold">
+        <span class="text-[#f5edd9]">예상 손익</span>
+        <span :class="sellProfitToneClass(estimatedProfit.amount)">
+          {{ formatSignedKrw(estimatedProfit.amount) }}
+          <span v-if="estimatedProfit.rate != null" class="ml-1 text-xs font-semibold">
+            {{ formatSignedRate(estimatedProfit.rate) }}
+          </span>
+        </span>
+      </div>
     </div>
 
     <p v-if="errorMessage" class="mt-3 font-serif text-xs text-[#f0b4b4]">

@@ -44,6 +44,13 @@ const MODULES = [
     tag: '콘텐츠',
     tone: 'emerald',
   },
+  {
+    path: '/admin/newsletters',
+    title: '뉴스레터',
+    desc: '뉴스레터 발송 목록을 관리합니다.',
+    tag: '콘텐츠',
+    tone: 'green',
+  },
 ]
 
 const todayLabel = computed(() =>
@@ -351,6 +358,10 @@ const goTo = (path) => {
 
 .admin-dashboard__accent--emerald {
   background: #10b981;
+}
+
+.admin-dashboard__accent--green {
+  background: #008000;
 }
 
 .admin-dashboard__notes {
