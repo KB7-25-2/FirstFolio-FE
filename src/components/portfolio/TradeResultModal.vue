@@ -2,8 +2,14 @@
 import { computed } from 'vue'
 import PortfolioModal from '@/components/portfolio/PortfolioModal.vue'
 import { getAssetTypeMeta } from '@/constants/assetType.js'
+import {
+  calcSellProfit,
+  formatSignedKrw,
+  formatSignedRate,
+  sellProfitToneClass,
+} from '@/utils/sellProfit.js'
 
-// result: mapTradeResult()가 만든 모델(+ productName/assetType을 호출부가 덧붙여 넘긴다).
+// result: mapTradeResult()가 만든 모델(+ productName/assetType/costBasis를 호출부가 덧붙여 넘긴다).
 // mapTradeResult엔 상품명이 없어서(거래 API 응답 자체에 없음) 호출부가 알고 있는 값을 합쳐서 넘긴다.
 const props = defineProps({
   result: {
@@ -41,6 +47,15 @@ const hasRoundingLeftover = computed(
     props.result.requestedAmount != null &&
     props.result.requestedAmount !== props.result.amount,
 )
+
+// 매도만 실현 손익 표시. 실수령액(수수료·세금 반영) − 매입 원금.
+const realizedProfit = computed(() => {
+  if (isBuy.value) return null
+  return calcSellProfit({
+    proceeds: props.result.netCashAmount,
+    costBasis: props.result.costBasis,
+  })
+})
 </script>
 
 <template>
@@ -72,6 +87,25 @@ const hasRoundingLeftover = computed(
       <div class="flex items-center justify-between font-bold">
         <span class="text-[#f5edd9]">{{ netCashLabel }}</span>
         <span class="text-[#c17f24]">{{ fmt(result.netCashAmount) }}원</span>
+      </div>
+    </div>
+
+    <div
+      v-if="realizedProfit && result.costBasis != null"
+      class="mt-3 rounded-lg bg-[rgba(245,237,217,0.06)] px-3 py-2.5 font-serif text-sm"
+    >
+      <div class="flex items-center justify-between text-xs text-[rgba(245,237,217,0.6)]">
+        <span>매입 금액</span>
+        <span>{{ fmt(result.costBasis) }}원</span>
+      </div>
+      <div class="mt-1.5 flex items-center justify-between font-bold">
+        <span class="text-[#f5edd9]">실현 손익</span>
+        <span :class="sellProfitToneClass(realizedProfit.amount)">
+          {{ formatSignedKrw(realizedProfit.amount) }}
+          <span v-if="realizedProfit.rate != null" class="ml-1 text-xs font-semibold">
+            {{ formatSignedRate(realizedProfit.rate) }}
+          </span>
+        </span>
       </div>
     </div>
 

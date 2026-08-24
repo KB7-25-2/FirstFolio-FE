@@ -13,6 +13,7 @@ import {
   priceChangeFlashClass,
   priceChangeToneClass,
 } from '@/utils/priceChange.js'
+import { attachSellTradeMeta } from '@/utils/sellProfit.js'
 import * as portfolioService from '@/services/portfolioTradeService.js'
 
 const CHART_CANDLE_COUNT = 200
@@ -270,11 +271,7 @@ const handleSellConfirm = async (quantity) => {
   sellError.value = null
   try {
     const result = await store.sellHolding(sellTargetHolding.value.holdingId, quantity)
-    tradeResult.value = {
-      ...result,
-      productName: sellTargetHolding.value.displayName,
-      assetType: sellTargetHolding.value.assetType,
-    }
+    tradeResult.value = attachSellTradeMeta(result, sellTargetHolding.value, quantity)
     sellTargetHolding.value = null
     await store.fetchSummary()
   } catch (err) {
