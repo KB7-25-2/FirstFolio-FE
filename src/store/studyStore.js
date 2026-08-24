@@ -663,6 +663,64 @@ export const useStudyStore = defineStore('study', () => {
     scenarioUiStatus.value = 'IN_PROGRESS'
   }
 
+  const buildScenarioStepsFromQuestions = (questions) =>
+    questions.map((q) => {
+      const sj = q.scenarioJson ?? null
+      return {
+        stepId: q.questionId,
+        order: q.displayOrder ?? q.questionId,
+        paperTitle: sj?.paper_title ?? '대단원 퀴즈',
+        prompt: q.prompt,
+        options: (q.optionsJson ?? []).map((opt) => ({
+          key: opt.key,
+          label: opt.label,
+          description: opt.description ?? null,
+        })),
+        correctKey: q.correctAnswerJson?.key ?? null,
+        explanation: q.explanation ?? null,
+        scenarioJson: sj,
+      }
+    })
+
+  /** 퀴즈 시작 API가 반환한 문항·기존 응답으로 시나리오 세션 복원 (소단원 applyQuizAttemptSession과 동일 패턴) */
+  const applyScenarioAttemptSession = (questions) => {
+    if (!questions?.length) return false
+
+    const steps = scenarioDetail.value?.content?.steps ?? []
+    if (!steps.length) return false
+
+    const nextAnswers = {}
+    for (const question of questions) {
+      if (!question.answered || !question.selectedKey) continue
+      nextAnswers[question.questionId] = question.selectedKey
+      const step = steps.find((row) => row.stepId === question.questionId)
+      if (!step) continue
+      if (question.correctAnswerJson?.key != null) {
+        step.correctKey = question.correctAnswerJson.key
+      }
+      if (question.explanation != null) {
+        step.explanation = question.explanation
+      }
+    }
+    scenarioAnswers.value = nextAnswers
+
+    const nextIndex = questions.findIndex((row) => !row.answered)
+    const hasProgress = questions.some((row) => row.answered)
+
+    scenarioStepIndex.value = nextIndex >= 0 ? nextIndex : Math.max(questions.length - 1, 0)
+    // 한 문항이라도 채점됐으면 INTRO를 건너뛰고 PLAY부터 이어한다.
+    scenarioPhase.value = hasProgress ? 'PLAY' : 'INTRO'
+
+    const current = questions[scenarioStepIndex.value]
+    if (current?.answered && current.selectedKey) {
+      scenarioSelectedKey.value = current.selectedKey
+      scenarioUiStatus.value = current.isCorrect ? 'CORRECT' : 'WRONG'
+    } else {
+      resetScenarioStepUi()
+    }
+    return true
+  }
+
   const clearScenarioSession = () => {
     scenarioMainChapterId.value = null
     scenarioAttemptId.value = null
@@ -692,28 +750,11 @@ export const useStudyStore = defineStore('study', () => {
 
     scenarioAttemptId.value = attempt.attemptId
 
-    const steps = attempt.questions.map((q) => {
-      const sj = q.scenarioJson ?? null
-      return {
-        stepId: q.questionId,
-        order: q.displayOrder ?? q.questionId,
-        paperTitle: sj?.paper_title ?? '대단원 퀴즈',
-        prompt: q.prompt,
-        options: (q.optionsJson ?? []).map((opt) => ({
-          key: opt.key,
-          label: opt.label,
-          description: opt.description ?? null,
-        })),
-        correctKey: null,
-        explanation: null,
-        scenarioJson: sj,
-      }
-    })
+    const questions = attempt.questions
+    const steps = buildScenarioStepsFromQuestions(questions)
 
     // 첫 번째 SCENARIO 타입 문항의 scenario_json → conditions (페르소나·시황)
-    const firstScenario = attempt.questions.find(
-      (q) => q.questionType === 'SCENARIO' && q.scenarioJson,
-    )
+    const firstScenario = questions.find((q) => q.questionType === 'SCENARIO' && q.scenarioJson)
     const sj = firstScenario?.scenarioJson ?? null
     const conditions = sj
       ? {
@@ -766,18 +807,18 @@ export const useStudyStore = defineStore('study', () => {
       },
     }
 
-    scenarioPhase.value = 'INTRO'
-    scenarioStepIndex.value = 0
-    resetScenarioStepUi()
+    applyScenarioAttemptSession(questions)
   }
 
   const beginScenarioPlay = () => {
     if (!scenarioDetail.value) return
     scenarioPhase.value = 'PLAY'
-    scenarioStepIndex.value = 0
-    scenarioAnswers.value = {}
-    scenarioAttemptResult.value = null
-    resetScenarioStepUi()
+    // INTRO에서 새로 시작할 때만 0번 문항부터 — 재진입(applyScenarioAttemptSession)은 index를 유지
+    if (!Object.keys(scenarioAnswers.value).length) {
+      scenarioStepIndex.value = 0
+      scenarioAttemptResult.value = null
+      resetScenarioStepUi()
+    }
   }
 
   const selectScenarioOption = (key) => {
@@ -789,6 +830,15 @@ export const useStudyStore = defineStore('study', () => {
   const submitCurrentScenarioStep = async () => {
     const step = scenarioCurrentStep.value
     if (!step || scenarioUiStatus.value !== 'SELECTED' || !scenarioSelectedKey.value) return false
+
+    // 재진입 복원 등으로 서버에 이미 제출된 문항은 PUT을 다시 보내지 않는다 (409 방지).
+    if (
+      step.correctKey != null &&
+      scenarioAnswers.value[step.stepId] === scenarioSelectedKey.value
+    ) {
+      scenarioUiStatus.value = scenarioSelectedKey.value === step.correctKey ? 'CORRECT' : 'WRONG'
+      return true
+    }
 
     scenarioAnswers.value = {
       ...scenarioAnswers.value,

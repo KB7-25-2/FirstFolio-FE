@@ -63,6 +63,9 @@ export const useMainChapterScenarioQuiz = () => {
     () => scenarioPhase.value === 'PLAY' || scenarioPhase.value === 'RESULT',
   )
 
+  // 시장 상황 바는 문항 풀이(PLAY) 중에만 — INTRO·RESULT에는 숨긴다.
+  const showMarketBar = computed(() => scenarioPhase.value === 'PLAY' && conditions.value != null)
+
   const scenarioOptions = computed(() => scenarioCurrentStep.value?.options ?? [])
 
   const stepCorrectOption = computed(() => {
@@ -247,6 +250,7 @@ export const useMainChapterScenarioQuiz = () => {
     stampLabel,
     progressRatio,
     showClientScene,
+    showMarketBar,
     scenarioPhase,
     scenarioCurrentStep,
     scenarioStepTotal,

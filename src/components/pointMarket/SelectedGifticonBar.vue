@@ -35,7 +35,7 @@ const isInsufficient = computed(() => remainingAfter.value < 0)
         class="font-serif text-xs"
         :class="isInsufficient ? 'text-[#c0433f]' : 'text-[rgba(41,33,26,0.55)]'"
       >
-        {{ gifticon.pricePoints.toLocaleString('ko-KR') }}원 · 교환 후
+        {{ gifticon.pricePoints.toLocaleString('ko-KR') }}P · 교환 후
         {{ Math.max(remainingAfter, 0).toLocaleString('ko-KR') }}P
       </p>
     </div>
