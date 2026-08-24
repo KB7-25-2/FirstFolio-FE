@@ -26,6 +26,11 @@ export const getCategoryLabel = (category) => CATEGORY_LABEL[category] ?? catego
 // 목록 아이템(GifticonProductListItemResponse)엔 point_balance가 없다 — can_exchange는
 // 서버가 이미 "재고 있음 && 포인트 충분"까지 계산해서 준 값이라 그대로 신뢰한다.
 // 프론트에서 재고 수량이나 포인트 잔액을 다시 비교해 재계산하지 않는다.
+//
+// 가격은 두 축이다.
+// - face_value_krw: 상품 액면(원화 표시용). 교환 차감과 무관하다.
+// - required_points: 교환에 필요한 포인트. POST /gifticon-orders의
+//   expected_required_points에 그대로 보낸다(가격 변경 충돌 감지용).
 export const mapGifticon = (raw) => {
   const isSoldOut = raw.stock_status === 'SOLD_OUT'
 

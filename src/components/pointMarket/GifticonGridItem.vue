@@ -91,9 +91,6 @@ const isSoldOut = computed(() => props.gifticon.stockStatus === 'SOLD_OUT')
     <div>
       <p class="font-serif text-sm font-bold text-[#2c1810]">{{ gifticon.displayName }}</p>
       <div class="mt-1 flex items-baseline gap-1.5">
-        <p class="font-serif text-xs text-[rgba(41,33,26,0.45)]">
-          {{ gifticon.pricePoints.toLocaleString('ko-KR') }}원
-        </p>
         <p class="font-serif text-sm font-bold" :style="{ color: accentColor }">
           {{ gifticon.pricePoints.toLocaleString('ko-KR') }}P
         </p>

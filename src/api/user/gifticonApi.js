@@ -20,12 +20,16 @@ export const getGifticons = (params = {}) =>
   })
 
 // 교환은 상품별 하위 경로가 아니라 /gifticon-orders 컬렉션에 생성하는 방식이다.
-// idempotencyKey는 사용자 범위 멱등 키로, 반드시 Idempotency-Key 헤더에 실어야 한다
-// (body에 넣으면 서버가 못 읽는다).
-export const redeemGifticon = (gifticonProductId, idempotencyKey) =>
+// - Idempotency-Key: 사용자 범위 멱등 키(헤더, 최대 100자). body에 넣으면 서버가 못 읽는다.
+// - expected_required_points: 목록/상세에서 본 required_points. 서버 현재가와 다르면
+//   GIFTICON_PRICE_CHANGED(409)로 거절되며 포인트·코드는 건드리지 않는다.
+export const redeemGifticon = ({ gifticonProductId, expectedRequiredPoints, idempotencyKey }) =>
   apiClient.post(
     '/gifticon-orders',
-    { gifticon_product_id: gifticonProductId },
+    {
+      gifticon_product_id: gifticonProductId,
+      expected_required_points: expectedRequiredPoints,
+    },
     { headers: { 'Idempotency-Key': idempotencyKey } },
   )
 
