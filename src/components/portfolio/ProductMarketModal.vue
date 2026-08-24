@@ -173,13 +173,40 @@ const handleClose = () => {
   emit('close')
 }
 
+// 매수/매도 모달은 연 시점 스냅샷을 들고 있으므로, 스냅샷 폴링으로 갱신된
+// productState 시세를 덮어씌워 현재가·예상 금액이 장중에도 따라가게 한다.
+const buyModalProduct = computed(() => {
+  if (!buyTargetProduct.value) return null
+  return {
+    ...buyTargetProduct.value,
+    unitPrice: productState.value?.unitPrice ?? buyTargetProduct.value.unitPrice,
+    openPrice: productState.value?.openPrice ?? buyTargetProduct.value.openPrice,
+  }
+})
+
+const sellModalHolding = computed(() => {
+  if (!sellTargetHolding.value) return null
+  const liveHolding = activeHolding.value
+  return {
+    ...(liveHolding ?? sellTargetHolding.value),
+    unitPrice:
+      productState.value?.unitPrice ?? liveHolding?.unitPrice ?? sellTargetHolding.value.unitPrice,
+  }
+})
+
 const openBuyModal = async () => {
   buyError.value = null
   buyTargetProduct.value = productState.value
   try {
     const detail = await store.fetchProductDetail(productState.value.productId)
     if (detail && buyTargetProduct.value?.productId === productState.value.productId) {
-      buyTargetProduct.value = { ...productState.value, ...detail }
+      // 상세의 고정 시세보다 폴링 중인 productState 시세를 우선한다
+      buyTargetProduct.value = {
+        ...productState.value,
+        ...detail,
+        unitPrice: productState.value.unitPrice ?? detail.unitPrice,
+        openPrice: productState.value.openPrice ?? detail.openPrice,
+      }
     }
   } catch (err) {
     buyError.value = err.message || '가격 정보를 불러오지 못했어요.'
@@ -338,8 +365,8 @@ const closeTradeResult = () => {
       </div>
 
       <BuyProductModal
-        v-if="buyTargetProduct && store.summary"
-        :product="buyTargetProduct"
+        v-if="buyModalProduct && store.summary"
+        :product="buyModalProduct"
         :cash-balance="store.summary.cashBalance"
         :is-submitting="isBuying"
         :error-message="buyError"
@@ -348,8 +375,8 @@ const closeTradeResult = () => {
       />
 
       <SellHoldingModal
-        v-if="sellTargetHolding"
-        :holding="sellTargetHolding"
+        v-if="sellModalHolding"
+        :holding="sellModalHolding"
         :is-submitting="isSelling"
         :error-message="sellError"
         @close="closeSellModal"
