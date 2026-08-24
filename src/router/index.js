@@ -209,6 +209,12 @@ const router = createRouter({
           meta: { title: '모의 금융상품' },
         },
         {
+          path: 'gifticons',
+          name: 'admin-gifticons',
+          component: () => import('@/views/admin/AdminGifticonsView.vue'),
+          meta: { title: '기프티콘' },
+        },
+        {
           path: 'news',
           name: 'admin-news',
           component: () => import('@/views/admin/AdminNewsView.vue'),

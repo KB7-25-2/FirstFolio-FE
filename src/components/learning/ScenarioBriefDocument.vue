@@ -33,12 +33,6 @@ defineEmits(['start'])
       </p>
     </div>
 
-    <div class="mt-3 flex w-full items-center justify-between">
-      <p class="font-serif text-[9px] text-[rgba(139,100,60,0.45)]">{{ docNo }}</p>
-      <p class="font-serif text-[9px] text-[rgba(139,100,60,0.45)]">{{ docDate }}</p>
-    </div>
-    <div class="mt-3 h-px w-full bg-[rgba(139,100,60,0.18)]" />
-
     <img :src="officialSeal" alt="" class="mt-4 size-14 object-contain" width="56" height="56" />
     <p
       v-if="orgName"

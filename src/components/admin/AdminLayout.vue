@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { name: 'admin-curriculum', label: '커리큘럼', path: '/admin/curriculum' },
   { name: 'admin-quiz', label: '퀴즈', path: '/admin/quiz' },
   { name: 'admin-products', label: '모의 상품', path: '/admin/products' },
+  { name: 'admin-gifticons', label: '기프티콘', path: '/admin/gifticons' },
   { name: 'admin-news', label: '뉴스 검수', path: '/admin/news' },
 ]
 

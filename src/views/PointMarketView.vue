@@ -74,6 +74,13 @@ const handleRedeem = async () => {
     gifticonStore.fetchRedemptionHistory()
     redeemToast.value = { open: true, message: `${displayName} 교환 완료!`, variant: 'success' }
   } catch (err) {
+    // 가격 변경·품절이면 스토어가 카탈로그를 갱신한다. 선택 상품이 사라지거나
+    // 교환 불가가 되면 하단 바 선택을 해제한다.
+    const refreshed = gifticonStore.gifticons.find(
+      (item) => item.gifticonId === selectedGifticonId.value,
+    )
+    if (!refreshed?.isRedeemable) selectedGifticonId.value = null
+
     redeemToast.value = {
       open: true,
       message: err.message || '교환 처리 중 문제가 발생했어요.',

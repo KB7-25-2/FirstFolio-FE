@@ -29,16 +29,28 @@ export const useGifticonStore = defineStore('gifticon', () => {
   }
 
   // gifticon 교환. 포인트 잔액의 진짜 소스는 userStore뿐이라, 성공 후 다시 동기화한다.
+  // GIFTICON_PRICE_CHANGED면 카탈로그를 다시 받아 화면의 required_points를 맞춘다.
   const redeem = async (gifticon) => {
     const userStore = useUserStore()
 
-    const result = await gifticonService.redeemGifticonService({
-      gifticon,
-      currentPointBalance: userStore.pointBalance,
-    })
-    lastRedemption.value = result
-    await userStore.fetchProfile()
-    return result
+    try {
+      const result = await gifticonService.redeemGifticonService({
+        gifticon,
+        currentPointBalance: userStore.pointBalance,
+      })
+      lastRedemption.value = result
+      await userStore.fetchProfile()
+      return result
+    } catch (err) {
+      if (err?.code === 'GIFTICON_PRICE_CHANGED' || err?.code === 'GIFTICON_SOLD_OUT') {
+        try {
+          await fetchGifticons()
+        } catch {
+          // 카탈로그 갱신 실패는 원래 교환 오류를 우선한다
+        }
+      }
+      throw err
+    }
   }
 
   const fetchRedemptionHistory = async (params = {}) => {
