@@ -39,17 +39,7 @@ const props = defineProps({
 
 defineEmits(['update:modelValue'])
 
-const displayValue = computed(() => {
-  if (!props.maskPassword || props.type !== 'password') {
-    return props.modelValue
-  }
-
-  return props.modelValue
-    ? Array.from(props.modelValue)
-        .map(() => '※')
-        .join(' ')
-    : ''
-})
+const isMaskedPassword = computed(() => props.maskPassword && props.type === 'password')
 </script>
 
 <template>
@@ -61,24 +51,45 @@ const displayValue = computed(() => {
     <span class="font-serif text-[9px] text-[var(--auth-doc-label)]">{{ label }}</span>
     <div class="relative min-h-[28px] w-full">
       <input
+        v-if="isMaskedPassword"
         :id="id"
-        :type="maskPassword ? 'text' : type"
+        type="text"
         :value="modelValue"
         :placeholder="placeholder"
         :autocomplete="autocomplete"
         :disabled="disabled"
         required
-        class="absolute inset-0 z-10 w-full bg-transparent font-serif font-bold text-[20px] leading-none text-transparent caret-[var(--auth-hand)] outline-none disabled:cursor-not-allowed"
-        :class="maskPassword ? 'tracking-[0.2em]' : ''"
+        class="auth-doc-field__password w-full bg-transparent font-mono text-[14px] font-bold leading-none tracking-[0.12em] text-[var(--auth-hand)] caret-[var(--auth-hand)] outline-none placeholder:opacity-35 disabled:cursor-not-allowed"
         @input="$emit('update:modelValue', $event.target.value)"
       />
-      <span
-        class="pointer-events-none font-serif font-bold text-[20px] leading-none text-[var(--auth-hand)]"
-        :class="displayValue ? '' : 'opacity-35'"
-      >
-        {{ displayValue || placeholder }}
-      </span>
+      <template v-else>
+        <input
+          :id="id"
+          :type="type"
+          :value="modelValue"
+          :placeholder="placeholder"
+          :autocomplete="autocomplete"
+          :disabled="disabled"
+          required
+          class="absolute inset-0 z-10 w-full bg-transparent font-serif text-[20px] font-bold leading-none text-transparent caret-[var(--auth-hand)] outline-none disabled:cursor-not-allowed"
+          @input="$emit('update:modelValue', $event.target.value)"
+        />
+        <span
+          class="pointer-events-none block font-serif text-[20px] font-bold leading-none text-[var(--auth-hand)]"
+          :class="modelValue ? '' : 'opacity-35'"
+          aria-hidden="true"
+        >
+          {{ modelValue || placeholder }}
+        </span>
+      </template>
       <img :src="dottedLine" alt="" class="mt-0.5 block h-px w-full max-w-none" />
     </div>
   </label>
 </template>
+
+<style scoped>
+.auth-doc-field__password {
+  -webkit-text-security: disc;
+  text-security: disc;
+}
+</style>
