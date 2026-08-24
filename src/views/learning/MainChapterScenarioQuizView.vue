@@ -24,6 +24,7 @@ const {
   stampLabel,
   progressRatio,
   showClientScene,
+  showMarketBar,
   scenarioPhase,
   scenarioCurrentStep,
   scenarioIsGraded,
@@ -294,7 +295,7 @@ const penguinMood = computed(() => {
       </div>
 
       <ScenarioMarketBar
-        v-if="conditions"
+        v-if="showMarketBar"
         :title="conditions.marketTitle"
         :date="conditions.marketDate || ''"
         :bullets="conditions.marketBullets"
