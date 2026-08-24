@@ -146,8 +146,9 @@
   --color-pf-danger-bg: rgba(209, 46, 41, 0.15);
   --color-pf-danger-text: #ff8f8a;
   --color-pf-danger-border: rgba(209, 46, 41, 0.5);
-  --color-pf-positive: #6bd67f;
-  --color-pf-negative: #ff8f8a;
+  /* 한국 시세 관례: 상승=빨강, 하락=파랑 */
+  --color-pf-positive: #e53935;
+  --color-pf-negative: #1e88e5;
 }
 
 :root {

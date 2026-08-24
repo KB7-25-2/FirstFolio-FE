@@ -10,6 +10,7 @@ import ProductMarketModal from '@/components/portfolio/ProductMarketModal.vue'
 import BaseLoading from '@/components/BaseLoading.vue'
 import ScrollReveal from '@/components/ScrollReveal.vue'
 import { ASSET_TYPE_META } from '@/constants/assetType.js'
+import { attachSellTradeMeta } from '@/utils/sellProfit.js'
 
 const CHART_ASSET_TYPES = new Set(['STOCK', 'FUND'])
 
@@ -85,12 +86,7 @@ const handleSellConfirm = async (quantity) => {
 
   try {
     const result = await store.sellHolding(sellTargetHolding.value.holdingId, quantity)
-    // mapTradeResult엔 상품명이 없어서(응답 자체에 없음) 방금 판 holding에서 채워 넣는다.
-    tradeResult.value = {
-      ...result,
-      productName: sellTargetHolding.value.displayName,
-      assetType: sellTargetHolding.value.assetType,
-    }
+    tradeResult.value = attachSellTradeMeta(result, sellTargetHolding.value, quantity)
     sellTargetHolding.value = null
   } catch (err) {
     sellError.value = err.message || '판매 처리 중 문제가 발생했어요. 다시 시도해주세요.'

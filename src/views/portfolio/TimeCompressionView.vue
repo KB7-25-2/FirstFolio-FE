@@ -233,7 +233,7 @@ const goToIndex = (index) => {
     class="nav-scroll-pad hide-scrollbar absolute inset-0 flex flex-col gap-3 overflow-y-auto overscroll-contain"
   >
     <div class="flex shrink-0 items-baseline justify-between">
-      <p class="font-pen text-base text-[#c17f24]">내가 보유한 상품의 시간 압축</p>
+      <p class="font-pen text-base text-[#c17f24]">보유 상품</p>
       <p
         v-if="heldTimeCompressedItems.length > 1"
         class="font-serif text-[10px] text-[rgba(41,33,26,0.45)]"
