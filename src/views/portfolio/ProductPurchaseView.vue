@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import ProductListItem from '@/components/portfolio/ProductListItem.vue'
 import ProductMarketModal from '@/components/portfolio/ProductMarketModal.vue'
@@ -34,8 +34,13 @@ const tradeResult = ref(null)
 const isChartAsset = (product) => CHART_ASSET_TYPES.has(product?.assetType)
 
 onMounted(() => {
-  store.fetchPurchasableProducts().then(() => store.hydrateProductPrices())
+  // 목록 시세(주식·펀드) 2초 폴링 — hydrate는 null만 채우므로 장중 갱신은 폴링이 담당
+  store.startProductPricePolling()
   if (!store.summary) store.fetchSummary()
+})
+
+onUnmounted(() => {
+  store.stopProductPricePolling()
 })
 
 const heldProductIds = computed(
