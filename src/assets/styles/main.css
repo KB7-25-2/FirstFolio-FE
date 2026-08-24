@@ -1202,3 +1202,47 @@
 .btn-hover:active {
   @apply scale-[0.99];
 }
+
+/* 시세 텍스트 틱 glow (상승=빨강, 하락=파랑) — 차트 컨테이너가 아니라 가격 글자에 적용 */
+@keyframes pf-price-flash-up {
+  0% {
+    text-shadow: 0 0 0 rgba(229, 57, 53, 0);
+  }
+  35% {
+    text-shadow:
+      0 0 4px rgba(229, 57, 53, 0.55),
+      0 0 10px rgba(229, 57, 53, 0.28);
+  }
+  100% {
+    text-shadow: 0 0 3px rgba(229, 57, 53, 0.18);
+  }
+}
+
+@keyframes pf-price-flash-down {
+  0% {
+    text-shadow: 0 0 0 rgba(30, 136, 229, 0);
+  }
+  35% {
+    text-shadow:
+      0 0 4px rgba(30, 136, 229, 0.55),
+      0 0 10px rgba(30, 136, 229, 0.28);
+  }
+  100% {
+    text-shadow: 0 0 3px rgba(30, 136, 229, 0.18);
+  }
+}
+
+.pf-price-flash-up {
+  animation: pf-price-flash-up 0.7s ease-out;
+}
+
+.pf-price-flash-down {
+  animation: pf-price-flash-down 0.7s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-price-flash-up,
+  .pf-price-flash-down {
+    animation: none;
+  }
+}

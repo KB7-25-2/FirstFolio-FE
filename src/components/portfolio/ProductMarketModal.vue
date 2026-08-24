@@ -10,6 +10,7 @@ import {
   calcPriceChangeVsOpen,
   formatPriceChangeAmount,
   formatPriceChangeRate,
+  priceChangeFlashClass,
   priceChangeToneClass,
 } from '@/utils/priceChange.js'
 import * as portfolioService from '@/services/portfolioTradeService.js'
@@ -79,6 +80,19 @@ const priceToneClass = computed(() => {
 const priceLabel = computed(() => {
   if (currentPrice.value == null) return '시세 준비 중'
   return `${currentPrice.value.toLocaleString('ko-KR')}원`
+})
+
+const flashDirection = ref(null)
+let priceFlashTimer = null
+
+watch(currentPrice, (next, prev) => {
+  if (prev == null || next == null || next === prev) return
+  flashDirection.value = next > prev ? 'up' : 'down'
+  if (priceFlashTimer) clearTimeout(priceFlashTimer)
+  priceFlashTimer = setTimeout(() => {
+    flashDirection.value = null
+    priceFlashTimer = null
+  }, 700)
 })
 
 const changeAmountLabel = computed(() =>
@@ -166,6 +180,7 @@ watch(
 onUnmounted(() => {
   chartRequestId += 1
   stopSnapshotPolling()
+  if (priceFlashTimer) clearTimeout(priceFlashTimer)
 })
 
 const handleClose = () => {
@@ -311,21 +326,44 @@ const closeTradeResult = () => {
             <h2 class="font-serif text-xl font-bold text-[#2c1810]">
               {{ productState.displayName || '상품 시세' }}
             </h2>
-            <p class="mt-2 font-serif text-2xl font-bold leading-none" :class="priceToneClass">
+            <p
+              class="mt-2 font-serif text-2xl font-bold leading-none"
+              :class="[priceToneClass, priceChangeFlashClass(flashDirection)]"
+            >
               {{ priceLabel }}
             </p>
             <p
               v-if="changeAmountLabel"
               class="mt-1.5 font-serif text-sm font-bold"
-              :class="priceToneClass"
+              :class="[priceToneClass, priceChangeFlashClass(flashDirection)]"
             >
               {{ changeAmountLabel }}
               <span class="ml-1">{{ changeRateLabel }}</span>
             </p>
-            <p class="mt-1 font-serif text-[11px] text-[rgba(41,33,26,0.5)]">
-              {{ productState.riskLevel || '' }}
-              <span v-if="productState.riskLevel"> · </span>
-              {{ marketStatusLabel }}
+            <p
+              class="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-serif text-[12px]"
+            >
+              <span v-if="productState.riskLevel" class="font-medium text-[rgba(41,33,26,0.72)]">
+                {{ productState.riskLevel }}
+              </span>
+              <span
+                v-if="productState.riskLevel"
+                class="text-[rgba(41,33,26,0.35)]"
+                aria-hidden="true"
+              >
+                ·
+              </span>
+              <span
+                class="inline-flex items-center gap-1 font-semibold"
+                :class="chartSnapshot?.marketOpen ? 'text-[#a86b1a]' : 'text-[rgba(41,33,26,0.72)]'"
+              >
+                <span
+                  class="inline-block size-1.5 shrink-0 rounded-full"
+                  :class="chartSnapshot?.marketOpen ? 'bg-[#c17f24]' : 'bg-[rgba(41,33,26,0.35)]'"
+                  aria-hidden="true"
+                />
+                {{ marketStatusLabel }}
+              </span>
             </p>
           </div>
 

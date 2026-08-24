@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { name: 'admin-products', label: '모의 상품', path: '/admin/products' },
   { name: 'admin-gifticons', label: '기프티콘', path: '/admin/gifticons' },
   { name: 'admin-news', label: '뉴스 검수', path: '/admin/news' },
+  { name: 'admin-newsletters', label: '뉴스레터', path: '/admin/newsletters' },
 ]
 
 const route = useRoute()

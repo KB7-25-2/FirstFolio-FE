@@ -220,6 +220,12 @@ const router = createRouter({
           component: () => import('@/views/admin/AdminNewsView.vue'),
           meta: { title: '뉴스 검수' },
         },
+        {
+          path: 'newsletters',
+          name: 'admin-newsletters',
+          component: () => import('@/views/admin/AdminNewslettersView.vue'),
+          meta: { title: '뉴스레터' },
+        },
       ],
     },
     {

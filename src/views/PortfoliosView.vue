@@ -59,11 +59,11 @@ const handleResetConfirm = async () => {
               {{ title }}
             </h1>
             <span
-              class="shrink-0 rounded-full px-1.5 py-0.5 font-serif text-[9px] font-bold"
+              class="shrink-0 rounded-full px-1.5 py-0.5 font-serif text-[10px] font-bold"
               :class="
                 marketSession.isOpen
-                  ? 'bg-[rgba(89,140,82,0.28)] text-[#d7f0cf]'
-                  : 'bg-[rgba(240,217,160,0.2)] text-[var(--chalk-text-muted)]'
+                  ? 'bg-[rgba(89,140,82,0.22)] text-[#2f6b2a]'
+                  : 'bg-[rgba(44,24,16,0.08)] text-[rgba(41,33,26,0.72)]'
               "
               :title="marketSession.scheduleLabel"
             >

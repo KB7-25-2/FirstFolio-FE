@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import VueApexCharts from 'vue3-apexcharts'
 import {
   CHART_PERIODS,
@@ -8,9 +8,13 @@ import {
   formatChartCategoryLabel,
 } from '@/utils/productChartCandles.js'
 import {
+  PRICE_CANDLE_DOWN,
+  PRICE_CANDLE_UP,
   calcPriceChangeVsOpen,
   formatPriceChangeAmount,
   formatPriceChangeRate,
+  priceChangeFlashClass,
+  priceChangeSurfaceClass,
   priceChangeToneClass,
 } from '@/utils/priceChange.js'
 
@@ -89,6 +93,28 @@ const priceToneClass = computed(() => {
   return priceChangeToneClass(priceChange.value.direction)
 })
 
+const changeDirection = computed(() => priceChange.value?.direction ?? 'flat')
+
+const flashDirection = ref(null)
+let flashTimer = null
+
+watch(
+  () => props.currentPrice,
+  (next, prev) => {
+    if (prev == null || next == null || next === prev) return
+    flashDirection.value = next > prev ? 'up' : 'down'
+    if (flashTimer) clearTimeout(flashTimer)
+    flashTimer = setTimeout(() => {
+      flashDirection.value = null
+      flashTimer = null
+    }, 700)
+  },
+)
+
+onUnmounted(() => {
+  if (flashTimer) clearTimeout(flashTimer)
+})
+
 const changeAmountLabel = computed(() =>
   priceChange.value ? formatPriceChangeAmount(priceChange.value.amount) : null,
 )
@@ -119,8 +145,8 @@ const chartOptions = computed(() => {
     plotOptions: {
       candlestick: {
         colors: {
-          upward: '#2f6b4f',
-          downward: '#c0433f',
+          upward: PRICE_CANDLE_UP,
+          downward: PRICE_CANDLE_DOWN,
         },
         wick: { useFillColor: true },
       },
@@ -183,16 +209,33 @@ const chartOptions = computed(() => {
         <p class="truncate font-serif text-xs font-bold text-[#2c1810]">
           {{ productName || '상품 시세' }}
         </p>
-        <p class="font-serif text-[9px] text-[rgba(41,33,26,0.5)]">
+        <p
+          class="mt-0.5 flex items-center gap-1 font-serif text-[10px] font-semibold"
+          :class="marketOpen ? 'text-[#a86b1a]' : 'text-[rgba(41,33,26,0.72)]'"
+        >
+          <span
+            class="inline-block size-1.5 shrink-0 rounded-full"
+            :class="marketOpen ? 'bg-[#c17f24]' : 'bg-[rgba(41,33,26,0.35)]'"
+            aria-hidden="true"
+          />
           {{ marketOpen ? '장중 · 실시간 갱신' : '장외 · 확정 시세' }}
         </p>
       </div>
-      <div v-if="priceLabel" class="shrink-0 text-right">
-        <p class="font-serif text-xs font-bold" :class="priceToneClass">{{ priceLabel }}</p>
+      <div
+        v-if="priceLabel"
+        class="shrink-0 rounded-md border px-1.5 py-0.5 text-right transition-[border-color] duration-300"
+        :class="priceChangeSurfaceClass(changeDirection)"
+      >
+        <p
+          class="font-serif text-xs font-bold"
+          :class="[priceToneClass, priceChangeFlashClass(flashDirection)]"
+        >
+          {{ priceLabel }}
+        </p>
         <p
           v-if="changeAmountLabel"
           class="mt-0.5 font-serif text-[10px] font-bold"
-          :class="priceToneClass"
+          :class="[priceToneClass, priceChangeFlashClass(flashDirection)]"
         >
           {{ changeAmountLabel }}
           <span class="ml-0.5 font-semibold">{{ changeRateLabel }}</span>
@@ -226,10 +269,7 @@ const chartOptions = computed(() => {
     <p v-else-if="!hasData" class="py-16 text-center font-serif text-xs text-[rgba(41,33,26,0.45)]">
       아직 표시할 시세가 없어요.
     </p>
-    <div
-      v-else
-      class="overflow-hidden rounded-[3px] border-[0.5px] border-[rgba(193,127,36,0.2)] bg-white"
-    >
+    <div v-else class="overflow-hidden rounded-[3px] border border-[rgba(193,127,36,0.2)] bg-white">
       <VueApexCharts
         :key="`${selectedPeriod}-${variant}`"
         type="candlestick"

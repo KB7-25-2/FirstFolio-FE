@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, onUnmounted } from 'vue'
 import { getAssetTypeMeta } from '@/constants/assetType.js'
 import {
   calcPriceChangeVsOpen,
   formatPriceChangeAmount,
   formatPriceChangeRate,
+  priceChangeFlashClass,
   priceChangeToneClass,
 } from '@/utils/priceChange.js'
 
@@ -52,6 +53,27 @@ const priceToneClass = computed(() => {
   if (!priceChange.value) return 'text-[#c17f24]'
   if (priceChange.value.direction === 'flat') return 'text-[#c17f24]'
   return priceChangeToneClass(priceChange.value.direction)
+})
+
+const flashDirection = ref(null)
+let flashTimer = null
+
+watch(
+  () => props.product.unitPrice,
+  (next, prev) => {
+    if (isSubscription.value) return
+    if (prev == null || next == null || next === prev) return
+    flashDirection.value = next > prev ? 'up' : 'down'
+    if (flashTimer) clearTimeout(flashTimer)
+    flashTimer = setTimeout(() => {
+      flashDirection.value = null
+      flashTimer = null
+    }, 700)
+  },
+)
+
+onUnmounted(() => {
+  if (flashTimer) clearTimeout(flashTimer)
 })
 
 const changeAmountLabel = computed(() =>
@@ -106,11 +128,16 @@ const priceText = computed(() => {
         <p class="truncate font-serif text-xs text-[rgba(41,33,26,0.55)]">
           {{ product.riskLevel }} · {{ cycleSummaryText }}
         </p>
-        <p class="mt-1 font-serif text-sm font-bold" :class="priceToneClass">{{ priceText }}</p>
+        <p
+          class="mt-1 font-serif text-sm font-bold"
+          :class="[priceToneClass, priceChangeFlashClass(flashDirection)]"
+        >
+          {{ priceText }}
+        </p>
         <p
           v-if="changeAmountLabel"
           class="mt-0.5 font-serif text-[11px] font-bold"
-          :class="priceToneClass"
+          :class="[priceToneClass, priceChangeFlashClass(flashDirection)]"
         >
           {{ changeAmountLabel }}
           <span class="ml-0.5 font-semibold">{{ changeRateLabel }}</span>
