@@ -114,7 +114,6 @@ const goTo = (path) => {
       <h3 class="admin-card__title">운영 안내</h3>
       <ul class="admin-dashboard__notes-list">
         <li>관리자 API 변경은 즉시 사용자 앱에 반영됩니다. 게시·폐기 전 내용을 확인하세요.</li>
-        <li>감사 이력(audit log) 조회 API는 아직 연결되지 않았습니다.</li>
         <li>문의·장애 대응은 팀 내부 채널을 이용해 주세요.</li>
       </ul>
     </section>
