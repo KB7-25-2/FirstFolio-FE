@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { usePortfolioStore } from '@/store/portfolioStore.js'
 import ProductListItem from '@/components/portfolio/ProductListItem.vue'
 import ProductMarketModal from '@/components/portfolio/ProductMarketModal.vue'
@@ -34,8 +34,13 @@ const tradeResult = ref(null)
 const isChartAsset = (product) => CHART_ASSET_TYPES.has(product?.assetType)
 
 onMounted(() => {
-  store.fetchPurchasableProducts().then(() => store.hydrateProductPrices())
+  // 목록 시세(주식·펀드) 2초 폴링 — hydrate는 null만 채우므로 장중 갱신은 폴링이 담당
+  store.startProductPricePolling()
   if (!store.summary) store.fetchSummary()
+})
+
+onUnmounted(() => {
+  store.stopProductPricePolling()
 })
 
 const heldProductIds = computed(
@@ -61,6 +66,21 @@ const closeProductMarket = () => {
   marketProduct.value = null
 }
 
+// 목록 폴링이 purchasableProducts를 갱신해도 모달은 연 시점 객체를 들고 있으므로
+// 열려 있는 동안 스토어 시세를 합쳐 현재가·예상 체결이 따라가게 한다.
+const buyModalProduct = computed(() => {
+  if (!buyTargetProduct.value) return null
+  const live = store.purchasableProducts.find(
+    (product) => product.productId === buyTargetProduct.value.productId,
+  )
+  if (!live) return buyTargetProduct.value
+  return {
+    ...buyTargetProduct.value,
+    unitPrice: live.unitPrice ?? buyTargetProduct.value.unitPrice,
+    openPrice: live.openPrice ?? buyTargetProduct.value.openPrice,
+  }
+})
+
 const openBuyModal = async (product) => {
   buyError.value = null
   buyTargetProduct.value = product
@@ -68,7 +88,13 @@ const openBuyModal = async (product) => {
   try {
     const detail = await store.fetchProductDetail(product.productId)
     if (detail && buyTargetProduct.value?.productId === product.productId) {
-      buyTargetProduct.value = { ...product, ...detail }
+      const live = store.purchasableProducts.find((p) => p.productId === product.productId)
+      buyTargetProduct.value = {
+        ...product,
+        ...detail,
+        unitPrice: live?.unitPrice ?? detail.unitPrice ?? product.unitPrice,
+        openPrice: live?.openPrice ?? detail.openPrice ?? product.openPrice,
+      }
     }
   } catch (err) {
     if (buyTargetProduct.value?.productId === product.productId) {
@@ -176,8 +202,8 @@ const closeTradeResult = () => {
     <ProductMarketModal v-if="marketProduct" :product="marketProduct" @close="closeProductMarket" />
 
     <BuyProductModal
-      v-if="buyTargetProduct && store.summary"
-      :product="buyTargetProduct"
+      v-if="buyModalProduct && store.summary"
+      :product="buyModalProduct"
       :cash-balance="store.summary.cashBalance"
       :is-submitting="isBuying"
       :error-message="buyError"
