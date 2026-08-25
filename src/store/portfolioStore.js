@@ -188,6 +188,7 @@ export const usePortfolioStore = defineStore('portfolio', () => {
   const resetPortfolio = async () => {
     await portfolioService.resetPortfolioService()
     await fetchSummary()
+    await syncDashboardAfterPortfolioChange()
   }
 
   /** 홈 PortfolioSummary가 최신 배분·총자산을 쓰도록 대시보드 캐시 갱신 */

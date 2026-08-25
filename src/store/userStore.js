@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import {
   getUserProfile,
   updateUserProfile as updateUserProfileApi,
-  applyPointBalanceDelta,
 } from '@/services/userService.js'
 
 export const useUserStore = defineStore('user', () => {
@@ -11,6 +10,8 @@ export const useUserStore = defineStore('user', () => {
   const isLoading = ref(false)
   const isSaving = ref(false)
   const error = ref(null)
+  /** @type {Promise<import('@/types/user.js').UserProfile | null> | null} */
+  let inflight = null
 
   const nickname = computed(() => profile.value?.nickname ?? '')
   const email = computed(() => profile.value?.email ?? '')
@@ -23,20 +24,44 @@ export const useUserStore = defineStore('user', () => {
     nickname.value ? `안녕하세요, ${nickname.value} 님` : '안녕하세요',
   )
 
+  /**
+   * GET /users/me — 호출 시 항상 서버 잔액·프로필을 다시 맞춘다.
+   * 동시 호출은 한 번의 요청으로 합친다.
+   */
   const fetchProfile = async () => {
-    if (isLoading.value) return
+    if (inflight) return inflight
 
     isLoading.value = true
     error.value = null
 
-    try {
-      const { data } = await getUserProfile()
-      profile.value = data
-    } catch (err) {
-      error.value = err?.message || '프로필을 불러오지 못했습니다.'
-      profile.value = null
-    } finally {
-      isLoading.value = false
+    inflight = (async () => {
+      try {
+        const { data } = await getUserProfile()
+        profile.value = data
+        return data
+      } catch (err) {
+        error.value = err?.message || '프로필을 불러오지 못했습니다.'
+        profile.value = null
+        throw err
+      } finally {
+        isLoading.value = false
+        inflight = null
+      }
+    })()
+
+    return inflight
+  }
+
+  /**
+   * 다른 API(기프티콘 목록 등)가 내려준 잔액으로 화면만 맞춘다.
+   * @param {number | null | undefined} balance
+   */
+  const patchPointBalance = (balance) => {
+    if (balance == null || Number.isNaN(Number(balance))) return
+    if (!profile.value) return
+    profile.value = {
+      ...profile.value,
+      pointBalance: Number(balance),
     }
   }
 
@@ -60,17 +85,15 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * 퀴즈 등 보상 포인트 가산 (목업)
-   * @param {number} amount
+   * 서버에서 이미 적립·차감된 포인트를 GET /users/me 로 동기화한다.
+   * (로컬 가산 목업은 쓰지 않는다 — 서버 잔액이 단일 소스)
    */
-  const addPoints = async (amount) => {
-    if (!amount || amount <= 0) return profile.value
-    if (!profile.value) {
-      await fetchProfile()
+  const syncPointBalance = async () => {
+    try {
+      return await fetchProfile()
+    } catch {
+      return profile.value
     }
-    const { data } = await applyPointBalanceDelta(amount)
-    profile.value = data
-    return data
   }
 
   const clearProfile = () => {
@@ -78,6 +101,7 @@ export const useUserStore = defineStore('user', () => {
     isLoading.value = false
     isSaving.value = false
     error.value = null
+    inflight = null
   }
 
   return {
@@ -94,8 +118,9 @@ export const useUserStore = defineStore('user', () => {
     pointBalanceDisplay,
     greeting,
     fetchProfile,
+    patchPointBalance,
     updateProfile,
-    addPoints,
+    syncPointBalance,
     clearProfile,
   }
 })
