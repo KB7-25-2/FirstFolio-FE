@@ -86,7 +86,9 @@ export const getGifticonList = async (params = {}) => {
 // 성공하면 spent_points·point_balance가 채워진 최종 주문을 돌려받는다.
 // expected_required_points는 화면에서 본 pricePoints(required_points)를 그대로 보낸다 —
 // 서버 현재가와 불일치하면 차감 없이 GIFTICON_PRICE_CHANGED로 거절된다.
-export const redeemGifticonService = async ({ gifticon, currentPointBalance }) => {
+// 잔액 충분 여부는 목록의 can_exchange(isRedeemable)와 서버 판정을 따른다.
+// (프론트 캐시 잔액으로 선차단하면 퀴즈 직후 동기화 전 오탐이 난다.)
+export const redeemGifticonService = async ({ gifticon }) => {
   const expectedRequiredPoints = Number(gifticon.pricePoints)
 
   if (!gifticon.isRedeemable) {
@@ -94,13 +96,6 @@ export const redeemGifticonService = async ({ gifticon, currentPointBalance }) =
   }
   if (!Number.isInteger(expectedRequiredPoints) || expectedRequiredPoints <= 0) {
     throw new GifticonApiError('INVALID_REQUEST', GIFTICON_ERROR_MESSAGES.INVALID_REQUEST, 400)
-  }
-  if (expectedRequiredPoints > currentPointBalance) {
-    throw new GifticonApiError(
-      'INSUFFICIENT_POINTS',
-      GIFTICON_ERROR_MESSAGES.INSUFFICIENT_POINTS,
-      422,
-    )
   }
 
   const idempotencyKey = buildRedeemIdempotencyKey(gifticon.gifticonId, expectedRequiredPoints)

@@ -29,7 +29,7 @@ const redeemToast = ref({ open: false, message: '', variant: 'success' })
 
 onMounted(() => {
   gifticonStore.fetchGifticons()
-  if (!userStore.profile) userStore.fetchProfile()
+  userStore.fetchProfile()
 })
 
 watch(currentView, (view) => {

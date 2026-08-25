@@ -17,9 +17,17 @@ export const useGifticonStore = defineStore('gifticon', () => {
     error.value = null
 
     try {
-      const { items, nextCursor: cursor } = await gifticonService.getGifticonList(params)
+      const {
+        items,
+        nextCursor: cursor,
+        pointBalance,
+      } = await gifticonService.getGifticonList(params)
       gifticons.value = items
       nextCursor.value = cursor
+      // 목록의 can_exchange와 화면 잔액이 어긋나지 않게 서버 잔액으로 맞춤
+      if (pointBalance != null) {
+        useUserStore().patchPointBalance(pointBalance)
+      }
     } catch (err) {
       error.value = err.message
       throw err
@@ -36,10 +44,13 @@ export const useGifticonStore = defineStore('gifticon', () => {
     try {
       const result = await gifticonService.redeemGifticonService({
         gifticon,
-        currentPointBalance: userStore.pointBalance,
       })
       lastRedemption.value = result
-      await userStore.fetchProfile()
+      if (result?.pointBalance != null) {
+        userStore.patchPointBalance(result.pointBalance)
+      } else {
+        await userStore.syncPointBalance()
+      }
       return result
     } catch (err) {
       if (err?.code === 'GIFTICON_PRICE_CHANGED' || err?.code === 'GIFTICON_SOLD_OUT') {
