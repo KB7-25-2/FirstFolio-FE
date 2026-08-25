@@ -11,6 +11,7 @@ vi.mock('@/api/user/dailyQuestApi.js', () => ({
 vi.mock('@/store/userStore.js', () => ({
   useUserStore: () => ({
     fetchProfile: vi.fn(() => Promise.resolve()),
+    syncPointBalance: vi.fn(() => Promise.resolve()),
   }),
 }))
 

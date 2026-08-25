@@ -219,11 +219,7 @@ export const useDailyQuestStore = defineStore('dailyQuest', () => {
       phase.value = 'RESULT'
 
       // 보상 반영된 포인트 잔액 갱신 (GET /users/me)
-      try {
-        await useUserStore().fetchProfile()
-      } catch {
-        // 결과 표시는 유지, 잔액 갱신 실패는 무시
-      }
+      await useUserStore().syncPointBalance()
 
       return data
     } catch (err) {

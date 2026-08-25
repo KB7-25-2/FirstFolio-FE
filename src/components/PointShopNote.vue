@@ -10,9 +10,7 @@ const router = useRouter()
 const { pointBalanceDisplay } = storeToRefs(userStore)
 
 onMounted(() => {
-  if (!userStore.profile) {
-    userStore.fetchProfile()
-  }
+  userStore.fetchProfile()
 })
 
 const goPointMarket = () => {

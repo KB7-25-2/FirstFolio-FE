@@ -17,9 +17,17 @@ export const useGifticonStore = defineStore('gifticon', () => {
     error.value = null
 
     try {
-      const { items, nextCursor: cursor } = await gifticonService.getGifticonList(params)
+      const {
+        items,
+        nextCursor: cursor,
+        pointBalance,
+      } = await gifticonService.getGifticonList(params)
       gifticons.value = items
       nextCursor.value = cursor
+      // 목록의 can_exchange와 화면 잔액이 어긋나지 않게 서버 잔액으로 맞춤
+      if (pointBalance != null) {
+        useUserStore().patchPointBalance(pointBalance)
+      }
     } catch (err) {
       error.value = err.message
       throw err
@@ -28,18 +36,53 @@ export const useGifticonStore = defineStore('gifticon', () => {
     }
   }
 
-  // gifticon 교환. 포인트 잔액의 진짜 소스는 userStore뿐이라, 성공 후 다시 동기화한다.
-  // GIFTICON_PRICE_CHANGED면 카탈로그를 다시 받아 화면의 required_points를 맞춘다.
+  /**
+   * 잔액 기준으로 목록의 교환 가능 여부만 다시 계산한다.
+   * (교환 직후 서버 목록 재조회 전에도 '포인트 부족'이 바로 보이게)
+   * @param {number} balance
+   */
+  const applyRedeemabilityFromBalance = (balance) => {
+    const points = Number(balance)
+    if (Number.isNaN(points)) return
+
+    gifticons.value = gifticons.value.map((item) => {
+      if (item.stockStatus === 'SOLD_OUT') {
+        return { ...item, isRedeemable: false, statusLabel: '품절' }
+      }
+      const canExchange = points >= Number(item.pricePoints)
+      return {
+        ...item,
+        isRedeemable: canExchange,
+        statusLabel: canExchange ? '구매 가능' : '포인트 부족',
+      }
+    })
+  }
+
+  // gifticon 교환. 성공 후 잔액·can_exchange(목록 활성/비활성)를 함께 맞춘다.
   const redeem = async (gifticon) => {
     const userStore = useUserStore()
 
     try {
       const result = await gifticonService.redeemGifticonService({
         gifticon,
-        currentPointBalance: userStore.pointBalance,
       })
       lastRedemption.value = result
-      await userStore.fetchProfile()
+
+      if (result?.pointBalance != null) {
+        userStore.patchPointBalance(result.pointBalance)
+        applyRedeemabilityFromBalance(result.pointBalance)
+      } else {
+        await userStore.syncPointBalance()
+        applyRedeemabilityFromBalance(userStore.pointBalance)
+      }
+
+      // 재고·서버 can_exchange 최종 반영
+      try {
+        await fetchGifticons()
+      } catch {
+        // 잔액·로컬 비활성은 이미 반영됨 — 목록 재조회 실패는 교환 성공을 막지 않음
+      }
+
       return result
     } catch (err) {
       if (err?.code === 'GIFTICON_PRICE_CHANGED' || err?.code === 'GIFTICON_SOLD_OUT') {

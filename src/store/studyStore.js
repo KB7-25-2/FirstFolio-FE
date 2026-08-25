@@ -552,7 +552,10 @@ export const useStudyStore = defineStore('study', () => {
     const correctCount = grades.filter((g) => g?.isCorrect).length
     const totalCount = quizQuestions.value.length
     const last = grades[grades.length - 1]
-    const pointsGranted = last?.reward?.points ?? 0
+    // 보상은 보통 응시 완료 채점(대개 마지막 문항)에만 실림 — 없으면 전체에서 합산
+    const pointsGranted =
+      Number(last?.reward?.points) ||
+      grades.reduce((sum, g) => sum + (Number(g?.reward?.points) || 0), 0)
     const data = {
       subChapterId,
       totalCount,
@@ -575,10 +578,8 @@ export const useStudyStore = defineStore('study', () => {
     }
     quizAttemptResult.value = data
     useDashboardStore().invalidate()
-    if (data.pointsGranted > 0) {
-      const userStore = useUserStore()
-      await userStore.addPoints(data.pointsGranted)
-    }
+    // 포인트는 서버 채점 시 이미 적립됨 — 로컬 가산 대신 GET /users/me 동기화
+    await useUserStore().syncPointBalance()
 
     const alreadyCompleted =
       currentContent.value?.subChapterId === subChapterId &&
@@ -907,13 +908,14 @@ export const useStudyStore = defineStore('study', () => {
     ).length
     const quizScore = totalCount ? Math.round((correctCount / totalCount) * 100) : 0
 
+    const pointsGranted = Number(scenarioFinalGrading.value?.reward?.points) || 0
     const data = {
       mainChapterId,
       totalCount,
       correctCount,
       quizScore,
       rewardStar: scenarioDetail.value?.rewardStar ?? 0,
-      pointsGranted: 0,
+      pointsGranted,
       wrongAnswers: steps
         .filter((step) => scenarioAnswers.value[step.stepId] !== step.correctKey)
         .map((step) => ({
@@ -932,6 +934,7 @@ export const useStudyStore = defineStore('study', () => {
 
     scenarioAttemptResult.value = data
     scenarioPhase.value = 'RESULT'
+    await useUserStore().syncPointBalance()
 
     const item = learningItems.value.find(
       (row) => row.mainChapterId === mainChapterId && row.entryType === 'SCENARIO_QUIZ',
