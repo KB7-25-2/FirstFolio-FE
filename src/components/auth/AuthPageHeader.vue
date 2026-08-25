@@ -4,7 +4,7 @@ import { BRAND_WORDMARK_SRC } from '@/constants/brandAssets.js'
 defineProps({
   tagline: {
     type: String,
-    default: '나의 첫 번째 자산 관리 여정',
+    default: '배우며 완성하는 나의 첫 자산 포트폴리오',
   },
 })
 </script>
