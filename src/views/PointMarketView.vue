@@ -1,7 +1,7 @@
 <script setup>
 defineOptions({ name: 'PointMarketView' })
 
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onActivated, watch } from 'vue'
 import { useGifticonStore } from '@/store/gifticonStore.js'
 import { useUserStore } from '@/store/userStore.js'
 import PointBalanceCard from '@/components/pointMarket/PointBalanceCard.vue'
@@ -27,7 +27,8 @@ const selectedGifticonId = ref(null)
 const isRedeeming = ref(false)
 const redeemToast = ref({ open: false, message: '', variant: 'success' })
 
-onMounted(() => {
+// KeepAlive: 최초·재진입 모두 onActivated — 잔액·can_exchange 동기화
+onActivated(() => {
   gifticonStore.fetchGifticons()
   userStore.fetchProfile()
 })
